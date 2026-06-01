@@ -379,30 +379,32 @@ void LayerBase::setupInterpolation() {
     mRecvCounts_.resize(comm_.size());
     std::fill(mRecvCounts_.begin(), mRecvCounts_.end(), 0);
     std::vector<int> mRecvPointsList;
-    for (size_t jy = 0; jy < ny_; ++jy) {
-      const double jMin = jy > 0 ? yCoord[jy-1] : yCoord[0];
-      const double jMax = yCoord[std::min(jy+1, ny_-1)];
-      for (size_t jx = 0; jx < nx_; ++jx) {
-        const double iMin = jx > 0 ? xCoord[jx-1] : xCoord[0];
-        const double iMax = xCoord[std::min(jx+1, nx_-1)];
-        const atlas::Point3 p(xCoord[jx], yCoord[jy], 0.0);
-        const auto list = mTree.closestPointsWithinRadius(p, radius);
-        bool pointsNeeded = false;
-        for (const auto & item : list) {
-          const size_t jnode0 = item.payload();
-          if (ghostView(jnode0) == 0) {
-            if (iMin <= static_cast<double>(indexX0View(jnode0)) &&
-              static_cast<double>(indexX0View(jnode0)) <= iMax &&
-              jMin <= static_cast<double>(indexY0View(jnode0)) &&
-              static_cast<double>(indexY0View(jnode0)) <= jMax) {
-              pointsNeeded = true;
-              break;
+    if (mSize_ > 0) {
+      for (size_t jy = 0; jy < ny_; ++jy) {
+        const double jMin = jy > 0 ? yCoord[jy-1] : yCoord[0];
+        const double jMax = yCoord[std::min(jy+1, ny_-1)];
+        for (size_t jx = 0; jx < nx_; ++jx) {
+          const double iMin = jx > 0 ? xCoord[jx-1] : xCoord[0];
+          const double iMax = xCoord[std::min(jx+1, nx_-1)];
+          const atlas::Point3 p(xCoord[jx], yCoord[jy], 0.0);
+          const auto list = mTree.closestPointsWithinRadius(p, radius);
+          bool pointsNeeded = false;
+          for (const auto & item : list) {
+            const size_t jnode0 = item.payload();
+            if (ghostView(jnode0) == 0) {
+              if (iMin <= static_cast<double>(indexX0View(jnode0)) &&
+                static_cast<double>(indexX0View(jnode0)) <= iMax &&
+                jMin <= static_cast<double>(indexY0View(jnode0)) &&
+                static_cast<double>(indexY0View(jnode0)) <= jMax) {
+                pointsNeeded = true;
+                break;
+              }
             }
           }
-        }
-        if (pointsNeeded) {
-          ++mRecvCounts_[mpiTask_[jx*ny_+jy]];
-          mRecvPointsList.push_back(jx*ny_+jy);
+          if (pointsNeeded) {
+            ++mRecvCounts_[mpiTask_[jx*ny_+jy]];
+            mRecvPointsList.push_back(jx*ny_+jy);
+          }
         }
       }
     }

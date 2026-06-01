@@ -242,6 +242,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
   if (biperParams != boost::none) {
     // Setup biperiodization implementation
     BiperiodizationImpl biper(outerGeometryData, biperVars, *biperParams);
+    ASSERT(biper.sameFs());
 
     // Apply biperiodization leftInverseMultiply to go to biperiodization inner geometry
     biper.leftInverseMultiply(data_.fieldSet());

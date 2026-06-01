@@ -68,15 +68,37 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   const size_t physicalNy = outerNy - outerExtNy;
 
   if (innerExtNx == outerExtNx && innerExtNy == outerExtNy) {
-    // Same grid
-    sameGrid_ = true;
+    // Same function space
+    oops::Log::info() << "Info     : Inner grid resolution = outer grid resolution" << std::endl;
+    sameFs_ = true;
 
     // Copy grid
     innerGrid_ = outerGrid;
-    oops::Log::info() << "Info     : Inner grid = outer grid" << std::endl;
+
+    // Copy function space
+    innerFs_ = outerFs;
+
+    // Allocate inner partition
+    innerPartition_.resize(innerGrid_.size());
+
+    // Communicate partition
+    atlas::Field glbPartitionField = innerFs_.createField<int>(
+      atlas::option::name("global partition") | atlas::option::global());
+    innerFs_.gather(innerFs_.partition(), glbPartitionField);
+
+    if (comm_.rank() == 0) {
+      // Fill partition vector
+      const auto glbPartitionView = make_view<int, 1>(glbPartitionField);
+      for (int jnodeGlb = 0; jnodeGlb < innerGrid_.size(); ++jnodeGlb) {
+        innerPartition_[jnodeGlb] = glbPartitionView(jnodeGlb);
+      }
+    }
+
+    // Broadcast partition vector
+    comm_.broadcast(innerPartition_.begin(), innerPartition_.end(), 0);
   } else {
-    // Different grid
-    sameGrid_ = false;
+    // Same function space
+    sameFs_ = false;
 
     // Define inner grid
     const size_t innerNx = physicalNx + innerExtNx;
@@ -96,37 +118,35 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
     atlas::grid::detail::grid::Structured::YSpace innerYSpace(yspec);
     innerGrid_ = atlas::StructuredGrid(innerXSpace, innerYSpace, outerFs.grid().projection());
     oops::Log::test() << "Info     : Inner grid size: " << innerGrid_.size() << std::endl;
-  }
 
-  // Allocate inner partition
-  innerPartition_.resize(innerGrid_.size());
+    // Get outer Partitioner name
+    const std::string outerPartitionerName = outerFs.distribution();
+    oops::Log::info() << "Info     : Outer partitioner: " << outerPartitionerName << std::endl;
 
-  // Get outer Partitioner name
-  const std::string outerPartitionerName = outerFs.distribution();
-  oops::Log::info() << "Info     : Outer partitioner: " << outerPartitionerName << std::endl;
+    // Get inner Partitioner name
+    std::string innerPartitionerName;
+    if (outerPartitionerName == "custom") {
+      // Mandatory input parameter (custom is not a valid inner partitioner name)
+      ASSERT(params_.innerPartitioner.value());
+      innerPartitionerName = *params_.innerPartitioner.value();
+    } else {
+      // Optional input parameter
+      if (params_.innerPartitioner.value()) {
+        innerPartitionerName = *params_.innerPartitioner.value();
+      } else {
+        innerPartitionerName = outerPartitionerName;
+      }
+    }
 
-  if (outerPartitionerName == "custom") {
     // Get inner Partitioner
-    const std::string innerPartitionerName = params_.innerPartitioner.value();
-    oops::Log::info() << "Info     : Inner partitioner: " << innerPartitionerName << std::endl;
     const auto innerPartitioner =  atlas::grid::Partitioner(innerPartitionerName);
+
+    // Allocate inner partition
+    innerPartition_.resize(innerGrid_.size());
 
     // Generate inner partition
     innerPartitioner.partition(innerGrid_, innerPartition_.data());
-  } else {
-    // Get outer Partitioner
-    const auto outerPartitioner =  atlas::grid::Partitioner(outerPartitionerName);
-    oops::Log::info() << "Info     : Inner partitioner = outer partitioner ("
-       << outerFs.distribution() << ")" << std::endl;
 
-    // Generate inner partition
-    outerPartitioner.partition(innerGrid_, innerPartition_.data());
-  }
-
-  if (innerExtNx == outerExtNx && innerExtNy == outerExtNy && outerPartitionerName != "custom") {
-    // Copy function space
-    innerFs_ = outerFs;
-  } else {
     // Generate inner Distribution
     atlas::grid::Distribution innerDistribution(comm_.size(), innerGrid_.size(),
     innerPartition_.data());

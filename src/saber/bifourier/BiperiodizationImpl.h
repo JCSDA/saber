@@ -39,8 +39,8 @@ class BiperiodizationImplParameters : public oops::Parameters {
   // Y-direction outer extension zone
   oops::Parameter<size_t> outerExtNy{"y outer extension", 0, this};
 
-  // Inner partitioner (if outer partitioner is "custom")
-  oops::Parameter<std::string> innerPartitioner{"inner partitioner", "checkerboard", this};
+  // Inner partitioner (required if outer partitioner is "custom")
+  oops::OptionalParameter<std::string> innerPartitioner{"inner partitioner", this};
 
   // Mixing size (have an impact if lower than nxExt or nyExt)
   oops::OptionalParameter<size_t> nmix{"mixing size", this};
@@ -74,13 +74,13 @@ class BiperiodizationImpl {
   void multiplyAD(atlas::FieldSet &) const;
   void leftInverseMultiply(atlas::FieldSet &) const;
 
-  bool sameGrid() const
-    {return sameGrid_;}
+  bool sameFs() const
+    {return sameFs_;}
 
  private:
   // Inner grid
   atlas::StructuredGrid innerGrid_;
-  bool sameGrid_;
+  bool sameFs_;
 
   // Inner partition
   std::vector<int> innerPartition_;
