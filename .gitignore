@@ -12,6 +12,7 @@
 *.sublime-workspace
 *~
 *.DS_Store
+CLAUDE.md
 CMakeLists.txt.user
 dependencies.mk
 loadmap
