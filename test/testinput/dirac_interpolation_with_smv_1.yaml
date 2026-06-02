@@ -1,0 +1,41 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-12
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 1
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: gauss to cubed-sphere-dual with smv-interp
+    inner inverse tolerance: 0.005
+    outer inverse tolerance: 0.005
+    gauss grid uid: F15
+    active variables:
+    - air_horizontal_streamfunction
+dirac:
+  lon:
+  - 3.75
+  lat:
+  - 3.74199
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  filepath: testdata/dirac_interpolation_with_smv_1/_MPI_-_OMP__dirac_%id%
+test:
+  float relative tolerance: 1e-12  
+  reference filename: testref/dirac_interpolation_with_smv_1.ref

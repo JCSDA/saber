@@ -1,0 +1,42 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - northward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613667046e-03
+Adjoint test for block gauss winds to geostrophic pressure with smv-interp passed
+Adjoint test for block ID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -5.5571139478709719e-01
+    + max    = 5.3062528822376915e+00
+    + mean   = 2.9228592180885341e-03
+    + stddev = 7.5080213966168111e-02
+  - northward_wind (70 levels):
+    + min    = -2.8160742259234550e+00
+    + max    = 2.7953070110743026e+00
+    + mean   = -8.9037946258921278e-06
+    + stddev = 6.9012912371232915e-02
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -3.7600001917992790e+02
+    + max    = 8.3932005608036809e+02
+    + mean   = -4.7943546275362331e-01
+    + stddev = 3.3146603003978143e+01

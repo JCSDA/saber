@@ -1,0 +1,60 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+
+background:
+  date: &date 2010-01-01T12:00:00Z
+  state variables: *vars
+
+bands:
+- band: 
+    gauss to cubed-sphere-dual block: &GaussToCSDual # To avoid a copy in right inverse and direct blocks
+      saber block name: gauss to cubed-sphere-dual with smv-interp
+      gauss grid uid: F45
+    filter:
+    - <<: *GaussToCSDual
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral analytical filter
+      function:
+        horizontal daley length: 5008e3
+    - saber block name: spectral to gauss
+    - <<: *GaussToCSDual
+  output:
+    model write:
+      filepath: testdata/process_perts_spectralb_from_csdual_states_with_smv_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb1
+      member pattern: '%MEM%'
+- output:
+    model write:
+      filepath: testdata/process_perts_spectralb_from_csdual_states_with_smv_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
+      member pattern: '%MEM%'
+
+recursive filters: true
+
+ensemble:
+  members:
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/_MPI_-_OMP__randomized_csdual_mb1
+    state variables: *vars
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/_MPI_-_OMP__randomized_csdual_mb2
+    state variables: *vars
+
+input variables: *vars
+
+test:
+  float relative tolerance: 1.0e-12       # default value of 1.0e-6
+  reference filename: testref/process_perts_spectralb_from_csdual_states_with_smv_1.ref

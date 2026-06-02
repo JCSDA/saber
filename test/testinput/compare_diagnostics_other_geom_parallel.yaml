@@ -1,0 +1,3 @@
+file to compare 1: testref/dirac_ens_parallel_other_geom_2.ref
+file to compare 2: testref/dirac_ens_other_geom_with_smv_2.ref
+relative float tolerance: 1e-15

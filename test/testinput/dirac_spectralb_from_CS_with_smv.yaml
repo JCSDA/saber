@@ -1,0 +1,103 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - eastward_wind
+    - mu
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - eastward_wind
+  - mu
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  saber central block:
+    saber block name: spectral covariance
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+  saber outer blocks:
+  - saber block name: spectral to gauss
+    skip inverse test: true
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - eastward_wind
+    - mu
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
+  - saber block name: gauss to cubed-sphere-dual with smv-interp
+    inner inverse tolerance: 0.18
+    outer inverse tolerance: 0.18
+    gauss grid uid: F15
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
+
+dirac:
+  lon:
+  - 0.0
+  - 0.0
+  - 0.0
+  lat:
+  - 90.0
+  - 90.0
+  - 90.0
+  level:
+  - 1
+  - 1
+  - 1
+  variable:
+  - eastward_wind
+  - mu
+  - unbalanced_pressure_levels_minus_one
+diagnostic points:
+  lon:
+  - 20.0
+  - 20.0
+  - 0
+  - 0
+  lat:
+  - 20.0
+  - 20.0
+  - 90
+  - 90
+  level:
+  - 2
+  - 2
+  - 1
+  - 1
+  variable:
+  - mu
+  - unbalanced_pressure_levels_minus_one
+  - mu
+  - unbalanced_pressure_levels_minus_one
+output dirac:
+  filepath: testdata/dirac_spectralb_from_CS_with_smv/_MPI_-_OMP__dirac_%id%
+test:
+  float relative tolerance: 1e-12 
+  reference filename: testref/dirac_spectralb_from_CS_with_smv.ref

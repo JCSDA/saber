@@ -47,10 +47,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   if (srcFspace.type() == "StructuredColumns") {
     const atlas::functionspace::StructuredColumns fs(srcFspace);
 
-    // NOTE(@mo-joshuacolclough): **Prior to Atlas 0.46.0**
-    //                            StructuredColumns erroneously resets the MPI communicator to
-    //                            one at a higher "MPI scope". See Atlas issue #186.
-    if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+    if constexpr (!SABER_ATLAS_VERSION_46_OR_GREATER) {
       eckit::mpi::setCommDefault(startMPIComm);
     }
 
@@ -63,7 +60,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
       + " source function space not supported yet", Here());
   }
 
-  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+  if constexpr (!SABER_ATLAS_VERSION_46_OR_GREATER) {
     eckit::mpi::setCommDefault(startMPIComm);
   }
 
@@ -94,7 +91,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   }
 
   // Ensure comm definitely set correctly prior to interpolation.
-  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+  if constexpr (!SABER_ATLAS_VERSION_46_OR_GREATER) {
     eckit::mpi::setCommDefault(startMPIComm);
   }
 

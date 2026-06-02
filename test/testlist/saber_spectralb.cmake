@@ -280,6 +280,60 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_2_1-2
                 DEPENDS saber_quench_process_perts.x
                 TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-2 )
 
+if(ATLAS_TEST_46_OR_GREATER)
+  # process_perts_spectralb_from_csdual_states_1
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_1_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_1.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-1 )
+
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_1_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_1.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_2-1 )
+
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_1_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_1.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-2 )
+
+  # process_perts_spectralb_from_csdual_states_2
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_2.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-1 )
+
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_2_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_2.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_2-1 )
+
+  saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_2.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-2 )
+endif()
+
 # process_perts_spectralb_from_gauss_perts_1
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_1-1
                 MPI 1
@@ -436,9 +490,205 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-2
                 DEPENDS saber_quench_process_perts.x
                 TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-2 )
 
-
-
 # DIRAC TESTS
+if(ATLAS_TEST_46_OR_GREATER)
+  # dirac_ens_both_geom_with_smv
+  saber_add_test( TARGET saber_dirac_ens_both_geom_with_smv_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_both_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_both_geom_with_smv_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_both_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_2-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_both_geom_with_smv_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_both_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )
+
+  # dirac_ens_model_geom
+  saber_add_test( TARGET saber_dirac_ens_model_geom_with_smv_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_model_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_model_geom_with_smv_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_model_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_2-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_model_geom_with_smv_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_model_geom_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )
+
+  # dirac_ens_other_geom_with_smv_1
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_1_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_1_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_2-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_1_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )
+
+  # dirac_ens_other_geom_with_smv_2
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_2_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_2_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_2-1 )
+
+  saber_add_test( TARGET saber_dirac_ens_other_geom_with_smv_2_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_other_geom_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )
+
+  # This should give similar results to dirac_ens_other_geom_with_smv_2
+  saber_add_test( TARGET saber_dirac_ens_parallel_other_geom_2_6-2
+                  MPI 6
+                  OMP 2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_parallel_other_geom_2.yaml
+		              LABELS   tier2
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )	
+
+  # Compare model and other geom
+  saber_add_test( TARGET saber_compare_diagnostics_ens_geom
+                  TYPE SCRIPT
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
+                  ARGS testinput/compare_diagnostics_ens_geom.yaml )
+
+  saber_add_test( TARGET saber_compare_diagnostics_other_geom_parallel
+                  TYPE SCRIPT
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
+                  ARGS testinput/compare_diagnostics_other_geom_parallel.yaml)
+
+  # dirac_interpolation_with_smv_1
+  saber_add_test( TARGET saber_dirac_interpolation_with_smv_1_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_interpolation_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_dirac_interpolation_with_smv_1_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_interpolation_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_dirac_interpolation_with_smv_1_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_interpolation_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+
+  # dirac_spectralb_from_CS_with_smv
+  saber_add_test( TARGET saber_dirac_spectralb_from_CS_with_smv_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_from_CS_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_dirac_spectralb_from_CS_with_smv_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_from_CS_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_dirac_spectralb_from_CS_with_smv_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_from_CS_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-1 )
+
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1 )
+
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-2 )
+endif()
 
 # dirac_ens_both_geom
 saber_add_test( TARGET saber_dirac_ens_both_geom_1-1
@@ -543,20 +793,6 @@ saber_add_test( TARGET saber_dirac_ens_other_geom_2_1-2
                 ARGS testinput/dirac_ens_other_geom_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_2_1-2 )
-
-# NOTE: These tests rely on Atlas 0.46.0, because earlier versions do not support
-#       using ectrans on a split communicator.
-if( ATLAS_SUPPORTS_SPECTRAL_ON_SPLIT_COMM )
-  # This should give similar results to dirac_ens_other_geom_2
-  saber_add_test( TARGET saber_dirac_ens_parallel_other_geom_2_6-2
-                  MPI 6
-                  OMP 2
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                  ARGS testinput/dirac_ens_parallel_other_geom_2.yaml
-		  LABELS   tier2
-                  DEPENDS saber_quench_error_covariance_toolbox.x
-                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_2_1-2 )	
-endif()
 
 # dirac_interpolation_1
 saber_add_test( TARGET saber_dirac_interpolation_1_1-1
@@ -815,6 +1051,86 @@ saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_2_1-2
                 ARGS testinput/dirac_spectralb_covariance_rescaling_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_dirac_spectralb_covariance_rescaling_1_1-2 )
+
+if(ATLAS_TEST_46_OR_GREATER)
+  # dirac_spectralb_correlation_rescaling_with_smv
+  saber_add_test( TARGET saber_dirac_spectralb_correlation_rescaling_with_smv_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_correlation_rescaling_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_correlation_profiles_1-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_correlation_rescaling_with_smv_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_correlation_rescaling_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_correlation_profiles_2-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_correlation_rescaling_with_smv_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_correlation_rescaling_with_smv.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_correlation_profiles_1-2 )
+
+  # dirac_spectralb_covariance_rescaling_1
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_1_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_profiles_1-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_1_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_profiles_2-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_1_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_1.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_profiles_1-2 )
+
+  # dirac_spectralb_covariance_rescaling_2
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_2_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_rescaling_1_1-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_2_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_rescaling_1_2-1 )
+
+  saber_add_test( TARGET saber_dirac_spectralb_covariance_rescaling_with_smv_2_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_covariance_rescaling_with_smv_2.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_dirac_spectralb_covariance_rescaling_1_1-2 )
+endif()
 
 # dirac_spectralb_duplicate_variables
 saber_add_test( TARGET saber_dirac_spectralb_duplicate_variables_1-1

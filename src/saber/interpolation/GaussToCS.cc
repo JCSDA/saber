@@ -55,7 +55,7 @@ atlas::functionspace::StructuredColumns
 
   // NOTE(@mo-joshuacolclough): Atlas has an mpi::Scope object which incorrectly resets the
   //                            communicator in StructuredColumns. Fixed in Atlas 0.46.0.
-  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+  if constexpr (!SABER_ATLAS_VERSION_46_OR_GREATER) {
     eckit::mpi::setCommDefault(startCommName);
   }
   return gaussFSpace;

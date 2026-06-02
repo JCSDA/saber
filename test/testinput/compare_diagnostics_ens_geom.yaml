@@ -1,3 +1,3 @@
-file to compare 1: testref/dirac_ens_model_geom.ref
-file to compare 2: testref/dirac_ens_other_geom.ref
+file to compare 1: testref/dirac_ens_model_geom_with_smv.ref
+file to compare 2: testref/dirac_ens_other_geom_with_smv_1.ref
 relative float tolerance: 1e-15

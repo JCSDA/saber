@@ -1,0 +1,35 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-12 [864]
+  Fields:
+  - mu (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.7870370370370367e-04
+    + stddev = 2.4056261216234470e-02
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.7870370370370367e-04
+    + stddev = 2.4056261216234470e-02
+Covariance(SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 6.7962709154265319e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 3.9575270940934172e+02
+- Covariances at diagnostic points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 6.7962709154265319e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 3.9575270940934172e+02
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-12 [864]
+  Fields:
+  - mu (2 levels):
+    + min    = -4.7015480135194189e-03
+    + max    = 6.9110371659137387e-02
+    + mean   = 6.5924506861253116e-04
+    + stddev = 3.8937584161640960e-03
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = -2.1802407184259355e+01
+    + max    = 3.9575270940934172e+02
+    + mean   = 1.9692146610608027e-02
+    + stddev = 3.8821576934839833e+01

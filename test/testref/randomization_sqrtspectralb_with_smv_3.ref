@@ -1,0 +1,440 @@
+Member 0: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.2126907810657183e+01
+    + max    = 1.0498560426713166e+01
+    + mean   = -1.1106773041489526e-02
+    + stddev = 1.0960081116433267e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.3111053417243443e+02
+    + max    = 1.7502864473837670e+02
+    + mean   = 6.6135666857215325e-01
+    + stddev = 2.5584430679352952e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -9.0852434563626900e+01
+    + max    = 1.0512692382419685e+02
+    + mean   = 6.1239184012155023e-01
+    + stddev = 1.8952490110037434e+01
+  - mu (70 levels):
+    + min    = -2.6660244740557077e+00
+    + max    = 3.5079942039000853e+00
+    + mean   = -1.7486321187143650e-02
+    + stddev = 3.8952517562954991e-01
+  - northward_wind (70 levels):
+    + min    = -9.4469787890784289e+00
+    + max    = 1.0230858690513205e+01
+    + mean   = 1.6552709453616140e-02
+    + stddev = 1.0900687898178398e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.4700423638566278e+01
+    + max    = 7.5520503780907262e+01
+    + mean   = -5.8234289459601997e-02
+    + stddev = 1.1585261549472568e+01
+Member 1: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1533561647006366e+01
+    + max    = 1.2016857144150093e+01
+    + mean   = -2.8929550339851480e-03
+    + stddev = 1.0988199525644096e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.5652938522537912e+02
+    + max    = 1.4896639227002993e+02
+    + mean   = 6.5244455395339851e-01
+    + stddev = 2.6019155494013486e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.0820091854841844e+02
+    + max    = 1.5180779538526602e+02
+    + mean   = 2.1576905356306160e+00
+    + stddev = 2.1579931135173268e+01
+  - mu (70 levels):
+    + min    = -2.5197206379177119e+00
+    + max    = 2.8067306325034864e+00
+    + mean   = 5.2251887446836849e-03
+    + stddev = 3.9253110214904297e-01
+  - northward_wind (70 levels):
+    + min    = -1.3174265030511407e+01
+    + max    = 1.2003435599755687e+01
+    + mean   = -1.4124934308475195e-02
+    + stddev = 1.1248388506205387e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.8616840251850391e+01
+    + max    = 8.3224117038033228e+01
+    + mean   = 1.4576614480646264e+00
+    + stddev = 1.3129887390914639e+01
+Member 2: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.2528704202986020e+01
+    + max    = 1.1746926595634410e+01
+    + mean   = -1.6253651486664737e-02
+    + stddev = 1.1272838659986946e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.8957485126281534e+02
+    + max    = 1.9705914137194478e+02
+    + mean   = -2.6418801228747324e-01
+    + stddev = 2.7136062588786537e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.1572268649483911e+02
+    + max    = 1.6852833660405577e+02
+    + mean   = -1.0031683881582454e+00
+    + stddev = 2.0285444202001653e+01
+  - mu (70 levels):
+    + min    = -2.6919805132438177e+00
+    + max    = 2.7553591413243277e+00
+    + mean   = 1.5365830352327891e-02
+    + stddev = 3.8505097592874921e-01
+  - northward_wind (70 levels):
+    + min    = -1.3815349175892750e+01
+    + max    = 9.6556397741915916e+00
+    + mean   = -1.4713586051086244e-02
+    + stddev = 1.1165812614648123e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.4067175714335249e+01
+    + max    = 8.4793627181053708e+01
+    + mean   = -5.6587188688801060e-01
+    + stddev = 1.1231426941120027e+01
+Member 3: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -9.8369217468987742e+00
+    + max    = 1.1152360895295711e+01
+    + mean   = -2.5106285722810090e-03
+    + stddev = 1.1173226673461973e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.7668620788264857e+02
+    + max    = 1.4130270602407396e+02
+    + mean   = 1.6056964621326658e-01
+    + stddev = 2.3940575014450435e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.0719516679152939e+02
+    + max    = 1.0577166318386026e+02
+    + mean   = -2.7049505262061702e-01
+    + stddev = 1.6537698578066205e+01
+  - mu (70 levels):
+    + min    = -2.7288695734500790e+00
+    + max    = 2.5854404751870397e+00
+    + mean   = 1.0512141873925209e-02
+    + stddev = 3.9821351677826949e-01
+  - northward_wind (70 levels):
+    + min    = -1.0541939116832495e+01
+    + max    = 1.5539699861581774e+01
+    + mean   = 5.1852333829487431e-03
+    + stddev = 1.0882519330049036e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -5.8872997861683402e+01
+    + max    = 6.3811234125938249e+01
+    + mean   = -4.3515783424554866e-01
+    + stddev = 1.1191587116099734e+01
+Member 4: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.2894599113636644e+01
+    + max    = 1.1307701716877958e+01
+    + mean   = 1.5754122114932316e-02
+    + stddev = 1.1006644363441802e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.5738128848106220e+02
+    + max    = 1.2703739859893760e+02
+    + mean   = -7.3721122680623863e-01
+    + stddev = 2.6681467268298803e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.0581503743707921e+02
+    + max    = 1.0653215769200617e+02
+    + mean   = -6.1389746522553978e-01
+    + stddev = 1.9917880965881537e+01
+  - mu (70 levels):
+    + min    = -2.5842363190657607e+00
+    + max    = 2.4044146613891404e+00
+    + mean   = 4.7188373144402836e-02
+    + stddev = 3.9431731851545582e-01
+  - northward_wind (70 levels):
+    + min    = -1.3370852157721526e+01
+    + max    = 1.1614216089382445e+01
+    + mean   = 5.3268112883395396e-03
+    + stddev = 1.1065991058702562e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.3197893443283164e+01
+    + max    = 8.7892387919791872e+01
+    + mean   = 5.1082336699274988e-01
+    + stddev = 1.1130354976723149e+01
+Member 5: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1622433656756574e+01
+    + max    = 1.3204137335454387e+01
+    + mean   = 2.8517861614583629e-02
+    + stddev = 1.1165527399365891e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.6323766495610431e+02
+    + max    = 1.9597233546729964e+02
+    + mean   = 7.5077797445146521e-01
+    + stddev = 2.9480646404203139e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.1077486319279359e+02
+    + max    = 1.1791839203712918e+02
+    + mean   = -6.8347331945156597e-01
+    + stddev = 1.9344302156177033e+01
+  - mu (70 levels):
+    + min    = -2.6750013913285207e+00
+    + max    = 2.4213864523681261e+00
+    + mean   = -8.9562592394498656e-03
+    + stddev = 3.8662372935169231e-01
+  - northward_wind (70 levels):
+    + min    = -9.9595178411005811e+00
+    + max    = 1.0853769344790717e+01
+    + mean   = 6.6820904540581746e-03
+    + stddev = 1.0835635350592976e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -5.8880091024365527e+01
+    + max    = 5.9443556658047449e+01
+    + mean   = -1.6888727782207791e+00
+    + stddev = 1.1180000428285563e+01
+Member 6: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1682489104839160e+01
+    + max    = 1.0052804965834779e+01
+    + mean   = -2.1151577829044222e-03
+    + stddev = 1.0853468602223271e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.6891852451054370e+02
+    + max    = 1.7829291622315844e+02
+    + mean   = -4.7517611664532466e-01
+    + stddev = 2.6975467068624695e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.3588496442542805e+02
+    + max    = 1.1073685669345934e+02
+    + mean   = -5.2461353866466587e-01
+    + stddev = 2.0801270769919551e+01
+  - mu (70 levels):
+    + min    = -2.7435235665912403e+00
+    + max    = 2.2968206634641692e+00
+    + mean   = 1.6288662046973233e-02
+    + stddev = 3.8975220319125359e-01
+  - northward_wind (70 levels):
+    + min    = -1.1930287374375173e+01
+    + max    = 1.5851756871523829e+01
+    + mean   = 6.5920062958299483e-03
+    + stddev = 1.1200526614386954e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.0684159250077940e+01
+    + max    = 8.2845326225957450e+01
+    + mean   = 2.0081837964497903e-01
+    + stddev = 1.1963108034120044e+01
+Member 7: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1874830268783246e+01
+    + max    = 1.4351636624679905e+01
+    + mean   = 2.3317366153096774e-02
+    + stddev = 1.1004472595369112e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.6303946659923093e+02
+    + max    = 1.5803173299619530e+02
+    + mean   = -8.6399440081193712e-01
+    + stddev = 2.6775421957921480e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -1.3159523819402338e+02
+    + max    = 1.3477720420802143e+02
+    + mean   = -1.2887026060688482e+00
+    + stddev = 2.1149362722028226e+01
+  - mu (70 levels):
+    + min    = -3.0100911076724906e+00
+    + max    = 2.4007879794427103e+00
+    + mean   = 3.8074915197997557e-02
+    + stddev = 3.9279190720256557e-01
+  - northward_wind (70 levels):
+    + min    = -1.0541909609722204e+01
+    + max    = 1.0583639041145023e+01
+    + mean   = 1.5719054642411683e-02
+    + stddev = 1.0937954512867494e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -7.0536017577364532e+01
+    + max    = 8.2723644439552942e+01
+    + mean   = -3.8582849431273802e-01
+    + stddev = 1.2722813286458875e+01
+Member 8: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1325680651751064e+01
+    + max    = 1.2266789712673294e+01
+    + mean   = -9.0026671786489765e-03
+    + stddev = 1.1076143754917431e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.5071242025253440e+02
+    + max    = 1.4462722647750891e+02
+    + mean   = 1.3544818656216953e+00
+    + stddev = 2.6407792847029057e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -9.5683034167803584e+01
+    + max    = 1.1224271140054216e+02
+    + mean   = 1.3937360604314921e+00
+    + stddev = 1.9485789282212366e+01
+  - mu (70 levels):
+    + min    = -2.5020219609348833e+00
+    + max    = 2.1501454471979073e+00
+    + mean   = -8.1789069101014633e-02
+    + stddev = 4.0328224528718626e-01
+  - northward_wind (70 levels):
+    + min    = -1.1085963373807425e+01
+    + max    = 9.5999246778763094e+00
+    + mean   = -1.9111253609952108e-02
+    + stddev = 1.0825291544448896e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -8.2678637668127863e+01
+    + max    = 6.3954378795489298e+01
+    + mean   = -2.4948643092047576e-01
+    + stddev = 1.0848701239247900e+01
+Member 9: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = -1.1337365271968853e+01
+    + max    = 1.0305990376874139e+01
+    + mean   = 3.1500361956183806e-03
+    + stddev = 1.0999706706011843e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = -1.3347704330970947e+02
+    + max    = 1.9720661777471310e+02
+    + mean   = 1.3558118626047111e+00
+    + stddev = 2.7301232167172628e+01
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = -8.9570516204291508e+01
+    + max    = 1.4695475609881856e+02
+    + mean   = 1.4191457387391735e+00
+    + stddev = 2.1192932776960660e+01
+  - mu (70 levels):
+    + min    = -2.7928412135150951e+00
+    + max    = 2.6625508925125709e+00
+    + mean   = -1.4080175535731914e-02
+    + stddev = 3.9200491493178652e-01
+  - northward_wind (70 levels):
+    + min    = -1.0135973862183050e+01
+    + max    = 1.2228148195399488e+01
+    + mean   = -1.1976753316947811e-02
+    + stddev = 1.1015968003567611e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -7.3586145041968734e+01
+    + max    = 8.3247037994014789e+01
+    + mean   = -3.9957072994892562e-01
+    + stddev = 1.2333645572060576e+01
+Randomized variance: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_pressure_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = 1.0045259858687598e-02
+    + max    = 3.7943552922808962e+01
+    + mean   = 1.2213628592481742e+00
+    + stddev = 2.0890587557158531e+00
+  - geostrophic_pressure_levels_minus_one (70 levels):
+    + min    = 8.3202892778817593e-06
+    + max    = 8.9055828963805670e+03
+    + mean   = 7.1160363897870934e+02
+    + stddev = 8.8574465874041812e+02
+  - hydrostatic_pressure_levels (71 levels):
+    + min    = 1.0392739772053310e-06
+    + max    = 6.0741395929659120e+03
+    + mean   = 4.0024316740965884e+02
+    + stddev = 5.9621857163733591e+02
+  - mu (70 levels):
+    + min    = 7.9271267354239405e-04
+    + max    = 1.7461530703230530e+00
+    + mean   = 1.5516797976425278e-01
+    + stddev = 1.5393159038265550e-01
+  - northward_wind (70 levels):
+    + min    = 5.9312646079506381e-03
+    + max    = 3.9302181850642164e+01
+    + mean   = 1.2120960081246432e+00
+    + stddev = 2.0502738780985559e+00
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = 4.2968353719042886e-05
+    + max    = 1.5450416030089955e+03
+    + mean   = 1.3878300074374164e+02
+    + stddev = 1.8294806616697102e+02

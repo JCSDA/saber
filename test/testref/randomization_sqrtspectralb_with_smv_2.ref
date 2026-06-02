@@ -1,0 +1,44 @@
+Member 0: 
+- Valid time: 2016-01-01T16:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - air_potential_temperature (70 levels):
+    + min    = -8.0459615086707387e+01
+    + max    = 1.1845110858397196e+02
+    + mean   = 1.8645689453721498e-02
+    + stddev = 4.4311170780034956e+00
+  - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water (70 levels):
+    + min    = -3.4657898650889506e-05
+    + max    = 6.7987472561219998e-05
+    + mean   = -2.5029521098471077e-08
+    + stddev = 1.3740474357015746e-06
+  - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water (70 levels):
+    + min    = -7.6833343099100930e-05
+    + max    = 1.3917160378706532e-04
+    + mean   = 1.0327205771614819e-08
+    + stddev = 2.2185226972172009e-06
+  - dimensionless_exner_function_levels_minus_one (70 levels):
+    + min    = -4.6474028225785701e-04
+    + max    = 5.3572131882359964e-04
+    + mean   = -7.5976613800128569e-07
+    + stddev = 9.9769806671108966e-05
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = -5.5775078433117024e-03
+    + max    = 6.9882543839235034e-03
+    + mean   = 7.6239268976256686e-05
+    + stddev = 1.0688429198577429e-03
+  - eastward_wind (70 levels):
+    + min    = -1.2047893968802665e+01
+    + max    = 1.1431898540227007e+01
+    + mean   = -3.1921303127476652e-02
+    + stddev = 1.0993362079405748e+00
+  - northward_wind (70 levels):
+    + min    = -1.3345307808331590e+01
+    + max    = 1.1018027418831338e+01
+    + mean   = 9.5317236547587132e-03
+    + stddev = 1.1007052802955593e+00
+  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water (70 levels):
+    + min    = -1.8172624032984160e-03
+    + max    = 1.6598429433497335e-03
+    + mean   = -2.1851218247637222e-06
+    + stddev = 1.2825985492720575e-04

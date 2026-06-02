@@ -35,6 +35,13 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     HydrostaticPressurem1.cc
     HydrostaticPressurem1.h
     )
+    if( ${ATLAS_TEST_46_OR_GREATER})
+        list(APPEND spectralb_src_files_list
+            # ATLAS gauss to cubed-sphere-dual with SMV inverse interpolator saber block
+            GaussUVToGPWithSMV.cc
+            GaussUVToGPWithSMV.h
+        )
+    endif()
 endif()
 
 set( spectralb_src_files ${spectralb_src_files_list} PARENT_SCOPE )

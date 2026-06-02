@@ -1,0 +1,144 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_potential_temperature
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - air_temperature
+    - cfeff
+    - cleff
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+    - dimensionless_exner_function
+    - dimensionless_exner_function_levels_minus_one
+    - dlsvpdT
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - geostrophic_pressure_levels_minus_one
+    - height_above_mean_sea_level
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - northward_wind
+    - qrain
+    - qsat
+    - qt
+    - rain_mixing_ratio_wrt_dry_air
+    - rht
+    - svp
+    - total_water_mixing_ratio_wrt_dry_air
+    - unbalanced_pressure_levels_minus_one
+    - virtual_potential_temperature
+    - water_vapor_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water   
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_above_mean_sea_level_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+
+increment variables:
+- air_potential_temperature
+- cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+- cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+- dimensionless_exner_function_levels_minus_one
+- dry_air_density_levels_minus_one
+- eastward_wind
+- northward_wind
+- water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
+
+background error:
+  covariance model: SABER
+  randomization size: 1
+  saber central block:
+    saber block name: ID
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu   
+    - unbalanced_pressure_levels_minus_one
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix 
+      gauss_grid_uid: F12
+  - saber block name: spectral to gauss
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - eastward_wind
+    - mu
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
+  - saber block name: gauss winds to geostrophic pressure with smv-interp
+  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+    read:
+      covariance file path: testdata/FPstats.nc
+      number of covariance latitude rings: 481
+      gp regression bins: 18
+  - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
+  - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
+  - saber block name: mo_hydro_bal
+  - saber block name: mo_moisture_control
+    read:
+      covariance file path: testdata/MUstats.nc
+  - saber block name: mo_super_mio
+    moisture incrementing operator file: testdata/MIO_coefficients.nc
+  - saber block name: mo_dry_air_density
+
+background:
+  date: 2016-01-01T16:00:00Z
+  state variables:
+  - air_potential_temperature
+  - air_pressure
+  - air_pressure_levels_minus_one
+  - cloud_ice_mixing_ratio_wrt_dry_air
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air
+  - dimensionless_exner_function
+  - dimensionless_exner_function_levels_minus_one
+  - dry_air_density_levels_minus_one
+  - height_above_mean_sea_level
+  - height_above_mean_sea_level_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
+  - rain_mixing_ratio_wrt_dry_air
+  - water_vapor_mixing_ratio_wrt_dry_air
+  filepath: testdata/gauss_state
+
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_sqrtspectralb_with_smv_2/_MPI_-_OMP__randomized_gauss_mb%MEM%
+
+test:
+  float relative tolerance: 1e-12
+  reference filename: testref/randomization_sqrtspectralb_with_smv_2.ref

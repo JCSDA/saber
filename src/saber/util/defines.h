@@ -9,11 +9,11 @@
 
 namespace saber {
 
-#ifdef ATLAS_SCOPE_ISSUE_RESOLVED
-constexpr bool SABER_ATLAS_SCOPE_ISSUE_RESOLVED = true;
+#ifdef ATLAS_VERSION_46_OR_GREATER
+constexpr bool SABER_ATLAS_VERSION_46_OR_GREATER = true;
 #else
-constexpr bool SABER_ATLAS_SCOPE_ISSUE_RESOLVED = false;
-#endif  // ifdef ATLAS_SCOPE_ISSUE_RESOLVED
+constexpr bool SABER_ATLAS_VERSION_46_OR_GREATER = false;
+#endif  // ifdef ATLAS_VERSION_46_OR_GREATER
 
 }  // namespace saber
 

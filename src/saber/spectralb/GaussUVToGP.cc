@@ -376,7 +376,7 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
 
   // Atlas issue #186, prior to 0.46.0.
   // Ensure comm is still set to the outerGeometryData comm.
-  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+  if constexpr (!SABER_ATLAS_VERSION_46_OR_GREATER) {
     eckit::mpi::setCommDefault(outerGeometryData.comm().name());
   }
 
