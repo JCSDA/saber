@@ -34,6 +34,8 @@ option( ENABLE_SABER_DOC "Enable SABER documentation" OFF )
 option( ENABLE_MKL "Use MKL for LAPACK implementation (if available)" ON )
 option( ENABLE_BUMP "Compile BUMP and run BUMP-based tests" ON )
 option( ENABLE_BUMP_INSTRUMENTATION "Enable BUMP instrumentation" OFF )
+option( ENABLE_TORCH "Use Torch" OFF )
+option( VENV_DIR "Virtual environment directory" ${CMAKE_CURRENT_BINARY_DIR}/torch_env )
 option( ENABLE_QUENCH "Compile QUENCH and run QUENCH-based tests" ON )
 include( ${PROJECT_NAME}_compiler_flags )
 
@@ -96,17 +98,60 @@ find_package( ip 5 QUIET )
 find_package( gsibec 1.4.2 QUIET )
 
 # Torch
-set(Torch_FOUND FALSE CACHE BOOL "Torch not found")
-if(DEFINED Torch_ROOT AND NOT Torch_ROOT STREQUAL "")
-  set(Torch_FOUND TRUE CACHE BOOL "Torch found" FORCE)
-  # Temporary fix until Torch is properly installed as a cmake package
-  include_directories("${Torch_ROOT}/include")
-  include_directories("${Torch_ROOT}/include/torch/csrc/api/include")
-  # Use full paths to libraries instead of link_directories
-  set(TORCH_LIBRARIES
-      "${Torch_ROOT}/lib/libtorch.so"
-      "${Torch_ROOT}/lib/libtorch_cpu.so"
-      "${Torch_ROOT}/lib/libc10.so")
+if( DEFINED Torch_ROOT AND NOT Torch_ROOT STREQUAL "")
+    # Torch root defined by the user at configure time, enable Torch
+    set( ENABLE_TORCH ON )
+endif()
+if( ENABLE_TORCH )
+    # Create virtual environment
+    message( STATUS "Virtual environment for Python/Torch: " ${VENV_DIR} )
+
+    # Find Python3 for venv creation
+    if( NOT Python3_EXECUTABLE )
+        find_package( Python3 COMPONENTS Interpreter REQUIRED )
+     endif()
+
+    # Create virtual environment only during CMake configuration
+    set( VENV_PYTHON ${VENV_DIR}/bin/python )
+
+    if( NOT EXISTS ${VENV_PYTHON} )
+        message( STATUS "Creating virtual environment for Torch in: " ${VENV_DIR} )
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m venv ${VENV_DIR}
+            RESULT_VARIABLE VENV_RESULT
+        )
+        if( NOT VENV_RESULT EQUAL 0 )
+            message( FATAL_ERROR "Failed to create virtual environment" )
+        endif()
+
+        execute_process(
+            COMMAND ${VENV_DIR}/bin/pip install torch
+            RESULT_VARIABLE PIP_RESULT
+        )
+        if( NOT PIP_RESULT EQUAL 0 )
+            message( FATAL_ERROR "Failed to install PyTorch in virtual environment" )
+        endif()
+    endif()
+
+    if( DEFINED Torch_ROOT AND NOT Torch_ROOT STREQUAL "")
+        # Torch root defined by the user at configure time
+        message( STATUS "Torch root defined by user: " ${Torch_ROOT} )
+    else()
+        # Find Python version to define Torch root directory
+        file( READ_SYMLINK ${VENV_PYTHON} PYTHON_VERSION )
+        set( Torch_ROOT ${VENV_DIR}/lib/${PYTHON_VERSION}/site-packages/torch )
+        message( STATUS "Torch root in the virtual environment: " ${Torch_ROOT} )
+    endif()
+
+    # Temporary fix until Torch is properly installed as a cmake package
+    include_directories( ${Torch_ROOT}/include )
+    include_directories( ${Torch_ROOT}/include/torch/csrc/api/include )
+
+    # Use full paths to libraries instead of link_directories
+    set( TORCH_LIBRARIES
+           ${Torch_ROOT}/lib/libtorch.so
+           ${Torch_ROOT}/lib/libtorch_cpu.so
+           ${Torch_ROOT}/lib/libc10.so )
 endif()
 
 # Optional SABER blocks

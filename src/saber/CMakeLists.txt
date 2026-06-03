@@ -49,7 +49,7 @@ if ( ENABLE_OFFLINE_CODECOV )
 endif()
 
 # Link Torch libraries if found
-if( Torch_FOUND )
+if( ENABLE_TORCH )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${TORCH_LIBRARIES} )
     # Add RPATH so the runtime linker can find Torch libraries
     get_target_property(EXISTING_RPATH ${PROJECT_NAME} BUILD_RPATH)
