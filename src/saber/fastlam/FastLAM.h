@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <Eigen/Dense>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -112,6 +113,14 @@ class FastLAM : public SaberCentralBlockBase {
   size_t nx0_;
   size_t ny0_;
   size_t nodes0_;
+  std::vector<double> cellSizeField_;
+
+  // Model grid of the background
+  size_t nx0Bkg_;
+  size_t ny0Bkg_;
+
+  // Duplicated and weighted strategy weights
+  Eigen::MatrixXd locWgtSqrt_;
 
   // Control vector size
   size_t ctlVecSize_;
@@ -131,8 +140,8 @@ class FastLAM : public SaberCentralBlockBase {
   // Setup resolution
   void setupResolution();
 
-  // Setup reduction factors
-  void setupReductionFactors();
+  // Setup reduced grids
+  void setupReducedGrids();
 
   // Setup control vector size
   void setupCtlVecSize();

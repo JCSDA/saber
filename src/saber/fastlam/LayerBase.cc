@@ -54,8 +54,8 @@ std::unique_ptr<LayerBase> LayerFactory::create(
   const std::string id = params.parallelization.value();
   typename std::map<std::string, LayerFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
-    oops::Log::error() << id << " does not exist in saber::LayerFactory." << std::endl;
-    throw eckit::UserError("Element does not exist in saber::LayerFactory.", Here());
+    oops::Log::error() << id << " does not exist in saber::fastlam::LayerFactory." << std::endl;
+    throw eckit::UserError("Element does not exist in saber::fastlam::LayerFactory.", Here());
   }
   std::unique_ptr<LayerBase> ptr =
     jsb->second->make(params, fieldsMetaData, gdata, myGroup, myVars, nx0, ny0, nz0);
@@ -87,16 +87,43 @@ void LayerBase::setupVerticalCoord(const atlas::Field & rvField,
     const auto wgtView = atlas::array::make_view<double, 2>(wgtField);
     const std::string key = myGroup_ + ".vert_coord";
     const std::string vertCoordName = fieldsMetaData_.getString(key, "vert_coord");
+    atlas::Field localVertCoordField;
+    if (gdata_.fieldSet().has(vertCoordName)) {
+      const atlas::Field vertCoordField = gdata_.fieldSet()[vertCoordName];
+      const size_t rank = vertCoordField.rank();
+      ASSERT((rank == 1) || (rank == 2));
+      if (rank == 1) {
+        localVertCoordField = atlas::Field(vertCoordName, atlas::array::make_datatype<double>(),
+          atlas::array::make_shape(mSize_, nz0_));
+        auto localVertCoordView = atlas::array::make_view<double, 2>(localVertCoordField);
+        const auto vertCoordView = atlas::array::make_view<double, 1>(vertCoordField);
+        for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+          if (ghostView(jnode0) == 0) {
+            for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
+              localVertCoordView(jnode0, jz0) = vertCoordView(jz0);
+            }
+          }
+        }
+      } else if (rank == 2) {
+        localVertCoordField = vertCoordField.clone();
+      }
+    } else {
+      localVertCoordField = atlas::Field(vertCoordName, atlas::array::make_datatype<double>(),
+        atlas::array::make_shape(mSize_, nz0_));
+      auto localVertCoordView = atlas::array::make_view<double, 2>(localVertCoordField);
+      for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+        if (ghostView(jnode0) == 0) {
+          for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
+            localVertCoordView(jnode0, jz0) = static_cast<double>(jz0+1);
+          }
+        }
+      }
+    }
+    const auto localVertCoordView = atlas::array::make_view<double, 2>(localVertCoordField);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
-          double VC = static_cast<double>(jz0+1);
-          if (gdata_.fieldSet().has(vertCoordName)) {
-            const atlas::Field vertCoordField = gdata_.fieldSet()[vertCoordName];
-            const auto vertCoordView = atlas::array::make_view<double, 2>(vertCoordField);
-            VC = vertCoordView(jnode0, jz0);
-          }
-          vertCoord[jz0] += VC*wgtView(jnode0, jz0);
+          vertCoord[jz0] += localVertCoordView(jnode0, jz0)*wgtView(jnode0, jz0);
           rv[jz0] += rvView(jnode0, jz0)*wgtView(jnode0, jz0);
           wgt[jz0] += wgtView(jnode0, jz0);
         }
@@ -178,10 +205,7 @@ void LayerBase::setupInterpolation() {
   // Ghost points
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
 
-  // Reduced grid size
-  nx_ = std::min(nx0_, static_cast<size_t>(static_cast<double>(nx0_-1)/rfh_)+2);
-  ny_ = std::min(ny0_, static_cast<size_t>(static_cast<double>(ny0_-1)/rfh_)+2);
-  nz_ = std::min(nz0_, static_cast<size_t>(static_cast<double>(nz0_-1)/rfv_)+2);
+  // Reduction factors
   xRedFac_ = static_cast<double>(nx0_-1)/static_cast<double>(nx_-1);
   yRedFac_ = static_cast<double>(ny0_-1)/static_cast<double>(ny_-1);
   if (nz_ > 1) {
@@ -189,11 +213,7 @@ void LayerBase::setupInterpolation() {
   } else {
     zRedFac_ = 1.0;
   }
-
-  oops::Log::info() << "Info     :     Target reduction factors: " << std::endl;
-  oops::Log::info() << "Info     :     - horizontal: " << rfh_ << std::endl;
-  oops::Log::info() << "Info     :     - vertical: " << rfv_ << std::endl;
-  oops::Log::info() << "Info     :     Real reduction factors: " << std::endl;
+  oops::Log::info() << "Info     :     Reduction factors: " << std::endl;
   oops::Log::info() << "Info     :     - along x: " << xRedFac_ << std::endl;
   oops::Log::info() << "Info     :     - along y: " << yRedFac_ << std::endl;
   oops::Log::info() << "Info     :     - along z: " << zRedFac_ << std::endl;

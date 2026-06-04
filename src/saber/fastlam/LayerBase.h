@@ -32,7 +32,7 @@ namespace fastlam {
 class LayerBase : public util::Printable,
                   private eckit::NonCopyable {
  public:
-  static const std::string classname() {return "saber::fastlam::Layer";}
+  static const std::string classname() {return "saber::fastlam::LayerBase";}
 
   // Constructor
   LayerBase(const FastLAMParametersBase & params,
@@ -95,12 +95,18 @@ class LayerBase : public util::Printable,
   const double & rh() const {return rh_;}
   double & rv() {return rv_;}
   const double & rv() const {return rv_;}
+  double & srh() {return srh_;}
+  const double & srh() const {return srh_;}
+  double & srv() {return srv_;}
+  const double & srv() const {return srv_;}
   double & resol() {return resol_;}
   const double & resol() const {return resol_;}
-  double & rfh() {return rfh_;}
-  const double & rfh() const {return rfh_;}
-  double & rfv() {return rfv_;}
-  const double & rfv() const {return rfv_;}
+  size_t & nx() {return nx_;}
+  const size_t & nx() const {return nx_;}
+  size_t & ny() {return ny_;}
+  const size_t & ny() const {return ny_;}
+  size_t & nz() {return nz_;}
+  const size_t & nz() const {return nz_;}
   const std::vector<double> & normVertCoord() const {return normVertCoord_;}
   const atlas::FieldSet & norm() const {return norm_;}
   const atlas::FieldSet & normAcc() const {return normAcc_;}
@@ -131,14 +137,14 @@ class LayerBase : public util::Printable,
   size_t mSize_;
   size_t nz0_;
 
-  // Resolution and reduction factors
+  // Resolution
   double resol_;
-  double rfh_;
-  double rfv_;
 
   // Convolution
   double rh_;
   double rv_;
+  double srh_;
+  double srv_;
   std::vector<double> normVertCoord_;
   size_t xKernelSize_;
   size_t yKernelSize_;
