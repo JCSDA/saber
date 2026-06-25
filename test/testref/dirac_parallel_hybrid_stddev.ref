@@ -12,7 +12,6 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
 
-Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_1.nc
 Fields:
   air_horizontal_streamfunction: 4.0127503126905715e+01
   air_horizontal_velocity_potential: 4.1873820575192198e+01
@@ -20,7 +19,6 @@ Adjoint test for block write fields passed
 Norm of input parameter StdDev: 5.4937700734311058e+01
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
-Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_2.nc
 Fields:
   air_horizontal_streamfunction: 1.2944134874642319e+00
   air_horizontal_velocity_potential: 0.0000000000000000e+00

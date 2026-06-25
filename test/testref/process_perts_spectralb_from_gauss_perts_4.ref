@@ -1,32 +1,26 @@
 Norm of perturbation: member 1: 4.4186345407967951e+02
-Wrote file testdata/process_perts_from_gauss_perts_4//wb1_F12_inc_1.nc
 Fields:
   eastward_wind: 5.1299177648256865e+01
   northward_wind: 5.4739760276942441e+01
 Norm of band perturbation: member 1: band 1: 7.5020310466996492e+01
-Wrote file testdata/process_perts_from_gauss_perts_4//wb2_F12_inc_1.nc
 Fields:
   eastward_wind: 1.1855879715062262e+02
   northward_wind: 1.1947330139197332e+02
 Norm of band perturbation: member 1: band 2: 1.6831535321324606e+02
 Norm of band perturbation: member 1: band 3: 1.3997431946166253e+02
-Wrote file testdata/process_perts_from_gauss_perts_4//wb3_F12_inc_1.nc
 Fields:
   eastward_wind: 9.7781570575692243e+01
   northward_wind: 1.0015774839974428e+02
 Norm of perturbation: member 2: 4.4239806656230007e+02
-Wrote file testdata/process_perts_from_gauss_perts_4//wb1_F12_inc_2.nc
 Fields:
   eastward_wind: 5.1893187062566192e+01
   northward_wind: 5.0786401861240940e+01
 Norm of band perturbation: member 2: band 1: 7.2609651407522563e+01
-Wrote file testdata/process_perts_from_gauss_perts_4//wb2_F12_inc_2.nc
 Fields:
   eastward_wind: 1.2559232618161154e+02
   northward_wind: 1.2408359572233898e+02
 Norm of band perturbation: member 2: band 2: 1.7655076075478453e+02
 Norm of band perturbation: member 2: band 3: 1.4388217697815512e+02
-Wrote file testdata/process_perts_from_gauss_perts_4//wb3_F12_inc_2.nc
 Fields:
   eastward_wind: 1.0280138720208123e+02
   northward_wind: 1.0066755009088540e+02

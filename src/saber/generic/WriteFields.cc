@@ -118,11 +118,11 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
 
     params_.saveParallelIONetCDFFile ? fsetWrite.write(conf, *io_) : fsetWrite.write(conf);
 
-    // Output filename to test stream.
-    oops::Log::test() << "Wrote file " << filepathnc << std::endl;
+    // Output filename to info stream.
+    oops::Log::info() << "Wrote file " << filepathnc << std::endl;
   } else {
-    // Output filename to test stream.
-    oops::Log::test() << "Did not write file " << filepathnc << std::endl;
+    // Output filename to info stream.
+    oops::Log::info() << "Did NOT write file " << filepathnc << std::endl;
   }
 
   if (params_.saveGMSHFile) {

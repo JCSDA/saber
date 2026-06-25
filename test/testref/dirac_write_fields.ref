@@ -1,25 +1,19 @@
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_multiply_1.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_multiply_1.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0651179472508852e+02
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_1.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_1.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0651179472508852e+02
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_multiply_2.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_multiply_2.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0651179472508852e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_2.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_2.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0656265186966141e+02
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_multiply_3.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_multiply_3.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0656265186966141e+02
-Did not write file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_3.nc
 Wrote file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_3.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0656265186966141e+02
@@ -34,61 +28,49 @@ Outer inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressu
 Skipping inverse test for block mo_hydro_bal
 Skipping inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner
 Skipping inverse test for block mo_hydrostatic_pressure_from_geostrophic_pressure
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_multiply_1.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0688894251380310e+02
   mu: 3.0644536738158951e+02
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_leftinverse_1.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0688894251380310e+02
   mu: 3.0644536738158951e+02
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_multiply_2.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0688894251380310e+02
   mu: 3.0644536738158951e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_leftinverse_2.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0776325974713319e+02
   mu: 3.0663611617486248e+02
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_multiply_3.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0776325974713319e+02
   mu: 3.0663611617486248e+02
-Wrote file testdata/dirac_write_fields/inner_fields_CS_space_leftinverse_3.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0776325974713319e+02
   mu: 3.0663611617486248e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block gauss to cubed-sphere-dual passed: U Uinv (U x) == (U x)
 Outer inverse test for block gauss to cubed-sphere-dual passed: Uinv U (Uinv x) == (Uinv x)
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_1.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_1.gmsh
 Fields:
   eastward_wind: 3.5415501190885806e+02
   northward_wind: 3.5471836668813307e+02
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_1.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_1.gmsh
 Fields:
   eastward_wind: 3.5415501190885806e+02
   northward_wind: 3.5471836668813307e+02
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_2.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_2.gmsh
 Fields:
   eastward_wind: 3.5415501190885806e+02
   northward_wind: 3.5471836668813307e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_2.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_2.gmsh
 Fields:
   eastward_wind: 3.5592147312454722e+02
   northward_wind: 3.5460781485291449e+02
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_3.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_multiply_3.gmsh
 Fields:
   eastward_wind: 3.5592147312454722e+02
   northward_wind: 3.5460781485291449e+02
-Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_3.nc
 Wrote file testdata/dirac_write_fields/fields_Gaussian_space_leftinverse_3.gmsh
 Fields:
   eastward_wind: 3.5592147312454722e+02
@@ -97,12 +79,10 @@ Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 Skipping inverse test for block gauss winds to geostrophic pressure
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
-Did not write file testdata/dirac_write_fields/fields_Spectral_space_final_xb_1.nc
 Wrote file testdata/dirac_write_fields/fields_Spectral_space_final_xb_1.gmsh
 Fields:
   eastward_wind: 4.3110191105979175e+03
   northward_wind: 2.6855538642475153e+03
-Did not write file testdata/dirac_write_fields/fields_Spectral_space_final_fg_1.nc
 Wrote file testdata/dirac_write_fields/fields_Spectral_space_final_fg_1.gmsh
 Fields:
   eastward_wind: 4.3110191105979175e+03

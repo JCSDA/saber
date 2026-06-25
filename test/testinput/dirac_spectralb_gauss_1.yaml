@@ -94,7 +94,7 @@ background error:
             nmembers: 2
             template:
               date: 2016-01-01T16:00:00Z
-              filename: testdata/process_perts_spectralb_from_gauss_perts_4/wb1_F12_inc_%MEM%.nc
+              filename: testdata/process_perts_spectralb_from_gauss_perts_4/_MPI_-_OMP__wb1_F12_inc_%MEM%.nc
               variables:
               - eastward_wind
               - northward_wind
@@ -157,7 +157,7 @@ background error:
             nmembers: 2
             template:
               date: 2016-01-01T16:00:00Z
-              filename: testdata/process_perts_spectralb_from_gauss_perts_4/wb2_F12_inc_%MEM%.nc
+              filename: testdata/process_perts_spectralb_from_gauss_perts_4/_MPI_-_OMP__wb2_F12_inc_%MEM%.nc
               variables:
               - eastward_wind
               - northward_wind
@@ -219,7 +219,7 @@ background error:
             nmembers: 2
             template:
               date: 2016-01-01T16:00:00Z
-              filepath: testdata/process_perts_spectralb_from_gauss_perts_4/wb3_F12_inc_%MEM%
+              filepath: testdata/process_perts_spectralb_from_gauss_perts_4/_MPI_-_OMP__wb3_F12_inc_%MEM%
               variables:
               - eastward_wind
               - northward_wind
