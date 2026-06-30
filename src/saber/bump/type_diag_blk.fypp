@@ -9,10 +9,10 @@
 module type_diag_blk
 
 !$ use omp_lib
-use tools_const, only: zero,tenth,half,one,ten,pi
+use tools_const, only: zero,tenth,half,one,ten,pi,req
 use tools_cor_var, only: eval
 use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2r,tensor_check_cond,fast_fit
-use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum
+use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum,write_yaml_profile
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,define_dim,define_var,put_var
 use tools_repro, only: inf,infeq,supeq
@@ -66,6 +66,7 @@ contains
    procedure :: partial_dealloc => diag_blk_partial_dealloc
    procedure :: dealloc => diag_blk_dealloc
    procedure :: write => diag_blk_write
+   procedure :: write_yaml => diag_blk_write_yaml
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
    procedure :: hybridization => diag_blk_hybridization
@@ -351,20 +352,20 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       end do
    end if
    if (diag_blk%ncmp==1) then
-      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0(:,1))
+      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0(:,1)*req)
       if (nam%nc4>1) then
-         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0(:,1))
-         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0(:,1))
-         call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0(:,1))
+         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0(:,1)*req**2)
+         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0(:,1)*req**2)
+         call put_var(mpl,grpid,D12_l0_id,diag_blk%D11_l0(:,1)*diag_blk%D22_l0(:,1)*diag_blk%D12_l0(:,1)*req**2)
       end if
       call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0(:,1))
    else
       call put_var(mpl,grpid,a_l0_id,diag_blk%a_l0)
-      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0)
+      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0*req)
       if (nam%nc4>1) then
-         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0)
-         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0)
-         call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0)
+         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0*req**2)
+         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0*req**2)
+         call put_var(mpl,grpid,D12_l0_id,diag_blk%D11_l0*diag_blk%D22_l0*diag_blk%D12_l0*req**2)
       end if
       call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
    end if
@@ -381,6 +382,74 @@ end associate
 @:probe_out()
 
 end subroutine diag_blk_write
+
+!----------------------------------------------------------------------
+! Subroutine: diag_blk_write_yaml
+!> Write yaml
+!----------------------------------------------------------------------
+subroutine diag_blk_write_yaml(diag_blk,mpl,nam,geom,ig,lunit)
+
+implicit none
+
+! Passed variables
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+integer,intent(in) :: ig                       !< Group index
+integer,intent(in) :: lunit                    !< I/O unit
+
+! Local variables
+integer :: il0,icmp
+
+! Set name
+@:set_name(diag_blk_write_yaml)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ic2a=>diag_blk%ic2a)
+
+! Write group
+write(lunit,'(a2,a)') '',trim(diag_blk%prefix)//':'
+
+! Write variables
+if (diag_blk%ncmp==1) then
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0(:,1)*req)
+   if (nam%nc4>1) then
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_blk%D11_l0(:,1)*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_blk%D22_l0(:,1)*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
+ & diag_blk%D11_l0(:,1)*diag_blk%D22_l0(:,1)*diag_blk%D12_l0(:,1)*req**2)
+   end if
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0(:,1))
+else
+   do icmp=1,diag_blk%ncmp
+      ! Write component
+      write(lunit,'(a4,a,i1,a)') '','component ',icmp,':'
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0(:,icmp)*req)
+      if (nam%nc4>1) then
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_blk%D11_l0(:,icmp)*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_blk%D22_l0(:,icmp)*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
+ & diag_blk%D11_l0(:,icmp)*diag_blk%D22_l0(:,icmp)*diag_blk%D12_l0(:,icmp)*req**2)
+      end if
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0(:,icmp))
+   end do
+end if
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_blk%hyb_coef_1_raw
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_blk%hyb_coef_1_raw
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 2: ',diag_blk%hyb_coef_2_raw
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2)) write(lunit,'(a4,a,e10.4)') '','hybrid coefficient 2: ',diag_blk%hyb_coef_2
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_blk_write_yaml
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_fitting

@@ -208,6 +208,10 @@ struct DriversDef {
   std::pair<const char *, bool> write_hdiag_detail =
     std::make_pair("write diagnostics detail", false);
 
+  // Write HDIAG diagnostics in yaml file
+  std::pair<const char *, bool> write_hdiag_yaml =
+    std::make_pair("write diagnostics in yaml", false);
+
   // Read universe radius
   std::pair<const char *, bool> load_universe_radius =
     std::make_pair("read universe radius", false);

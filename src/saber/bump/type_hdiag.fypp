@@ -35,6 +35,7 @@ contains
    procedure :: partial_dealloc => hdiag_partial_dealloc
    procedure :: dealloc => hdiag_dealloc
    procedure :: write => hdiag_write
+   procedure :: write_yaml => hdiag_write_yaml
    procedure :: run_hdiag => hdiag_run_hdiag
    procedure :: from_gsi => hdiag_from_gsi
 end type hdiag_type
@@ -167,6 +168,10 @@ do ildwv=0,nam%nldwv
          call put_var(mpl,grpid,as_id,geom%as(1:nam%nc4))
          call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
 
+         ! Write ensemble covariance
+         if (nam%compute_cov) call hdiag%cov%blk(ic2a(ildwv),ig)%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id)
+
          ! Write ensemble correlation
          if (nam%compute_cor) call hdiag%cor%blk(ic2a(ildwv),ig)%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
  & nl0_1_id,nl0_2_id)
@@ -185,6 +190,61 @@ end do
 @:probe_out()
 
 end subroutine hdiag_write
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_write_yaml
+!> Write diagnostics in yaml format
+!----------------------------------------------------------------------
+subroutine hdiag_write_yaml(hdiag,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(inout) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+
+! Local variables
+integer :: lunit,ioflag,ig
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(hdiag_write_yaml)
+
+! Probe in
+@:probe_in()
+
+if (mpl%main) then
+   ! Get unit
+   lunit = 12
+
+   ! Open file
+   open(lunit,file=trim(nam%datadir)//'/'//trim(nam%prefix)//'diag.yaml',iostat=ioflag,status='replace')
+   if (ioflag/=0) call mpl%abort('${subr}$','cannot write diagnostics file')
+
+   do ig=1,nam%ng
+      ! Get group name
+      call nam%alias(nam%group_names(ig),grpname)
+
+      ! Write group name
+      write(lunit,'(a)') trim(grpname)//':'
+
+      ! Write ensemble correlation
+      if (nam%compute_cor) call hdiag%cor%blk(0,ig)%write_yaml(mpl,nam,geom,ig,lunit)
+
+      ! Write ensemble localization and hybrid coefficient
+      if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(0,ig)%write_yaml(mpl,nam,geom,ig,lunit)
+   end do
+
+   ! Close file
+   close(lunit)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_write_yaml
 
 !----------------------------------------------------------------------
 ! Subroutine: hdiag_run_hdiag
@@ -261,6 +321,15 @@ if (nam%write_hdiag) then
    write(mpl%info,'(a)') '--- Write diagnostics'
    call mpl%flush
    call hdiag%write(mpl,nam,geom,samp)
+end if
+
+! Write profiles in yaml format
+if (nam%write_hdiag_yaml) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Write diagnostics in yaml format'
+   call mpl%flush
+   call hdiag%write_yaml(mpl,nam,geom)
 end if
 
 ! Probe out

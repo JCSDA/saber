@@ -74,6 +74,7 @@ type nam_type
    logical :: write_avg                                       !< Write averaged statistics
    logical :: write_hdiag                                     !< Write diagnostics
    logical :: write_hdiag_detail                              !< Write components detail
+   logical :: write_hdiag_yaml                                !< Write diagnostics in yaml file
    logical :: load_universe_radius                            !< Read universe radius
    logical :: write_universe_radius                           !< Write universe radius
    logical :: new_nicas                                       !< Compute NICAS parameters
@@ -465,6 +466,7 @@ if (conf%get('drivers',section)) then
    call nam%get(section,'write averaged statistics',nam%write_avg)
    call nam%get(section,'write diagnostics',nam%write_hdiag)
    call nam%get(section,'write diagnostics detail',nam%write_hdiag_detail)
+   call nam%get(section,'write diagnostics in yaml',nam%write_hdiag_yaml)
    call nam%get(section,'read universe radius',nam%load_universe_radius)
    call nam%get(section,'write universe radius',nam%write_universe_radius)
    call nam%get(section,'compute nicas',nam%new_nicas)

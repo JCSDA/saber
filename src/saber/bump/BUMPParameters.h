@@ -299,6 +299,8 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> write_hdiag = param(def.write_hdiag, this);
   // Write HDIAG components detail
   oops::Parameter<bool> write_hdiag_detail = param(def.write_hdiag_detail, this);
+  // Write HDIAG diagnostics in yaml file
+  oops::Parameter<bool> write_hdiag_yaml = param(def.write_hdiag_yaml, this);
   // Read universe radius
   oops::Parameter<bool> load_universe_radius = param(def.load_universe_radius, this);
   // Write universe radius

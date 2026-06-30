@@ -130,6 +130,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.write_hdiag, driversConf);
   // Write HDIAG components detail
   param(driversDef.write_hdiag_detail, driversConf);
+  // Write HDIAG diagnostics in yaml file
+  param(driversDef.write_hdiag_yaml, driversConf);
   // Read universe radius
   param(driversDef.load_universe_radius, driversConf);
   // Write universe radius

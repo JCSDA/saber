@@ -520,7 +520,7 @@ real(kind_real) :: lon0,lat0,dist,maxdist,area_124,area_234,splon_opt,splat_opt,
 real(kind_real) :: lonlat_bnd(2,4),v_bnd(3,4),v1(3),v2(3),cp(3),cd(3),v_bnd_infl(3,4),vtmp(3)
 real(kind_real) :: lonlat_bnd_opt(2,4)
 real(kind_real) :: north,south,east,west
-real(kind_real),pointer :: real_ptr(:,:)
+real(kind_real),pointer :: vert_coord_ptr(:),real_ptr(:,:)
 real(kind_real),allocatable :: v_mga(:,:)
 logical :: valid
 type(hull_type) :: hull
@@ -572,7 +572,19 @@ end if
 ! Get vertical coordinate
 if ((nam%vert_coord_name/='').and.(fieldset%has_field(nam%vert_coord_name))) then
    afield = fieldset%field(nam%vert_coord_name)
-   call field_to_array(afield,mpl,geom%vert_coord_mga,nam%ilev2d)
+   if (afield%rank()==1) then
+      ! Simple profile
+      if (afield%shape(1)/=geom%nl0) then
+        call mpl%abort('${subr}$','wrong vertical coordinate profile size')
+      end if
+      call afield%data(vert_coord_ptr)
+      do il0=1,geom%nl0
+         geom%vert_coord_mga(:,il0) = vert_coord_ptr(il0)
+      end do
+   else
+      ! Full 3D field
+      call field_to_array(afield,mpl,geom%vert_coord_mga,nam%ilev2d)
+   end if
 end if
 
 ! Get geometry mask

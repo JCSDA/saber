@@ -143,11 +143,14 @@ interface global_average
       module procedure func_global_average_r${rank}$
    #:endfor
 end interface
+interface write_yaml_profile
+   module procedure func_write_yaml_profile
+end interface
 
 private
 public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
  & vector_product,det,area,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
- & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
+ & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average,write_yaml_profile
 
 contains
 
@@ -1715,5 +1718,65 @@ if (norm>zero) value = value/norm
 
 end function func_global_average_r${rank}$
 #:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: func_write_yaml_profile
+!> Write profile in yaml file
+!----------------------------------------------------------------------
+subroutine func_write_yaml_profile(lunit,ifmt,nl0,grp2d,ilev2d,varname,profile)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: lunit                !< I/O unit
+integer,intent(in) :: ifmt                 !< Indentation
+integer,intent(in) :: nl0                  !< Number of levels
+logical,intent(in) :: grp2d                !< Flag for 2D groups
+integer,intent(in) :: ilev2d               !< Level for 2D variables
+character(len=*),intent(in) :: varname     !< Variable name
+real(kind_real),intent(in) :: profile(nl0) !< Profile
+
+! Local variables
+integer :: il0
+character(len=1024) :: cfmt
+
+! Set name
+@:set_name(func_write_yaml_profile)
+
+! Probe in
+@:probe_in()
+
+! Write variable name
+write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a,a)'
+write(lunit,trim(cfmt),advance='no') '',varname,': ['
+
+if (grp2d) then
+   ! Write single level
+   if (profile(ilev2d)<zero) then
+      cfmt = '(e11.4)'
+   else
+      cfmt = '(e10.4)'
+   end if
+   write(lunit,trim(cfmt),advance='no') profile(ilev2d)
+else
+   ! Write all levels
+   do il0=1,nl0
+      if (profile(il0)<zero) then
+         cfmt = '(e11.4)'
+      else
+         cfmt = '(e10.4)'
+      end if
+      write(lunit,trim(cfmt),advance='no') profile(il0)
+      if (il0<nl0) write(lunit,'(a)',advance='no') ','
+   end do
+end if
+
+! Close profile
+write(lunit,'(a)') ']'
+
+! Probe out
+@:probe_out()
+
+end subroutine func_write_yaml_profile
 
 end module tools_func
