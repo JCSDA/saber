@@ -17,9 +17,9 @@ Covariance(SABER) * Increment:
   Fields:
   - air_horizontal_streamfunction (10 levels):
     + min    = 0.0000000000000000e+00
-    + max    = 9.6934780872382520e-01
-    + mean   = 1.4547240233959929e-02
-    + stddev = 7.4999544649890018e-02
+    + max    = 9.6945329449308459e-01
+    + mean   = 1.4762270081597707e-02
+    + stddev = 7.5537877501026710e-02
   - air_horizontal_velocity_potential (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
