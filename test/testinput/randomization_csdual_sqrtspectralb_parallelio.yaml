@@ -1,0 +1,49 @@
+# To be called by saber_quench_error_covariance_toolbox.x
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+background error:
+  covariance model: SABER
+  randomization size: 2
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    active variables: *vars
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+  - saber block name: spectral to gauss
+    active variables: *vars
+  - saber block name: gauss to cubed-sphere-dual
+    initialize inverse interpolator: false
+    skip inverse test: true
+    gauss grid uid: F12
+    active variables: *vars
+  - saber block name: write fields
+    output path: testdata/randomization_csdual_sqrtspectralb_parallelio/
+    multiply fset filename: randomized_csdual_mb
+    parallel IO: true
+    field names: *vars
+output states:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_csdual_sqrtspectralb_parallelio/_MPI_-_OMP__randomized_csdual_mb%MEM%
+test:
+  reference filename: testref/randomization_csdual_sqrtspectralb_parallelio.ref

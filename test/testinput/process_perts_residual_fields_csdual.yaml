@@ -1,0 +1,67 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+
+background:
+  date: &date 2010-01-01T12:00:00Z
+  state variables: *vars
+
+bands:
+- band:
+    filter:
+    - saber block name: write fields
+      output path: testdata/process_perts_residual_fields_csdual/
+      multiply fset filename: csdual_mb
+      parallel IO: true
+      field names: *vars
+    - saber block name: residual fields
+      input path: testdata/process_perts_residual_fields_csdual/
+      multiply fset filename: csdual_mb
+      parallel IO: true
+      field names: *vars
+    - saber block name: write fields
+      output path: testdata/process_perts_residual_fields_csdual/
+      multiply fset filename: csdual_residual_mb
+      save netCDF file: false
+      field names: *vars
+
+ensemble geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+ensemble pert on other geometry:
+  grid name: CS-LFR-14
+  date: *date
+  members from template:
+    pattern: '%MEM%'
+    nmembers: 2
+    template:
+      date: *date
+      filename: testdata/randomization_csdual_sqrtspectralb_parallelio/randomized_csdual_mb_%MEM%.nc
+      variables: *vars
+      parallel IO: true
+
+
+input variables: *vars
+
+test:
+  reference filename: testref/process_perts_residual_fields_csdual.ref

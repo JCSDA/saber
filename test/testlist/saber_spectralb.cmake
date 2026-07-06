@@ -76,6 +76,31 @@ saber_add_test( TARGET saber_randomization_csdual_sqrtspectralb_1-2
                 ARGS testinput/randomization_csdual_sqrtspectralb.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
+if(ATLAS_TEST_46_OR_GREATER)
+  # randomization_csdual_sqrtspectralb_parallelio
+  saber_add_test( TARGET saber_randomization_csdual_sqrtspectralb_parallelio_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_csdual_sqrtspectralb_parallelio.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_randomization_csdual_sqrtspectralb_parallelio_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_csdual_sqrtspectralb_parallelio.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  saber_add_test( TARGET saber_randomization_csdual_sqrtspectralb_parallelio_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/randomization_csdual_sqrtspectralb_parallelio.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+endif()
+
 # randomization_sqrtspectralb_1
 saber_add_test( TARGET saber_randomization_sqrtspectralb_1_1-1
                 MPI 1
@@ -332,6 +357,32 @@ if(ATLAS_TEST_46_OR_GREATER)
                   ARGS testinput/process_perts_spectralb_from_csdual_states_with_smv_2.yaml
                   DEPENDS saber_quench_process_perts.x
                   TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-2 )
+
+  # process_perts_residual_fields_csdual
+  saber_add_test( TARGET saber_process_perts_residual_fields_csdual_1-1
+                  MPI 1
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_residual_fields_csdual.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_parallelio_1-1 )
+
+  saber_add_test( TARGET saber_process_perts_residual_fields_csdual_2-1
+                  MPI 2
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_residual_fields_csdual.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_parallelio_2-1 )
+
+  saber_add_test( TARGET saber_process_perts_residual_fields_csdual_1-2
+                  MPI 1
+                  OMP 2
+                  LABELS   tier2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                  ARGS testinput/process_perts_residual_fields_csdual.yaml
+                  DEPENDS saber_quench_process_perts.x
+                  TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_parallelio_1-2 )
 endif()
 
 # process_perts_spectralb_from_gauss_perts_1

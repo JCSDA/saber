@@ -220,18 +220,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars[i].setLevels(vlevs[i]);
     }
 
-    // Yaml validation
-    // TODO(Mayeul): Move this do an override of deserialize
-    if (((params.ensemble.value() == boost::none) &&
-        (params.ensemblePert.value() == boost::none)) ||
-        ((params.ensemble.value() != boost::none) &&
-        (params.ensemblePert.value() != boost::none)))
-    {
-      throw eckit::UserError(
-       "Require either input states or input perturbations to be set in yaml",
-       Here());
-    }
-
     // Read input ensemble
     oops::FieldSets fsetEnsI = readEnsemble<MODEL>(geom,
                                                    incVars,

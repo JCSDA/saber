@@ -60,9 +60,11 @@ ResidualFields::ResidualFields(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::ResidualFields starting" << std::endl;
 
   if (params_.readParallelIONetCDFFile) {
-    // TODO(tom-j-h): once is Atlas #264 available, use outerGeometryData.functionSpace() rather
-    // than casting to the underlying functionspace and extend to NodeColumns option
-    // See oops issue #2963
+#ifdef ATLAS_VERSION_46_OR_GREATER
+    const auto gridName = outerGeometryData.functionSpace().grid().name();
+    io_.reset(new util::ParallelFieldSetIO(outerGeometryData.functionSpace(), gridName,
+                                           util::ParallelFieldSetIO::Mode::Read));
+#else
     auto fsType = outerGeometryData.functionSpace().type();
     if (fsType == "StructuredColumns") {
       auto fs = atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
@@ -73,6 +75,7 @@ ResidualFields::ResidualFields(const oops::GeometryData & outerGeometryData,
       throw eckit::NotImplemented("parallel IO only supporting StructuredColumns for now",
                                   Here());
     }
+#endif
   }
 
   oops::Log::trace() << classname() << "::ResidualFields done" << std::endl;

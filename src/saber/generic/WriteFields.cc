@@ -163,9 +163,11 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::WriteFields starting" << std::endl;
 
   if (params_.saveParallelIONetCDFFile && params_.saveNetCDFFile) {
-    // TODO(tom-j-h): once is Atlas #264 available, use outerGeometryData.functionSpace() rather
-    // than casting to the underlying functionspace and extend to NodeColumns option
-    // See oops issue #2963
+#ifdef ATLAS_VERSION_46_OR_GREATER
+    const auto gridName = outerGeometryData.functionSpace().grid().name();
+    io_.reset(new util::ParallelFieldSetIO(outerGeometryData.functionSpace(), gridName,
+                                           util::ParallelFieldSetIO::Mode::Write));
+#else
     auto fsType = outerGeometryData.functionSpace().type();
     if (fsType == "StructuredColumns") {
       auto fs = atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
@@ -176,6 +178,7 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
       throw eckit::NotImplemented("parallel IO only supporting StructuredColumns for now",
                                   Here());
     }
+#endif
   }
 
   if (params_.XbFileName.value() != ::boost::none) {

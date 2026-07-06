@@ -1,0 +1,24 @@
+Norm of perturbation: member 1: 4.1540524123366261e+08
+Fields:
+  air_horizontal_streamfunction: 3.0406446715119386e+08
+  air_horizontal_velocity_potential: 2.8303058889608186e+08
+  mu: 9.0483049143250994e+01
+  unbalanced_pressure_levels_minus_one: 3.0962663795198168e+03
+Fields:
+  air_horizontal_streamfunction: 0.0000000000000000e+00
+  air_horizontal_velocity_potential: 0.0000000000000000e+00
+  mu: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 0.0000000000000000e+00
+Norm of band perturbation: member 1: band 1: 0.0000000000000000e+00
+Norm of perturbation: member 2: 3.9547094066124845e+08
+Fields:
+  air_horizontal_streamfunction: 2.9042050170791078e+08
+  air_horizontal_velocity_potential: 2.6842726591625836e+08
+  mu: 9.3900526079653034e+01
+  unbalanced_pressure_levels_minus_one: 2.8163065009395800e+03
+Fields:
+  air_horizontal_streamfunction: 0.0000000000000000e+00
+  air_horizontal_velocity_potential: 0.0000000000000000e+00
+  mu: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 0.0000000000000000e+00
+Norm of band perturbation: member 2: band 1: 0.0000000000000000e+00
