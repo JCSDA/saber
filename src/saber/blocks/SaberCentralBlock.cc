@@ -362,7 +362,9 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
         wgtSqrt_.push_back(wgt.llt().matrixL());
         oops::Log::info() << "Info     : Weights square-root matrix for group "
                         << groupNames_.back() << " :" << std::endl;
-        oops::Log::info() << wgtSqrt_.back() << std::endl;
+        for (const auto row : wgtSqrt_.back().rowwise()) {
+          oops::Log::info() << "Info     : " << row << std::endl;
+        }
       }
     }
   }
@@ -735,8 +737,6 @@ void SaberCentralBlock::write() const {
 // -----------------------------------------------------------------------------
 
 size_t SaberCentralBlock::ctlVecSize() const {
-  oops::Log::trace() << "SaberCentralBlock::ctlVecSize starting" << std::endl;
-
   // Initialize control vector size
   size_t ctlVecSize = 0;
 
@@ -920,6 +920,7 @@ void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
       }
     } else if (strategy_ == "duplicated and weighted") {
       // Duplicated and weighted strategy
+      util::zeroFieldSet(fset3d.fieldSet());
       for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
         // Get auxiliary outer block chain
         const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
@@ -929,7 +930,6 @@ void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
 
         // Get variables
         const auto vars = groupInputVars_[igroup];
-        util::zeroFieldSet(fset3d.fieldSet());
 
         for (size_t jvarI = 0; jvarI < vars.size(); ++jvarI) {
           // Get variable
