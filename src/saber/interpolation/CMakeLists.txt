@@ -15,6 +15,8 @@ Rescaling.h
 # Interpolation block
 Geometry.cc
 Geometry.h
+GsiGrid.cc
+GsiGrid.h
 Interpolation.cc
 Interpolation.h
 
