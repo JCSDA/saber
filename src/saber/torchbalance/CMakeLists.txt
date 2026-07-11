@@ -8,8 +8,10 @@ if( ENABLE_TORCH )
     list( APPEND torchbalance_src_files_list
     TorchBalance.h
     TorchBalance.cc
-    TorchBalanceEmulator.h
-    TorchBalanceEmulator.cc
+    TorchBalanceSurfaceEmulator.h
+    TorchBalanceSurfaceEmulator.cc
+    TorchBalanceVerticalEmulator.h
+    TorchBalanceVerticalEmulator.cc
     )
 endif()
 

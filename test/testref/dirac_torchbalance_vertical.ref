@@ -1,0 +1,30 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-15 [1350]
+  Fields:
+  - sea_water_potential_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8518518518518518e-04
+    + stddev = 1.3608276348794180e-02
+  - sea_water_salinity (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8518518518518518e-04
+    + stddev = 1.3608276348794180e-02
+Adjoint test for block TorchBalance passed
+Adjoint test for block ID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-15 [1350]
+  Fields:
+  - sea_water_potential_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.5000000000000000e+00
+    + mean   = 2.7777777777777778e-04
+    + stddev = 2.0412414523191270e-02
+  - sea_water_salinity (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.7500000000000000e+00
+    + mean   = 3.2407407407407407e-04
+    + stddev = 2.3814483610389815e-02

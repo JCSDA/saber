@@ -8,8 +8,6 @@ geometry:
   - variables:
     - sea_water_potential_temperature
     - sea_water_salinity
-    - air_temperature
-    - water_vapor_mixing_ratio_wrt_moist_air
     levels: 4
 
 background:
@@ -17,26 +15,13 @@ background:
   state variables:
   - sea_water_potential_temperature
   - sea_water_salinity
-  - air_temperature
-  - water_vapor_mixing_ratio_wrt_moist_air
 
 background error:
   covariance model: SABER
   adjoint test: true
   saber outer blocks:
   - saber block name: TorchBalance
-    save jacobians: true
-    surface emulators:
-    - name: sea_water_potential_temperature
-      path: ./testdata/dirac_torchbalance/sst_emulator.ts
-      jacobian wrt:
-      - air_temperature
-      - water_vapor_mixing_ratio_wrt_moist_air
-    - name: air_temperature
-      path: ./testdata/dirac_torchbalance/air_temperature_emulator.ts
-      jacobian wrt:
-      - sea_water_potential_temperature
-      - water_vapor_mixing_ratio_wrt_moist_air
+    surface emulators: []
     vertical emulators:
     - name: sea_water_salinity
       path: ./testdata/dirac_torchbalance/vertical_emulator.ts
@@ -49,22 +34,19 @@ dirac:
   lon:
   - 0.0
   - 0.0
-  - 0.0
   lat:
-  - -4.38894
   - -4.38894
   - -4.38894
   level:
   - 1
-  - 4
-  - 4
+  - 1
   variable:
   - sea_water_potential_temperature
-  - air_temperature
-  - water_vapor_mixing_ratio_wrt_moist_air
+  - sea_water_salinity
 
 output dirac:
-  filepath: testdata/dirac_torchbalance/_MPI_-_OMP__dirac_%id%
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_torchbalance_vertical/%MPI%_dirac_%id%
 
 test:
-  reference filename: testref/dirac_torchbalance.ref
+  reference filename: testref/dirac_torchbalance_vertical.ref

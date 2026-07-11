@@ -6,11 +6,15 @@
 * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 */
 
-#include "saber/torchbalance/TorchBalance.h"
+#include <algorithm>
 
-#include "saber/torchbalance/TorchBalanceEmulator.h"
+#include "saber/torchbalance/TorchBalance.h"
+#include "saber/torchbalance/TorchBalanceSurfaceEmulator.h"
+#include "saber/torchbalance/TorchBalanceVerticalEmulator.h"
 
 #include "atlas/array.h"
+
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/util/FieldSetHelpers.h"
 
@@ -36,85 +40,125 @@ TorchBalance::TorchBalance(
 {
   oops::Log::trace() << "TorchBalance constructed, inner vars: " << innerVars_ << std::endl;
 
-  // Initialize the Jacobian variables from emulator configuration
-  const auto& emulators = params.surfaceEmulators.value();
+  // ---- Phase 1: collect all Jacobian field specs (name + level count) ----
 
-  // Collect all Jacobian variables from all emulators
-  // Jacobian field names are constructed as: d{output}_div_d{input}
   std::vector<std::string> jacStr;
   std::vector<int> jacLevels;
-  const int SINGLE_LEVEL = 1;
+
+  // Surface emulators: single-level Jacobian per (output, input) pair
+  const auto& emulators = params.surfaceEmulators.value();
   for (const auto& emulator : emulators) {
     const std::string& emulatorName = emulator.name.value();
-    const auto& jacWrt = emulator.jacobianWrt.value();
-
-    // Construct Jacobian field name for each input variable
-    for (const auto& inputVar : jacWrt) {
-      std::string jacName = "d" + emulatorName + "_div_d" + inputVar;
-      jacStr.push_back(jacName);
-      jacLevels.push_back(SINGLE_LEVEL);  // Only currently implemented for single-level Jacobians
+    for (const auto& inputVar : emulator.jacobianWrt.value()) {
+      jacStr.push_back("d" + emulatorName + "_div_d" + inputVar);
+      jacLevels.push_back(1);
     }
   }
-  oops::Log::info() << "TorchBalance: Setting up " << jacStr.size()
-                    << " Jacobian variables from " << emulators.size()
-                    << " emulators" << std::endl;
 
-  // Initialize the Jacobian
-  oops::Variables jacVars(jacStr);
-  for (size_t i = 0; i < jacStr.size(); ++i) {
-    jacVars[jacStr[i]].setLevels(jacLevels[i]);
+  // Vertical emulators: compact vertical-block Jacobian.
+  if (params.verticalEmulators.value() != boost::none) {
+    for (const auto& emulator : *params.verticalEmulators.value()) {
+      const std::string& emulatorName = emulator.name.value();
+      if (!xb.has(emulatorName)) {
+        throw eckit::Exception(
+            "TorchBalance: vertical emulator output '" + emulatorName
+            + "' not found in background state", Here());
+      }
+      const int nOutputLevels = xb[emulatorName].shape(1);
+      for (const auto& inputVar : emulator.jacobianWrt.value()) {
+        if (!xb.has(inputVar)) {
+          throw eckit::Exception(
+              "TorchBalance: vertical emulator input '" + inputVar
+              + "' not found in background state", Here());
+        }
+        const int nInputLevels = xb[inputVar].shape(1);
+        jacStr.push_back("d" + emulatorName + "_div_d" + inputVar);
+        jacLevels.push_back(nOutputLevels == 1 ? nInputLevels :
+                            std::min(nOutputLevels, nInputLevels));
+      }
+    }
   }
+
+  oops::Log::info() << "TorchBalance: allocating " << jacStr.size()
+                    << " Jacobian fields" << std::endl;
+
+  // ---- Phase 2: allocate the Jacobian FieldSet ----
+
+  oops::Variables jacVars(jacStr);
+  for (size_t i = 0; i < jacStr.size(); ++i)
+    jacVars[jacStr[i]].setLevels(jacLevels[i]);
   const double INITIAL_VALUE = 0.0;
   auto fs = innerGeometryData_.functionSpace();
   jac_ = util::createFieldSet(fs, jacVars, INITIAL_VALUE);
 
-  // Process each emulator
+  // ---- Phase 3: run surface emulators ----
+
   for (const auto& emulator : emulators) {
     const std::string& emulatorName = emulator.name.value();
     const std::string& emulatorPath = emulator.path.value();
     const auto& jacWrt = emulator.jacobianWrt.value();
 
-    oops::Log::info() << "Processing emulator: " << emulatorName << std::endl;
-    oops::Log::info() << "  Path: " << emulatorPath << std::endl;
-    oops::Log::info() << "  Jacobian with respect to: ";
-    for (const auto& inputVar : jacWrt) {
-      oops::Log::info() << inputVar << " ";
-    }
-    oops::Log::info() << std::endl;
+    oops::Log::info() << "TorchBalance surface emulator: " << emulatorName
+                      << "  path: " << emulatorPath << std::endl;
 
-    // Extract masking parameters if present
     std::string maskVariable = "";
     int maskLevel = 0;
-    if (emulator.maskVariable.value() != boost::none) {
+    if (emulator.maskVariable.value() != boost::none)
       maskVariable = *emulator.maskVariable.value();
-      oops::Log::info() << "  Jacobian masking variable: " << maskVariable << std::endl;
-    }
-    if (emulator.maskLevel.value() != boost::none) {
+    if (emulator.maskLevel.value() != boost::none)
       maskLevel = *emulator.maskLevel.value();
-      oops::Log::info() << "  Jacobian masking level: " << maskLevel << std::endl;
-    }
 
-    // Create a FieldSet subset containing only the Jacobian fields for this emulator
     atlas::FieldSet emulatorJacFieldSet;
-    for (const auto& inputVar : jacWrt) {
-      std::string jacName = "d" + emulatorName + "_div_d" + inputVar;
-      emulatorJacFieldSet.add(jac_[jacName]);
-    }
+    for (const auto& inputVar : jacWrt)
+      emulatorJacFieldSet.add(jac_["d" + emulatorName + "_div_d" + inputVar]);
 
-    // Compute all Jacobians for this emulator in a single call and get level metadata
-    auto emulatorLevelMetadata = setupEmulator(xb,
-                                               outerGeometryData.comm(),
-                                               emulatorPath,
-                                               emulatorJacFieldSet,
-                                               maskVariable,
-                                               maskLevel);
+    auto emulatorLevelMetadata = setupSurfaceEmulator(xb, outerGeometryData.comm(),
+                              emulatorPath, emulatorJacFieldSet,
+                              maskVariable, maskLevel);
 
-    // Store the level metadata
+    // Surface: denominator_level and numerator_level from emulator;
+    //          nInputLevels = nOutputLevels = 1
     for (const auto& entry : emulatorLevelMetadata) {
-      jacLevelMetadata_[entry.first] = {entry.second.first, entry.second.second};
-      oops::Log::info() << "  Stored level metadata for " << entry.first
-                        << ": denominator_level=" << entry.second.first
-                        << ", numerator_level=" << entry.second.second << std::endl;
+      jacLevelMetadata_[entry.first] = {entry.second.first, entry.second.second, 1, 1};
+      oops::Log::info() << "  surface Jacobian " << entry.first
+                        << ": denom_level=" << entry.second.first
+                        << " numer_level=" << entry.second.second << std::endl;
+    }
+  }
+
+  // ---- Phase 4: run vertical emulators ----
+
+  if (params.verticalEmulators.value() != boost::none) {
+    for (const auto& emulator : *params.verticalEmulators.value()) {
+      const std::string& emulatorName = emulator.name.value();
+      const std::string& emulatorPath = emulator.path.value();
+      const auto& jacWrt = emulator.jacobianWrt.value();
+
+      oops::Log::info() << "TorchBalance vertical emulator: " << emulatorName
+                        << "  path: " << emulatorPath << std::endl;
+
+      std::string maskVariable = "";
+      int maskLevel = 0;
+      if (emulator.maskVariable.value() != boost::none)
+        maskVariable = *emulator.maskVariable.value();
+      if (emulator.maskLevel.value() != boost::none)
+        maskLevel = *emulator.maskLevel.value();
+
+      atlas::FieldSet emulatorJacFieldSet;
+      for (const auto& inputVar : jacWrt)
+        emulatorJacFieldSet.add(jac_["d" + emulatorName + "_div_d" + inputVar]);
+
+      auto emulatorLevelMetadata = setupVerticalEmulator(xb, outerGeometryData.comm(),
+                                                         emulatorPath, emulatorJacFieldSet,
+                                                         maskVariable, maskLevel);
+
+      // Vertical: denom_level = numer_level = 0; nInputLevels and nOutputLevels from metadata
+      for (const auto& entry : emulatorLevelMetadata) {
+        jacLevelMetadata_[entry.first] = {0, 0, entry.second.first, entry.second.second};
+        oops::Log::info() << "  vertical Jacobian " << entry.first
+                          << ": nInputLevels=" << entry.second.first
+                          << " nOutputLevels=" << entry.second.second << std::endl;
+      }
     }
   }
 
@@ -169,20 +213,32 @@ void TorchBalance::multiply(oops::FieldSet3D & fset) const {
       if (!fset.has(denominator)) continue;
 
       // Look up level metadata
-      int denominator_level, numerator_level;
-      if (!getJacobianLevels(jacName, denominator_level, numerator_level)) continue;
+      int denominator_level, numerator_level, nInputLevels, nOutputLevels;
+      if (!getJacobianLevels(jacName, denominator_level, numerator_level,
+                             nInputLevels, nOutputLevels)) continue;
 
       auto denominator_view = atlas::array::make_view<double, 2>(fsetCopy[denominator]);
       auto jac_view         = atlas::array::make_view<double, 2>(jac_[jacName]);
 
       oops::Log::debug() << "  multiplyFWD: d" << varName << " += "
                          << jacName << " * d" << denominator << std::endl;
-      const int nnodes           = jac_[jacName].shape(0);
+      const int nnodes = jac_[jacName].shape(0);
 
-      for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
-        if (ghostView(jnode) > 0) continue;
-        var_view(jnode, numerator_level) += jac_view(jnode, 0)
-                                          * denominator_view(jnode, denominator_level);
+      if (nOutputLevels == 1) {
+        for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
+          if (ghostView(jnode) > 0) continue;
+          for (int k = 0; k < nInputLevels; ++k)
+            var_view(jnode, numerator_level) +=
+              jac_view(jnode, k) * denominator_view(jnode, denominator_level + k);
+        }
+      } else {
+        const int nDiagonalLevels = std::min(nOutputLevels, nInputLevels);
+        for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
+          if (ghostView(jnode) > 0) continue;
+          for (int k = 0; k < nDiagonalLevels; ++k)
+            var_view(jnode, numerator_level + k) +=
+              jac_view(jnode, k) * denominator_view(jnode, denominator_level + k);
+        }
       }
     }
   }
@@ -223,8 +279,9 @@ void TorchBalance::multiplyAD(oops::FieldSet3D & fset) const {
       if (!fset.has(numerator)) continue;
 
       // Look up level metadata
-      int denominator_level, numerator_level;
-      if (!getJacobianLevels(jacName, denominator_level, numerator_level)) continue;
+      int denominator_level, numerator_level, nInputLevels, nOutputLevels;
+      if (!getJacobianLevels(jacName, denominator_level, numerator_level,
+                             nInputLevels, nOutputLevels)) continue;
 
       auto numerator_view = atlas::array::make_view<double, 2>(fsetCopy[numerator]);
       auto jac_view       = atlas::array::make_view<double, 2>(jac_[jacName]);
@@ -232,11 +289,22 @@ void TorchBalance::multiplyAD(oops::FieldSet3D & fset) const {
       oops::Log::debug() << "  multiplyAD: d" << varName << " += "
                          << jacName << " * d" << numerator << std::endl;
 
-      const int nnodes         = jac_[jacName].shape(0);
-      for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
-        if (ghostView(jnode) > 0) continue;
-        var_view(jnode, denominator_level) += jac_view(jnode, 0)
-                                            * numerator_view(jnode, numerator_level);
+      const int nnodes = jac_[jacName].shape(0);
+      if (nOutputLevels == 1) {
+        for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
+          if (ghostView(jnode) > 0) continue;
+          for (int k = 0; k < nInputLevels; ++k)
+            var_view(jnode, denominator_level + k) +=
+              jac_view(jnode, k) * numerator_view(jnode, numerator_level);
+        }
+      } else {
+        const int nDiagonalLevels = std::min(nOutputLevels, nInputLevels);
+        for (atlas::idx_t jnode = 0; jnode < nnodes; ++jnode) {
+          if (ghostView(jnode) > 0) continue;
+          for (int k = 0; k < nDiagonalLevels; ++k)
+            var_view(jnode, denominator_level + k) +=
+              jac_view(jnode, k) * numerator_view(jnode, numerator_level + k);
+        }
       }
     }
   }
@@ -266,11 +334,15 @@ bool TorchBalance::parseJacobianName(const std::string & jacName,
 
 bool TorchBalance::getJacobianLevels(const std::string & jacName,
                                      int & denominator_level,
-                                     int & numerator_level) const {
+                                     int & numerator_level,
+                                     int & nInputLevels,
+                                     int & nOutputLevels) const {
   auto it = jacLevelMetadata_.find(jacName);
   if (it == jacLevelMetadata_.end()) return false;
   denominator_level = it->second.denominator_level;
   numerator_level   = it->second.numerator_level;
+  nInputLevels      = it->second.nInputLevels;
+  nOutputLevels     = it->second.nOutputLevels;
   return true;
 }
 

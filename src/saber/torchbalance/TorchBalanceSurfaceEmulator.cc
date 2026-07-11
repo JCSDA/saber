@@ -6,30 +6,30 @@
 * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 */
 
-#include "saber/torchbalance/TorchBalanceEmulator.h"
+#include "saber/torchbalance/TorchBalanceSurfaceEmulator.h"
 
 #include <torch/script.h>
 #include <torch/torch.h>
 
-#include <algorithm>
-#include <numeric>
-#include <tuple>
+#include <sstream>
 #include <utility>
 #include <vector>
 
 #include "atlas/array.h"
 
+#include "eckit/exception/Exceptions.h"
 #include "oops/base/Variables.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
 
-std::map<std::string, std::pair<int, int>> setupEmulator(const oops::FieldSet3D & xb,
-                                                         const eckit::mpi::Comm & comm,
-                                                         const std::string & torchscript_path,
-                                                         atlas::FieldSet & jacFieldSet,
-                                                         const std::string & maskVariable,
-                                                         int maskLevel) {
+std::map<std::string, std::pair<int, int>> setupSurfaceEmulator(
+    const oops::FieldSet3D & xb,
+    const eckit::mpi::Comm & comm,
+    const std::string & torchscript_path,
+    atlas::FieldSet & jacFieldSet,
+    const std::string & maskVariable,
+    int maskLevel) {
   // Log PyTorch version information
   oops::Log::info() << "PyTorch C++ API version: " << TORCH_VERSION_MAJOR << "."
                     << TORCH_VERSION_MINOR << "." << TORCH_VERSION_PATCH << std::endl;
@@ -86,7 +86,7 @@ std::map<std::string, std::pair<int, int>> setupEmulator(const oops::FieldSet3D 
 
   // We're only expecting one output for now
   if (emulatorVarOutputs.size() != 1) {
-    throw std::runtime_error("setupEmulator expected exactly 1 output from emulator");
+    throw eckit::Exception("setupSurfaceEmulator expected exactly 1 output from emulator", Here());
   }
 
   // Prepare the input field views
@@ -98,8 +98,8 @@ std::map<std::string, std::pair<int, int>> setupEmulator(const oops::FieldSet3D 
       inputViews.push_back(atlas::array::make_view<double, 2>(xb[varName]));
     } else {
       std::ostringstream err;
-      err << "setupEmulator missing required input field: " << varName;
-      throw std::runtime_error(err.str());
+      err << "setupSurfaceEmulator missing required input field: " << varName;
+      throw eckit::Exception(err.str(), Here());
     }
   }
 
@@ -111,10 +111,10 @@ std::map<std::string, std::pair<int, int>> setupEmulator(const oops::FieldSet3D 
 
     if (requested_level < 0 || requested_level >= nlevels) {
       std::ostringstream err;
-      err << "setupEmulator: Input level index out of bounds for variable " << varName
+      err << "setupSurfaceEmulator: Input level index out of bounds for variable " << varName
           << ". Requested level " << requested_level << " but variable has "
           << nlevels << " levels.";
-      throw std::runtime_error(err.str());
+      throw eckit::Exception(err.str(), Here());
     }
   }
 
@@ -151,10 +151,10 @@ std::map<std::string, std::pair<int, int>> setupEmulator(const oops::FieldSet3D 
     int mask_nlevels = mask_view.shape(1);
     if (maskLevel < 0 || maskLevel >= mask_nlevels) {
       std::ostringstream err;
-      err << "setupEmulator: Mask level " << maskLevel
+      err << "setupSurfaceEmulator: Mask level " << maskLevel
           << " out of bounds for variable '" << maskVariable
           << "' with " << mask_nlevels << " levels";
-      throw std::runtime_error(err.str());
+      throw eckit::Exception(err.str(), Here());
     }
 
     // Collect mask data for all nodes

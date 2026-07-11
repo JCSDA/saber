@@ -81,7 +81,7 @@ if( ENABLE_QUENCH )
                         TYPE SCRIPT
                         COMMAND ${VENV_PYTHON}
                         ARGS ${CMAKE_SOURCE_DIR}/saber/src/saber/torchbalance/create_test_emulator.py
-                             ${CMAKE_CURRENT_BINARY_DIR}/testdata/air_temperature_emulator.ts )
+                             ${CMAKE_CURRENT_BINARY_DIR}/testdata/dirac_torchbalance )
   endif()
 
   # Setup SABER top-level directories

@@ -34,6 +34,16 @@ class SurfaceEmulatorParameters : public oops::Parameters {
   oops::OptionalParameter<int> maskLevel{"jacobian masking.level", this};
 };
 
+class VerticalEmulatorParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VerticalEmulatorParameters, oops::Parameters)
+ public:
+  oops::RequiredParameter<std::string> name{"name", this};
+  oops::RequiredParameter<std::string> path{"path", this};
+  oops::RequiredParameter<std::vector<std::string>> jacobianWrt{"jacobian wrt", this};
+  oops::OptionalParameter<std::string> maskVariable{"jacobian masking.variable", this};
+  oops::OptionalParameter<int> maskLevel{"jacobian masking.level", this};
+};
+
 class TorchBalanceParameters : public saber::SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(TorchBalanceParameters, saber::SaberBlockParametersBase)
  public:
@@ -45,6 +55,8 @@ class TorchBalanceParameters : public saber::SaberBlockParametersBase {
   oops::Parameter<oops::Variables> innerVars{"inner variables", oops::Variables(), this};
   oops::RequiredParameter<std::vector<SurfaceEmulatorParameters>> surfaceEmulators{
     "surface emulators", this};
+  oops::OptionalParameter<std::vector<VerticalEmulatorParameters>> verticalEmulators{
+    "vertical emulators", this};
   oops::Parameter<bool> saveJacobians{"save jacobians", false, this};
 };
 
@@ -76,11 +88,13 @@ class TorchBalance : public SaberOuterBlockBase {
                                 std::string & denominator);
 
   /// Look up the level metadata for a given Jacobian field name.
-  /// Sets denominator_level and numerator_level and returns true on success.
+  /// Sets all four level fields and returns true on success.
   /// Returns false if the Jacobian name is not found in jacLevelMetadata_.
   bool getJacobianLevels(const std::string & jacName,
                          int & denominator_level,
-                         int & numerator_level) const;
+                         int & numerator_level,
+                         int & nInputLevels,
+                         int & nOutputLevels) const;
 
  private:
   void print(std::ostream &) const override;
@@ -88,10 +102,14 @@ class TorchBalance : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   atlas::FieldSet jac_;
 
-  // Store level metadata for each Jacobian field
+  // Store level metadata for each Jacobian field.
+  // Surface emulators: nInputLevels = nOutputLevels = 1, specific level indices stored.
+  // Vertical emulators: denominator_level = numerator_level = 0, compact vertical block used.
   struct JacobianLevels {
     int denominator_level;
     int numerator_level;
+    int nInputLevels  = 1;
+    int nOutputLevels = 1;
   };
   std::map<std::string, JacobianLevels> jacLevelMetadata_;
 };

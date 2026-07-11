@@ -201,6 +201,95 @@ def create_emulator_with_metadata(
     return scripted_model
 
 
+class VerticalLinearEmulator(nn.Module):
+    """
+    Vertical emulator for testing TorchBalance vertical emulators.
+
+    Uses a constant diagonal Jacobian: J[k_out, k_in] = diag_value if k_out == k_in else 0.
+    jac_physical returns [nnodes, nRequestedPairs] as required by setupVerticalEmulator.
+    No input_levels / output_levels attributes — the C++ reads level counts from Atlas field shapes.
+    """
+
+    def __init__(self, n_out_levels: int, n_in_levels: int, diag_value: float = 0.5):
+        super().__init__()
+        jac = torch.zeros(n_out_levels, n_in_levels)
+        for k in range(min(n_out_levels, n_in_levels)):
+            jac[k, k] = diag_value
+        self.register_buffer('jac_matrix', jac)
+        self.n_out_levels = n_out_levels
+        self.n_in_levels = n_in_levels
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        return torch.matmul(inputs, self.jac_matrix.t())
+
+    @torch.jit.export
+    def jac_physical(self, inputs: torch.Tensor, mask: torch.Tensor,
+                     requested_row_indices: torch.Tensor,
+                     requested_col_indices: torch.Tensor) -> torch.Tensor:
+        """
+        Returns only requested Jacobian entries: [nnodes, nRequestedPairs].
+
+        requested_row_indices: 1-D int64 tensor of output level indices.
+        requested_col_indices: 1-D int64 tensor of input level indices into the full input
+        level dimension.
+        """
+        nnodes = inputs.shape[0]
+        req_jac = self.jac_matrix[requested_row_indices, requested_col_indices]
+        jac = req_jac.unsqueeze(0).expand(nnodes, -1).clone()
+        return jac * mask
+
+
+def create_vertical_emulator_with_metadata(
+    output_var_name,
+    input_var_names,
+    n_out_levels,
+    n_in_levels,
+    diag_value=0.5,
+    output_path="vertical_emulator.ts"
+):
+    """
+    Create a TorchScript vertical emulator for TorchBalance vertical emulator tests.
+
+    The emulator has a constant diagonal Jacobian. No input_levels / output_levels
+    attributes are stored — setupVerticalEmulator derives level counts from Atlas fields.
+    """
+    model = VerticalLinearEmulator(n_out_levels=n_out_levels,
+                                   n_in_levels=n_in_levels,
+                                   diag_value=diag_value)
+    model.eval()
+
+    class VerticalEmulatorWithMetadata(torch.nn.Module):
+        def __init__(self, inner, input_names, output_names):
+            super().__init__()
+            self.model = inner
+            self.input_names = torch.jit.Attribute(input_names, List[str])
+            self.output_names = torch.jit.Attribute(output_names, List[str])
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.model(x)
+
+        @torch.jit.export
+        def jac_physical(self, x: torch.Tensor, mask: torch.Tensor,
+                         requested_row_indices: torch.Tensor,
+                         requested_col_indices: torch.Tensor) -> torch.Tensor:
+            return self.model.jac_physical(x, mask, requested_row_indices, requested_col_indices)
+
+    wrapper = VerticalEmulatorWithMetadata(
+        model,
+        input_names=input_var_names,
+        output_names=[output_var_name],
+    )
+    scripted = torch.jit.script(wrapper)
+    scripted.save(output_path)
+
+    print(f"Created vertical emulator: {output_path}")
+    print(f"  Output variable: {output_var_name} ({n_out_levels} levels)")
+    print(f"  Input variables: {input_var_names} ({n_in_levels} levels each)")
+    print(f"  Jacobian: diagonal {diag_value}")
+
+    return scripted
+
+
 def create_test_suite():
     """
     Create a complete test suite with multiple emulators.
@@ -260,7 +349,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Derive output directory from the provided path
-    output_dir = Path(args.output).parent
+    output_dir = Path(args.output)
 
     # Create a complete test suite with multiple emulators
     print("Creating test suite of emulators...\n")
@@ -297,9 +386,31 @@ if __name__ == "__main__":
     )
     print()
 
+    # Vertical emulator: sea_water_salinity from sea_water_potential_temperature
+    # Diagonal Jacobian 0.5 over 4 levels (matches CS-LFR-15 / 4-level test geometry)
+    create_vertical_emulator_with_metadata(
+        output_var_name="sea_water_salinity",
+        input_var_names=["sea_water_potential_temperature"],
+        n_out_levels=4,
+        n_in_levels=4,
+        diag_value=0.5,
+        output_path=str(output_dir / "vertical_emulator.ts")
+    )
+    print()
+
     print("\nTest suite created!")
-    print("\nExpected matrix structure:")
+    print("\nExpected matrix structure (surface):")
     print("                       sst    qv    tair")
     print("  sst                [  I    0.1   0.4  ]")
     print("  qv                 [  0     I     0   ]")
     print("  tair               [ 0.3   0.2    I   ]")
+    print()
+    print("\nVertical emulator (sea_water_salinity w.r.t. sea_water_potential_temperature):")
+    print("  J_sal_temp = 0.5 * I_4  (4x4 diagonal Jacobian block)")
+    print()
+    print("  Full K operator is 8x8, partitioned by variable (temp: levels 0-3, sal: levels 0-3):")
+    print()
+    print("              temp (4 lvls)   sal (4 lvls)")
+    print("  temp (4 lvls) [    I_4           0     ]")
+    print("  sal (4 lvls) [  0.5*I_4         I_4   ]")
+    print()
