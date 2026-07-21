@@ -21,8 +21,8 @@ private
 ! BUMP registry
 #define LIST_KEY_TYPE c_int
 #define LISTED_TYPE bump_type
-#include "tools_linkedlist_interface.fypp"
-type(registry_type) :: bump_registry
+#include "oops/util/linkedList_i.f"
+type(registry_t) :: bump_registry
 
 public :: bump_registry
 
@@ -31,7 +31,7 @@ contains
 !----------------------------------------------------------------------
 ! Linked list implementation
 !----------------------------------------------------------------------
-#include "tools_linkedlist_implementation.fypp"
+#include "oops/util/linkedList_c.f"
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create_c
@@ -60,7 +60,7 @@ type(fckit_configuration) :: f_conf
 
 ! Interface
 f_comm = fckit_mpi_comm(c_comm)
-call bump_registry%init(f_comm)
+call bump_registry%init()
 call bump_registry%add(key_bump)
 call bump_registry%get(key_bump,bump)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
