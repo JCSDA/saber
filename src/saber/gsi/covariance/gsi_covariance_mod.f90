@@ -770,7 +770,7 @@ end subroutine multiply
       ier=0
    end if
    if (trim(vname) == "phis" ) then
-      if (.not.fields%has("geopotential_height_times_gravity_at_surface")) then
+      if (.not.fields%has("geopotential_at_surface")) then
          if (fields%has("geopotential_height_at_surface")) then
             afield = fields%field("geopotential_height_at_surface")
             call afield%data(rank2)
@@ -780,7 +780,7 @@ end subroutine multiply
             return
          end if
       else
-         afield = fields%field("geopotential_height_times_gravity_at_surface")
+         afield = fields%field("geopotential_at_surface")
          call afield%data(rank2)
          ier=0
       end if
