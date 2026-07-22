@@ -490,7 +490,11 @@ sinlat_f = sin(lat_f)
 ! Compute bearing
 x = coslat_f*sindlon
 y = coslat_i*sinlat_f-sinlat_i*coslat_f*cosdlon
-bearing = atan2(y,x)
+if ((abs(y)>zero).or.(abs(x)>zero)) then
+  bearing = atan2(y,x)
+else
+  bearing = zero
+endif
 
 ! Probe out
 @:probe_out()
