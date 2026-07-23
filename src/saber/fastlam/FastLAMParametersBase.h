@@ -30,8 +30,10 @@ class ValueOrProfileParameters : public oops::Parameters {
  public:
   // Group
   oops::RequiredParameter<std::string> group{"group", this};
+
   // Value
   oops::OptionalParameter<double> value{"value", this};
+
   // Profile
   oops::OptionalParameter<std::vector<double>> profile{"profile", this};
 };
@@ -61,6 +63,7 @@ class SpecWgtParameters : public oops::Parameters {
  public:
   // Variables pair
   oops::RequiredParameter<std::vector<std::string>> variablesPair{"variables pair", this};
+
   // Weight
   oops::RequiredParameter<double> weight{"weight", this};
 };

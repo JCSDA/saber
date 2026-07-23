@@ -140,6 +140,18 @@ void LayerBase::setupVerticalCoord(const atlas::Field & rvField,
       rv[jz0] = rv[jz0]/wgt[jz0];
     }
 
+    // Compute thickness
+    thickness_.resize(nz0_, 0.0);
+    for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
+      if (jz0 == 0) {
+        thickness_[jz0] = std::abs(vertCoord[jz0+1]-vertCoord[jz0]);
+      } else if (jz0 == nz0_-1) {
+        thickness_[jz0] = std::abs(vertCoord[jz0]-vertCoord[jz0-1]);
+      } else {
+        thickness_[jz0] = 0.5*std::abs(vertCoord[jz0+1]-vertCoord[jz0-1]);
+      }
+    }
+
     // Check if vertical length-scale is positive
     bool posRv = true;
     for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
@@ -150,23 +162,11 @@ void LayerBase::setupVerticalCoord(const atlas::Field & rvField,
     }
 
     if (posRv) {
-      // Compute thickness
-      std::vector<double> thickness(nz0_, 0.0);
-      for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
-        if (jz0 == 0) {
-          thickness[jz0] = std::abs(vertCoord[jz0+1]-vertCoord[jz0]);
-        } else if (jz0 == nz0_-1) {
-          thickness[jz0] = std::abs(vertCoord[jz0]-vertCoord[jz0-1]);
-        } else {
-          thickness[jz0] = 0.5*std::abs(vertCoord[jz0+1]-vertCoord[jz0-1]);
-        }
-      }
-
       // Normalize thickness with vertical length-scale
       std::vector<double> normThickness(nz0_, 0.0);
       for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
         ASSERT(rv[jz0] > 0.0);
-        normThickness[jz0] = thickness[jz0]/rv[jz0];
+        normThickness[jz0] = thickness_[jz0]/rv[jz0];
       }
 
       // Compute normalized vertical coordinate
@@ -396,8 +396,7 @@ void LayerBase::setupInterpolation() {
     const double radius = std::sqrt(dxCoord*dxCoord+dyCoord*dyCoord);
 
     // RecvCounts and received points list
-    mRecvCounts_.resize(comm_.size());
-    std::fill(mRecvCounts_.begin(), mRecvCounts_.end(), 0);
+    mRecvCounts_.resize(comm_.size(), 0);
     std::vector<int> mRecvPointsList;
     if (mSize_ > 0) {
       for (size_t jy = 0; jy < ny_; ++jy) {
@@ -884,14 +883,11 @@ void LayerBase::setupNormalization() {
   xNormSize_ = (xKernelSize_-1)/2;
   yNormSize_ = (yKernelSize_-1)/2;
   zNormSize_ = (zKernelSize_-1)/2;
-  xNorm_.resize(xNormSize_);
-  yNorm_.resize(yNormSize_);
-  zNorm_.resize(zNormSize_);
+  xNorm_.resize(xNormSize_, 0.0);
+  yNorm_.resize(yNormSize_, 0.0);
+  zNorm_.resize(zNormSize_, 0.0);
 
   // Compute boundary normalization
-  std::fill(xNorm_.begin(), xNorm_.end(), 0.0);
-  std::fill(yNorm_.begin(), yNorm_.end(), 0.0);
-  std::fill(zNorm_.begin(), zNorm_.end(), 0.0);
   for (size_t jnx = 0; jnx < xNormSize_; ++jnx) {
     for (size_t jkx = xNormSize_-jnx; jkx < xKernelSize_; ++jkx) {
       xNorm_[jnx] += xKernel_[jkx]*xKernel_[jkx];

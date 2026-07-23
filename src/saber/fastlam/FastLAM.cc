@@ -1606,6 +1606,9 @@ void FastLAM::setupReducedGrids() {
 
   // Initialize sampling length-scales
   if (params_.srhFromYaml.value()) {
+    // Copy srh from yaml
+    double srh = *params_.srhFromYaml.value();
+
     // Ghost points
     const auto ghostView = atlas::array::make_view<int, 1>(geometryData().functionSpace().ghost());
 
@@ -1621,8 +1624,7 @@ void FastLAM::setupReducedGrids() {
     comm_.allReduceInPlace(minCellSize, eckit::mpi::min());
     comm_.allReduceInPlace(maxCellSize, eckit::mpi::max());
 
-    // Average value
-    double srh = *params_.srhFromYaml.value();
+    // Normalize srh
     srh = 0.5*(srh/minCellSize + srh/maxCellSize);
 
     // Copy input value to srh_
@@ -1640,10 +1642,39 @@ void FastLAM::setupReducedGrids() {
     }
   }
   if (params_.srvFromYaml.value()) {
-    // Copy input value to srv_
     for (size_t jg = 0; jg < groups_.size(); ++jg) {
       for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
-        data_[jg][jBin]->srv() = *params_.srvFromYaml.value();
+        // Copy srv from yaml
+        double srv = *params_.srvFromYaml.value();
+
+        if (srv > 0.0) {
+          // Normalize thickness with vertical length-scale
+          std::vector<double> normThickness(groups_[jg].nz0_, 0.0);
+          for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+            normThickness[jz0] = data_[jg][jBin]->thickness()[jz0]/srv;
+          }
+
+          // Compute normalized vertical coordinate
+          std::vector<double> normVertCoord(groups_[jg].nz0_, 0.0);
+          for (size_t jz0 = 1; jz0 < groups_[jg].nz0_; ++jz0) {
+            normVertCoord[jz0] = normVertCoord[jz0-1]+0.5*(normThickness[jz0]+normThickness[jz0-1]);
+          }
+
+          // Rescale normalized vertical coordinate from 0 to groups_[jg].nz0_-1
+          const double maxNormVertCoord = normVertCoord[groups_[jg].nz0_-1];
+          for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+            normVertCoord[jz0] = normVertCoord[jz0]/maxNormVertCoord*
+              static_cast<double>(groups_[jg].nz0_-1);
+          }
+
+          // Save rescaled vertical length-scale
+          srv = static_cast<double>(groups_[jg].nz0_-1)/maxNormVertCoord;
+        } else {
+          srv = 0.0;
+        }
+
+        // Copy input value to srv_
+        data_[jg][jBin]->srv() = srv;
       }
     }
   } else {
@@ -1686,6 +1717,9 @@ void FastLAM::setupReducedGrids() {
         static_cast<size_t>(static_cast<double>(ny0Bkg_-1)/rfh[jg])+2);
       data_[jg][jBin]->nz() = std::min(groups_[jg].nz0_,
         static_cast<size_t>(static_cast<double>(groups_[jg].nz0_-1)/rfv[jg])+2);
+      oops::Log::info() << "Info     : Subgrid for group " << groups_[jg].name_
+        << ", layer #" << (jBin+1) << ": " << data_[jg][jBin]->nx() << " x "
+        << data_[jg][jBin]->ny() << " x " << data_[jg][jBin]->nz() << std::endl;
     }
   }
 
@@ -1704,8 +1738,9 @@ void FastLAM::setupCtlVecSize() {
   for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
     // Loop over groups
     for (size_t jg = 0; jg < groups_.size(); ++jg) {
-      if (params_.strategy.value() == "univariate") {
-        // Univariate strategy
+      if ((params_.strategy.value() == "univariate")
+        || (params_.strategy.value() == "duplicated and weighted")) {
+        // Univariate or duplicated and weighted strategy
         ctlVecSize_ += data_[jg][jBin]->ctlVecSize()*groups_[jg].variables_.size();
       } else if (params_.strategy.value() == "duplicated") {
         // Duplicated strategy
@@ -1747,8 +1782,8 @@ void FastLAM::setupGlbIndex() {
       comm_.allReduce(static_cast<int>(data_[jg][jBin]->ctlVecSize()), ctlVecGlbSize,
         eckit::mpi::sum());
 
-      if (params_.strategy.value() == "univariate") {
-        // Univariate strategy
+      if ((params_.strategy.value() == "univariate")
+        || (params_.strategy.value() == "duplicated and weighted")) {
         for (size_t jvar = 0; jvar < groups_[jg].variables_.size(); ++jvar) {
           for (size_t jcv = 0; jcv < data_[jg][jBin]->ctlVecSize(); ++jcv) {
             glbIndex_.push_back(partialGlbIndex[jcv]+offset);

@@ -738,7 +738,7 @@ void LayerHalo::vertNormalization(atlas::Field & field) const {
 void LayerHalo::multiplyRedSqrt(atlas::Field & redField) const {
   oops::Log::trace() << classname() << "::multiplyRedSqrt starting" << std::endl;
 
-  if (nz_ > 1) {
+  if ((nz_ > 1) && (zKernelSize_ > 1)) {
     // Apply vertical kernel
     vertConvolution(redField);
 
@@ -778,7 +778,7 @@ void LayerHalo::multiplyRedSqrtTrans(atlas::Field & redField) const {
   // Apply kernel on columns
   colsConvolutionAD(redField);
 
-  if (nz_ > 1) {
+  if ((nz_ > 1) && (zKernelSize_ > 1)) {
     // Apply vertical normalization
     vertNormalization(redField);
 

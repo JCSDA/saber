@@ -842,7 +842,7 @@ void LayerRC::multiplyRedSqrt(const atlas::Field & colsField,
                          atlas::array::make_datatype<double>(),
                          atlas::array::make_shape(nx_, nyPerTask_[myrank_], nz_));
 
-  if (nz_ > 1) {
+  if ((nz_ > 1) && (zKernelSize_ > 1)) {
     // Apply vertical kernel
     vertConvolution(colsFieldTmp);
 
@@ -899,7 +899,7 @@ void LayerRC::multiplyRedSqrtTrans(const atlas::Field & redField,
   // Apply kernel on columns
   colsConvolution(colsField);
 
-  if (nz_ > 1) {
+  if ((nz_ > 1) && (zKernelSize_ > 1)) {
     // Apply vertical normalization
     vertNormalization(colsField);
 

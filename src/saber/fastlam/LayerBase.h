@@ -91,6 +91,7 @@ class LayerBase : public util::Printable,
   void writeData(const std::array<int, 8> &) const;
 
   // Accessors
+  const std::vector<double> & thickness() const {return thickness_;}
   double & rh() {return rh_;}
   const double & rh() const {return rh_;}
   double & rv() {return rv_;}
@@ -136,6 +137,7 @@ class LayerBase : public util::Printable,
   size_t ny0_;
   size_t mSize_;
   size_t nz0_;
+  std::vector<double> thickness_;
 
   // Resolution
   double resol_;
