@@ -4169,7 +4169,7 @@ c_n_s = 0
 S_tot = zero
 
 ! Compute weights
-!$omp parallel do schedule(static) private(isb,isu,ithread,jl1,jbd,jc1u,jsu,S)
+!$omp parallel do schedule(static) private(isb,isu,ithread,jl1,jbd,jc1u,jsu,S,isa)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
