@@ -323,7 +323,7 @@ integer :: ier
 !  call gsiguess_bkgcov_final()
 !  call gsibec_final_guess()
 !  call gsibec_final(.false.)
-!endif
+!end if
 
 ! Delete the grid
 ! ---------------
@@ -756,7 +756,7 @@ end subroutine multiply
 !     afield = fields%field('cloud_water')
 !     call afield%data(rank2)
 !     ier=0
-!  endif
+!  end if
    if (trim(vname) == "oz" .or. trim(vname) == "o3ppmv" ) then
       if (.not.fields%has("mole_fraction_of_ozone_in_air")) return
       afield = fields%field("mole_fraction_of_ozone_in_air")
@@ -800,6 +800,27 @@ end subroutine multiply
    if (trim(vname) == "frseaice" ) then
       if (.not.fields%has("fraction_of_ice")) return
       afield = fields%field("fraction_of_ice")
+      call afield%data(rank2)
+      ier=0
+   end if
+   if (trim(vname) == "ext1" .or. &
+      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda1") then
+      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda1")) return
+      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda1")
+      call afield%data(rank2)
+      ier=0
+   end if
+   if (trim(vname) == "ext2" .or. &
+      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda2") then
+      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda2")) return
+      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda2")
+      call afield%data(rank2)
+      ier=0
+   end if
+   if (trim(vname) == "ext3" .or. &
+      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda3") then
+      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda3")) return
+      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda3")
       call afield%data(rank2)
       ier=0
    end if
@@ -1032,64 +1053,10 @@ end subroutine multiply
        end where
    end if
 
-   if (any(need=="tsen")) then
-       if (any(need=="filled-tv")) then ! when TV is available; it should not need tsen
-         where(need=="tsen")  ! gsi will take care of this
-            need="filled-"//need
-         end where
-       end if
-   end if
-
    if (any(need=="tv")) then
-     do ii=1,ntimes
-      ! from first guess ...
-      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),"q" ,q ,ier)
-      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),"tv",tv,ier)
-      ! from GSI cv ...
-      call gsi_bundlegetpointer(gsisv(ii),"q" ,q_pt ,ier)
-      call gsi_bundlegetpointer(gsisv(ii),"tv",tv_pt,ier)
-      ! from JEDI cv ...
-      call get_rank2_(rank2,jedicv(ii),"t",ier)
-      npz=size(q,3)
-      allocate(t_pt(size(q,1),size(q,2),size(q,3)))
-      if (vflip) then
-         do k=1,npz
-            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,npz-k+1))
-         end do
-      else
-         do k=1,npz
-            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,k))
-         end do
-      end if
-      ! retrieve missing field
-      if(which=="tlm") then
-        call gsi_tv_to_t_tl(tv,tv_pt,q,q_pt,t_pt)
-        where(need=="tv")
-           need="filled-"//need
-        end where
-        ! pass it back to JEDI ...
-        allocate(aux1(size(rank2,2)))
-        if (vflip) then
-           do k=1,npz
-              call gsi_to_atlas_(t_pt(:,:,k),aux1)
-              rank2(npz-k+1,:)=aux1
-           end do
-        else
-           do k=1,npz
-              call gsi_to_atlas_(t_pt(:,:,k),aux1)
-              rank2(k,:)=aux1
-           end do
-        end if
-        deallocate(aux1)
-      end if
-      if(which=="adm") then
-        call gsi_tv_to_t_ad(tv,tv_pt,q,q_pt,t_pt)
-        where(need=="tv")
-           need="filled-"//need
-        end where
-      end if
-      deallocate(t_pt)
-     end do
+     where(need=="tv")
+       need="filled-"//need
+     end where
    end if
    end subroutine svfix_
 

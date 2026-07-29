@@ -95,7 +95,7 @@ find_package( vader 1.10.0 REQUIRED )
 find_package( ECTRANS 1.6.0 COMPONENTS transi double QUIET ) # TODO(Benjamin): update tag once the ectrans PR is merged and a new tag is created
 find_package( FFTW 3.3.8 QUIET )
 find_package( ip 5 QUIET )
-find_package( gsibec 1.4.2 QUIET )
+find_package( gsibec 1.4.4 QUIET )
 
 # Torch
 if( DEFINED Torch_ROOT AND NOT Torch_ROOT STREQUAL "")
