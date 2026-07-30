@@ -43,7 +43,7 @@ background error:
         variables:
         - eastward_wind
         - northward_wind
-        saber central block:
+        group central block:
           saber block name: BUMP_NICAS
           calibration:
             general:
@@ -72,7 +72,7 @@ background error:
         variables:
         - air_horizontal_streamfunction
         - air_pressure_at_surface
-        saber central block:
+        group central block:
           saber block name: diffusion
           calibration:
             normalization:
