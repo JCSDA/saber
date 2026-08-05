@@ -123,7 +123,7 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
   // - Crossed: the localization of each group is to the sum of all the fields of the group,
   //   the result is split into the different fields. All the groups share the same control
   //   vector: square-root formulation is necessary.
-  ASSERT(strategy_ == "deprecated" ||
+  ASSERT(strategy_ == "single" ||
          strategy_ == "univariate" ||
          strategy_ == "duplicated" ||
          strategy_ == "duplicated and weighted" ||
@@ -132,13 +132,13 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
   oops::Log::info() << "Info     : SaberCentralBlock using multivariate strategy: "
                     << strategy_ << std::endl;
   // Check if it's a single group
-  if (params.singleBlock.value() && (strategy_ != "deprecated")) {
+  if (params.singleBlock.value() && (strategy_ != "single")) {
     throw eckit::UserError("SaberCentralBlock: single block can only be used with the "
-                           "'deprecated' strategy.", Here());
+                           "'single' strategy.", Here());
   }
-  if (strategy_ == "deprecated" && params.groups.value() &&
+  if (strategy_ == "single" && params.groups.value() &&
              (params.groups.value().get().size() > 1)) {
-    throw eckit::UserError("SaberCentralBlock: 'deprecated' strategy can only be used with "
+    throw eckit::UserError("SaberCentralBlock: 'single' strategy can only be used with "
                            "a single block.", Here());
   }
   if (params.singleBlock.value() && params.groups.value()) {
@@ -161,9 +161,9 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
     doRead_.push_back(params.singleBlock.value()->doRead());
     forceWrite_.push_back(params.singleBlock.value()->forceWrite.value());
 
-    // Append empty auxiliary outer block chain
+    // Append empty outer block chain
     std::unique_ptr<SaberOuterBlockChain> emptyOuterBlockChainPtr;
-    groupAuxOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
+    groupOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
 
     // Append group central block
     groupCentralBlocks_.push_back(SaberCentralBlockFactory::create(outerGeom,
@@ -283,29 +283,29 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
       doRead_.push_back(groupParams.centralBlockParams().doRead());
       forceWrite_.push_back(groupParams.centralBlockParams().forceWrite.value());
 
-      if (groupParams.auxOuterBlocksParams.value()) {
-        // Append group auxiliary outer block chain
+      if (groupParams.outerBlocks.value()) {
+        // Append group outer block chain
         oops::FieldSet4D fset4dXb(xb);
         oops::FieldSet4D fset4dFg(fg);
-        groupAuxOuterBlockChains_.push_back(std::make_unique<SaberOuterBlockChain>(outerGeom,
+        groupOuterBlockChains_.push_back(std::make_unique<SaberOuterBlockChain>(outerGeom,
             groupInnerVars_.back(),
             fset4dXb,
             fset4dFg,
             covarConf,
-            *groupParams.auxOuterBlocksParams.value()));
+            *groupParams.outerBlocks.value()));
       } else {
-        // Append empty auxiliary outer block chain
+        // Append empty outer block chain
         std::unique_ptr<SaberOuterBlockChain> emptyOuterBlockChainPtr;
-        groupAuxOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
+        groupOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
       }
 
       // Set outer geometry data for central block
-      const oops::GeometryData & currentOuterGeom = groupAuxOuterBlockChains_.back() ?
-                             groupAuxOuterBlockChains_.back()->innerGeometryData() : outerGeom;
+      const oops::GeometryData & currentOuterGeom = groupOuterBlockChains_.back() ?
+                             groupOuterBlockChains_.back()->innerGeometryData() : outerGeom;
 
       // Set outer variables for central block
-      const oops::Variables currentOuterVars = groupAuxOuterBlockChains_.back() ?
-                             groupAuxOuterBlockChains_.back()->innerVars() : groupInnerVars_.back();
+      const oops::Variables currentOuterVars = groupOuterBlockChains_.back() ?
+                             groupOuterBlockChains_.back()->innerVars() : groupInnerVars_.back();
 
       // Append group central block
       groupCentralBlocks_.push_back(SaberCentralBlockFactory::create(currentOuterGeom,
@@ -377,145 +377,152 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
 void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
   oops::Log::trace() << "SaberCentralBlock::multiply starting" << std::endl;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  if (strategy_ == "single") {
+    // Single mode
     groupCentralBlocks_[0]->multiply(fset3d);
-  } else {
-    if (strategy_ == "univariate") {
-      // Univariate strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate strategy or duplicated and weighted strategy
+    if (strategy_ == "duplicated and weighted") {
+      // Apply weights, adjoint
+      applyWeightsAD(fset3d);
+    }
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
 
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
 
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Create an empty FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-
-          // Clone input field
-          auto inputField = fset3d[var.name()].clone();
-
-          // Add field to empty FieldSet3D
-          fset3dTmp.add(inputField);
-
-          // Rename field with the name of the group
-          inputField.rename(groupNames_[igroup]);
-
-          // Multiply
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
-          groupCentralBlock->multiply(fset3dTmp);
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
-
-          // Get output field
-          const auto outputField = fset3dTmp[groupNames_[igroup]];
-
-          // Copy content to input FieldSet3D
-          const auto outputView = make_view<double, 2>(outputField);
-          auto view = make_view<double, 2>(fset3d[var.name()]);
-          view.assign(outputView);
-        }
-      }
-    } else if (strategy_ == "duplicated") {
-      // Duplicated strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        // Create a FieldSet3D
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Create an empty FieldSet3D
         oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-        fset3dTmp.init(geometryData_.functionSpace(), groupInnerVars_[igroup]);
-        fset3dTmp.zero();
 
-        // Get input reference field
-        auto inputRefField = fset3dTmp[groupNames_[igroup]];
+        // Clone input field
+        auto inputField = fset3d[var.name()].clone();
 
-        // Get input reference field view
-        auto inputRefView = make_view<double, 2>(inputRefField);
+        // Add field to empty FieldSet3D
+        fset3dTmp.add(inputField);
 
-        // Sum of fields
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Get field
-          const auto field = fset3d[var.name()];
-
-          // Get field view
-          const auto view = make_view<double, 2>(field);
-
-          // Get first level
-          const int firstLevel = firstLevel_.at(var.name());
-
-          // Check whether the field is a 2D field added to a reference 3D field
-          if ((inputRefField.levels() > 1) && (field.levels() == 1)) {
-            // 2D level only
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              inputRefView(jnode, firstLevel) += view(jnode, 0);
-            }
-          } else {
-            // All levels
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                inputRefView(jnode, firstLevel+jlevel) += view(jnode, jlevel);
-              }
-            }
-          }
-        }
+        // Rename field with the name of the group
+        inputField.rename(groupNames_[igroup]);
 
         // Multiply
-        if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
         groupCentralBlock->multiply(fset3dTmp);
-        if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
 
-        // Get output reference field
-        const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+        // Get output field
+        const auto outputField = fset3dTmp[groupNames_[igroup]];
 
-        // Get output reference field view
-        const auto outputRefView = make_view<double, 2>(outputRefField);
+        // Copy content to input FieldSet3D
+        const auto outputView = make_view<double, 2>(outputField);
+        auto view = make_view<double, 2>(fset3d[var.name()]);
+        view.assign(outputView);
+      }
+    }
+    if (strategy_ == "duplicated and weighted") {
+      // Apply weights
+      applyWeights(fset3d);
+    }
+  } else if (strategy_ == "duplicated") {
+    // Duplicated strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
 
-        // Split field
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Get field
-          auto field = fset3d[var.name()];
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
 
-          // Get field view
-          auto view = make_view<double, 2>(field);
+      // Create a FieldSet3D
+      oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
+      fset3dTmp.init(geometryData_.functionSpace(), groupInnerVars_[igroup]);
+      fset3dTmp.zero();
 
-          // Get first level
-          const int firstLevel = firstLevel_.at(var.name());
+      // Get input reference field
+      auto inputRefField = fset3dTmp[groupNames_[igroup]];
 
-          // Check whether the field is a 2D field added to a reference 3D field
-          if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
-            // 2D level only
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              view(jnode, 0) = outputRefView(jnode, firstLevel);
-            }
-          } else {
-            // All levels
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
-              }
+      // Get input reference field view
+      auto inputRefView = make_view<double, 2>(inputRefField);
+
+      // Sum of fields
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Get field
+        const auto field = fset3d[var.name()];
+
+        // Get field view
+        const auto view = make_view<double, 2>(field);
+
+        // Get first level
+        const int firstLevel = firstLevel_.at(var.name());
+
+        // Check whether the field is a 2D field added to a reference 3D field
+        if ((inputRefField.levels() > 1) && (field.levels() == 1)) {
+          // 2D level only
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            inputRefView(jnode, firstLevel) += view(jnode, 0);
+          }
+        } else {
+          // All levels
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              inputRefView(jnode, firstLevel+jlevel) += view(jnode, jlevel);
             }
           }
         }
       }
-    } else if ((strategy_ == "duplicated and weighted") || (strategy_ == "crossed")) {
-      // Crossed strategy or duplicated and weighted strategy
-      // Initialization
-      atlas::Field ctlVec = atlas::Field("genericCtlVec", make_datatype<double>(),
-        make_shape(ctlVecSize()));
 
-      // Apply multiplySqrtAD
-      multiplySqrtAD(fset3d, ctlVec, 0);
+      // Multiply
+      if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
+      groupCentralBlock->multiply(fset3dTmp);
+      if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
 
-      // Apply multiplySqrt
-      multiplySqrt(ctlVec, fset3d, 0);
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
+      // Get output reference field
+      const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+
+      // Get output reference field view
+      const auto outputRefView = make_view<double, 2>(outputRefField);
+
+      // Split field
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Get field
+        auto field = fset3d[var.name()];
+
+        // Get field view
+        auto view = make_view<double, 2>(field);
+
+        // Get first level
+        const int firstLevel = firstLevel_.at(var.name());
+
+        // Check whether the field is a 2D field added to a reference 3D field
+        if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
+          // 2D level only
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            view(jnode, 0) = outputRefView(jnode, firstLevel);
+          }
+        } else {
+          // All levels
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
+            }
+          }
+        }
+      }
     }
+  } else if (strategy_ == "crossed") {
+    // Crossed strategy
+
+    // Initialization
+    atlas::Field ctlVec = atlas::Field("genericCtlVec", make_datatype<double>(),
+      make_shape(ctlVecSize()));
+
+    // Apply multiplySqrtAD
+    multiplySqrtAD(fset3d, ctlVec, 0);
+
+    // Apply multiplySqrt
+    multiplySqrt(ctlVec, fset3d, 0);
+  } else {
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   oops::Log::trace() << "SaberCentralBlock::multiply done" << std::endl;
@@ -526,47 +533,19 @@ void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
 void SaberCentralBlock::randomize(oops::FieldSet3D & fset3d) const {
   oops::Log::trace() << "SaberCentralBlock::randomize starting" << std::endl;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  if (strategy_ == "single") {
+    // Single mode
     groupCentralBlocks_[0]->randomize(fset3d);
-  } else {
-    if (strategy_ == "univariate") {
-      // Univariate strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate strategy or duplicated and weighted strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
 
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
 
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Create a FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-          fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
-                         groupCentralBlock->centralVars());
-
-          // Randomize
-          groupCentralBlock->randomize(fset3dTmp);
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
-
-          // Get output field
-          const auto outputField = fset3dTmp[groupNames_[igroup]];
-
-          // Copy content to input FieldSet3D
-          const auto outputView = make_view<double, 2>(outputField);
-          auto view = make_view<double, 2>(fset3d[var.name()]);
-          view.assign(outputView);
-        }
-      }
-    } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
-      // Duplicated strategy or crossed strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
+      for (const auto & var : groupInputVars_[igroup]) {
         // Create a FieldSet3D
         oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
         fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
@@ -574,93 +553,89 @@ void SaberCentralBlock::randomize(oops::FieldSet3D & fset3d) const {
 
         // Randomize
         groupCentralBlock->randomize(fset3dTmp);
-        if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
 
-        // Get output reference field
-        const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+        // Get output field
+        const auto outputField = fset3dTmp[groupNames_[igroup]];
 
-        // Get output reference field view
-        const auto outputRefView = make_view<double, 2>(outputRefField);
-
-        // Split field
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Get field
-          auto field = fset3d[var.name()];
-
-          // Get field view
-          auto view = make_view<double, 2>(field);
-
-          // Get first level
-          const int firstLevel = firstLevel_.at(var.name());
-
-          // Check whether the field is a 2D field added to a reference 3D field
-          if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
-            // 2D level only
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              view(jnode, 0) = outputRefView(jnode, firstLevel);
-            }
-          } else {
-            // All levels
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
-              }
-            }
-          }
-        }
+        // Copy content to input FieldSet3D
+        const auto outputView = make_view<double, 2>(outputField);
+        auto view = make_view<double, 2>(fset3d[var.name()]);
+        view.assign(outputView);
       }
-    } else if (strategy_ == "duplicated and weighted") {
-      // Duplicated and weighted strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        // Get variables
-        const auto vars = groupInputVars_[igroup];
-
-        for (size_t jvarI = 0; jvarI < vars.size(); ++jvarI) {
-          // Get variable
-          const auto varI = vars[jvarI];
-
-          // Create a FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-          fset3dTmp.init(geometryData_.functionSpace(), groupInnerVars_[igroup]);
-
-          // Randomize
-          groupCentralBlock->randomize(fset3dTmp);
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
-
-          // Get field
-          const auto field = fset3dTmp[groupNames_[igroup]];
-
-          // Get field view
-          const auto view = make_view<double, 2>(field);
-
-          for (size_t jvarJ = jvarI; jvarJ < vars.size(); ++jvarJ) {
-            // Get variable
-            const auto varJ = vars[jvarJ];
-
-            // Get other field
-            atlas::Field otherField = fset3d[varJ.name()];
-
-            // Get other field view
-            auto otherView = make_view<double, 2>(otherField);
-
-            // Sum weighted off-diagonal fields
-            for (int jnode = 0; jnode < otherField.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < otherField.shape(1); ++jlevel) {
-                otherView(jnode, jlevel) += wgtSqrt_[igroup](jvarJ, jvarI)*view(jnode, jlevel);
-              }
-            }
-          }
-        }
-      }
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
     }
+    if (strategy_ == "duplicated and weighted") {
+      // Apply weights
+      applyWeights(fset3d);
+    }
+  } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
+    // Duplicated strategy or crossed strategy
+    atlas::Field cv;
+    if (strategy_ == "crossed") {
+      // Create control vector
+      cv = atlas::Field("genericCtlVec", atlas::array::make_datatype<double>(),
+        atlas::array::make_shape(ctlVecSize()));
+
+      // Generate random control vector
+      randomCtlVec(cv, 0);
+    }
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
+
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
+
+      // Create a FieldSet3D
+      oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
+      fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
+                     groupCentralBlock->centralVars());
+
+      // Randomize
+      if (strategy_ == "crossed") {
+        // Square-root multiply
+        groupCentralBlock->multiplySqrt(cv, fset3d, 0);
+      } else if (strategy_ == "duplicated") {
+        // Independent randomization for each group
+        groupCentralBlock->randomize(fset3dTmp);
+      }
+      if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
+
+      // Get output reference field
+      const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+
+      // Get output reference field view
+      const auto outputRefView = make_view<double, 2>(outputRefField);
+
+      // Split field
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Get field
+        auto field = fset3d[var.name()];
+
+        // Get field view
+        auto view = make_view<double, 2>(field);
+
+        // Get first level
+        const int firstLevel = firstLevel_.at(var.name());
+
+        // Check whether the field is a 2D field added to a reference 3D field
+        if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
+          // 2D level only
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            view(jnode, 0) = outputRefView(jnode, firstLevel);
+          }
+        } else {
+          // All levels
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
+            }
+          }
+        }
+      }
+    }
+  } else {
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   oops::Log::trace() << "SaberCentralBlock::randomize done" << std::endl;
@@ -681,8 +656,8 @@ void SaberCentralBlock::read() {
 void SaberCentralBlock::directCalibration(const oops::FieldSets & fsets) {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
-      if (groupAuxOuterBlockChains_[igroup]) {
-        // Applying the left inverse of the auxiliary outer block chain would require a deep-copy
+      if (groupOuterBlockChains_[igroup]) {
+        // Applying the left inverse of the outer block chain would require a deep-copy
         // of the ensemble, not allowed here. If needed, ensemble-based calibration should be done
         // outside of the multivariate central block framework.
         ASSERT(fsets.size() == 0);
@@ -698,7 +673,7 @@ void SaberCentralBlock::directCalibration(const oops::FieldSets & fsets) {
 void SaberCentralBlock::iterativeCalibrationInit() {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
-      ASSERT(!groupAuxOuterBlockChains_[igroup]);
+      ASSERT(!groupOuterBlockChains_[igroup]);
       groupCentralBlocks_[igroup]->iterativeCalibrationInit();
     }
   }
@@ -709,7 +684,7 @@ void SaberCentralBlock::iterativeCalibrationInit() {
 void SaberCentralBlock::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
-      ASSERT(!groupAuxOuterBlockChains_[igroup]);
+      ASSERT(!groupOuterBlockChains_[igroup]);
       groupCentralBlocks_[igroup]->iterativeCalibrationUpdate(fset);
     }
   }
@@ -720,7 +695,7 @@ void SaberCentralBlock::iterativeCalibrationUpdate(const oops::FieldSet3D & fset
 void SaberCentralBlock::iterativeCalibrationFinal() {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
-      ASSERT(!groupAuxOuterBlockChains_[igroup]);
+      ASSERT(!groupOuterBlockChains_[igroup]);
       groupCentralBlocks_[igroup]->iterativeCalibrationFinal();
     }
   }
@@ -740,34 +715,26 @@ size_t SaberCentralBlock::ctlVecSize() const {
   // Initialize control vector size
   size_t ctlVecSize = 0;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  if (strategy_ == "single") {
+    // Single mode
+    ctlVecSize += groupCentralBlocks_[0]->ctlVecSize();
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Add the group control vector size for each variable
+      ctlVecSize += groupCentralBlocks_[igroup]->ctlVecSize()*groupInputVars_[igroup].size();
+    }
+  } else if (strategy_ == "duplicated") {
+    // Duplicated strategy
+    for (const auto & groupCentralBlock : groupCentralBlocks_) {
+      // Add the group control vector
+      ctlVecSize += groupCentralBlock->ctlVecSize();
+    }
+  } else if (strategy_ == "crossed") {
+    // Crossed strategy
     ctlVecSize += groupCentralBlocks_[0]->ctlVecSize();
   } else {
-    if (strategy_ == "univariate") {
-      // Univariate strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Add the group control vector size for each variable
-        ctlVecSize += groupCentralBlocks_[igroup]->ctlVecSize()*groupInputVars_[igroup].size();
-      }
-    } else if (strategy_ == "duplicated") {
-      // Duplicated strategy
-      for (const auto & groupCentralBlock : groupCentralBlocks_) {
-        // Add the group control vector
-        ctlVecSize += groupCentralBlock->ctlVecSize();
-      }
-    } else if (strategy_ == "duplicated and weighted") {
-      // Duplicated and weighted strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Add the group control vector size for each variable
-        ctlVecSize += groupCentralBlocks_[igroup]->ctlVecSize()*groupInputVars_[igroup].size();
-      }
-    } else if (strategy_ == "crossed") {
-      // Crossed strategy
-      ctlVecSize += groupCentralBlocks_[0]->ctlVecSize();
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
-    }
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   // Return control vector size
@@ -780,38 +747,37 @@ void SaberCentralBlock::randomCtlVec(atlas::Field & cv,
                                      const size_t & offset) const {
   oops::Log::trace() << "SaberCentralBlock::randomCtlVec starting" << std::endl;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  // Initialize index
+  size_t index = offset;
+
+  if (strategy_ == "single") {
+    // Single mode
     groupCentralBlocks_[0]->randomCtlVec(cv, offset);
-  } else {
-    // Initialize index
-    size_t index = offset;
-
-    if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
-      // Univariate or duplicated and weighted strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        for (size_t jvar = 0; jvar < groupInputVars_[igroup].size(); ++jvar) {
-          // Apply localization
-          groupCentralBlocks_[igroup]->randomCtlVec(cv, index);
-
-          // Update index
-          index += groupCentralBlocks_[igroup]->ctlVecSize();
-        }
-      }
-    } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
-      // Duplicated strategy or crossed strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Apply localization
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate or duplicated and weighted strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      for (size_t jvar = 0; jvar < groupInputVars_[igroup].size(); ++jvar) {
+        // Get random control vector
         groupCentralBlocks_[igroup]->randomCtlVec(cv, index);
 
-        if (strategy_ == "duplicated") {
-          // Update index
-          index += groupCentralBlocks_[igroup]->ctlVecSize();
-        }
+        // Update index
+        index += groupCentralBlocks_[igroup]->ctlVecSize();
       }
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
     }
+  } else if (strategy_ == "duplicated") {
+    // Duplicated strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get random control vector
+      groupCentralBlocks_[igroup]->randomCtlVec(cv, index);
+
+      // Update index
+      index += groupCentralBlocks_[igroup]->ctlVecSize();
+    }
+  } else if (strategy_ == "crossed") {
+    // Crossed strategy
+    groupCentralBlocks_[0]->randomCtlVec(cv, 0);
+  } else {
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   oops::Log::trace() << "SaberCentralBlock::randomCtlVec done" << std::endl;
@@ -824,53 +790,22 @@ void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
                                      const size_t & offset) const {
   oops::Log::trace() << "SaberCentralBlock::multiplySqrt starting" << std::endl;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  // Initialize index
+  size_t index = offset;
+
+  if (strategy_ == "single") {
+    // Single mode
     groupCentralBlocks_[0]->multiplySqrt(cv, fset3d, offset);
-  } else {
-    // Initialize index
-    size_t index = offset;
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate strategy or duplicated and weighted strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
 
-    if (strategy_ == "univariate") {
-      // Univariate strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
 
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Create a FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-          fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
-                         groupCentralBlock->centralVars());
-
-          // Square-root multiply
-          groupCentralBlock->multiplySqrt(cv, fset3dTmp, index);
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
-
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-
-          // Get output field
-          const auto outputField = fset3dTmp[groupNames_[igroup]];
-
-          // Copy content to input FieldSet3D
-          const auto outputView = make_view<double, 2>(outputField);
-          auto view = make_view<double, 2>(fset3d[var.name()]);
-          view.assign(outputView);
-        }
-      }
-    } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
-      // Duplicated strategy or crossed strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
+      for (const auto & var : groupInputVars_[igroup]) {
         // Create a FieldSet3D
         oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
         fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
@@ -878,103 +813,82 @@ void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
 
         // Square-root multiply
         groupCentralBlock->multiplySqrt(cv, fset3dTmp, index);
-        if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
 
-        if (strategy_ == "duplicated") {
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-        }
+        // Update index
+        index += groupCentralBlock->ctlVecSize();
 
-        // Get output reference field
-        const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+        // Get output field
+        const auto outputField = fset3dTmp[groupNames_[igroup]];
 
-        // Get output reference field view
-        const auto outputRefView = make_view<double, 2>(outputRefField);
-
-        // Split field
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Get field
-          auto field = fset3d[var.name()];
-
-          // Get field view
-          auto view = make_view<double, 2>(field);
-
-          // Get first level
-          const int firstLevel = firstLevel_.at(var.name());
-
-          // Check whether the field is a 2D field added to a reference 3D field
-          if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
-            // 2D level only
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              view(jnode, 0) = outputRefView(jnode, firstLevel);
-            }
-          } else {
-            // All levels
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
-              }
-            }
-          }
-        }
+        // Copy content to input FieldSet3D
+        const auto outputView = make_view<double, 2>(outputField);
+        auto view = make_view<double, 2>(fset3d[var.name()]);
+        view.assign(outputView);
       }
-    } else if (strategy_ == "duplicated and weighted") {
-      // Duplicated and weighted strategy
-      util::zeroFieldSet(fset3d.fieldSet());
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        // Get variables
-        const auto vars = groupInputVars_[igroup];
-
-        for (size_t jvarI = 0; jvarI < vars.size(); ++jvarI) {
-          // Get variable
-          const auto varI = vars[jvarI];
-
-          // Create a FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-          fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
-                         groupCentralBlock->centralVars());
-
-          // Square-root multiply
-          groupCentralBlock->multiplySqrt(cv, fset3dTmp, index);
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocks(fset3dTmp);
-
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-
-          // Get field
-          const auto field = fset3dTmp[groupNames_[igroup]];
-
-          // Get field view
-          const auto view = make_view<double, 2>(field);
-
-          for (size_t jvarJ = jvarI; jvarJ < vars.size(); ++jvarJ) {
-            // Get variable
-            const auto varJ = vars[jvarJ];
-
-            // Other field
-            atlas::Field otherField = fset3d[varJ.name()];
-
-            // Get other field view
-            auto otherView = make_view<double, 2>(otherField);
-
-            // Sum weighted off-diagonal fields
-            for (int jnode = 0; jnode < otherField.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < otherField.shape(1); ++jlevel) {
-                otherView(jnode, jlevel) += wgtSqrt_[igroup](jvarJ, jvarI)*view(jnode, jlevel);
-              }
-            }
-          }
-        }
-      }
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
     }
+    if (strategy_ == "duplicated and weighted") {
+      // Apply weights
+      applyWeights(fset3d);
+    }
+  } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
+    // Duplicated strategy or crossed strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
+
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
+
+      // Create a FieldSet3D
+      oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
+      fset3dTmp.init(groupCentralBlock->geometryData().functionSpace(),
+                     groupCentralBlock->centralVars());
+
+      // Square-root multiply
+      groupCentralBlock->multiplySqrt(cv, fset3dTmp, index);
+      if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocks(fset3dTmp);
+
+      if (strategy_ == "duplicated") {
+        // Update index
+        index += groupCentralBlock->ctlVecSize();
+      }
+
+      // Get output reference field
+      const auto outputRefField = fset3dTmp[groupNames_[igroup]];
+
+      // Get output reference field view
+      const auto outputRefView = make_view<double, 2>(outputRefField);
+
+      // Split field
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Get field
+        auto field = fset3d[var.name()];
+
+        // Get field view
+        auto view = make_view<double, 2>(field);
+
+        // Get first level
+        const int firstLevel = firstLevel_.at(var.name());
+
+        // Check whether the field is a 2D field added to a reference 3D field
+        if ((outputRefField.levels() > 1) && (field.levels() == 1)) {
+          // 2D level only
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            view(jnode, 0) = outputRefView(jnode, firstLevel);
+          }
+        } else {
+          // All levels
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              view(jnode, jlevel) = outputRefView(jnode, firstLevel+jlevel);
+            }
+          }
+        }
+      }
+    }
+  } else {
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   oops::Log::trace() << "SaberCentralBlock::multiplySqrt done" << std::endl;
@@ -987,182 +901,125 @@ void SaberCentralBlock::multiplySqrtAD(const oops::FieldSet3D & fset3d,
                                        const size_t & offset) const {
   oops::Log::trace() << "SaberCentralBlock::multiplySqrtAD starting" << std::endl;
 
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
+  // Initialize index
+  size_t index = offset;
+
+  // Initialize control variable
+  auto ctlVecView = make_view<double, 1>(cv);
+  for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
+    ctlVecView(index+jnode) = 0.0;
+  }
+
+  if (strategy_ == "single") {
+    // Single mode
     groupCentralBlocks_[0]->multiplySqrtAD(fset3d, cv, offset);
-  } else {
-    // Initialize index
-    size_t index = offset;
-
-    // Initialize control variable
-    auto ctlVecView = make_view<double, 1>(cv);
-    for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
-      ctlVecView(index+jnode) = 0.0;
+  } else if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+    // Univariate strategy or duplicated and weighted strategy
+    oops::FieldSet3D fset3dCopy(fset3d);
+    if (strategy_ == "duplicated and weighted") {
+      // Apply weights, adjoint
+      applyWeightsAD(fset3dCopy);
     }
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
 
-    if (strategy_ == "univariate") {
-      // Univariate strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
 
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Create an empty FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-
-          // Clone field
-          auto field = fset3d[var.name()].clone();
-
-          // Rename field with the name of the group
-          field.rename(groupNames_[igroup]);
-
-          // Add field
-          fset3dTmp.add(field);
-
-          // Square-root adjoint multiply
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
-          groupCentralBlock->multiplySqrtAD(fset3dTmp, cv, index);
-
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-        }
-      }
-    } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
-      // Duplicated strategy or crossed strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        // Create a FieldSet3D
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Create an empty FieldSet3D
         oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-        fset3dTmp.init(geometryData_.functionSpace(), groupInnerVars_[igroup]);
 
-        // Get input reference field
-        auto inputRefField = fset3dTmp[groupNames_[igroup]];
+        // Clone field
+        auto field = fset3dCopy[var.name()].clone();
 
-        // Get reference field view
-        auto inputRefView = make_view<double, 2>(inputRefField);
-        inputRefView.assign(0.0);
+        // Rename field with the name of the group
+        field.rename(groupNames_[igroup]);
 
-        // Sum of fields
-        for (const auto & var : groupInputVars_[igroup]) {
-          // Get field
-          const auto field = fset3d[var.name()];
+        // Add field
+        fset3dTmp.add(field);
 
-          // Get field view
-          const auto view = make_view<double, 2>(field);
+        // Square-root adjoint multiply
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
+        groupCentralBlock->multiplySqrtAD(fset3dTmp, cv, index);
 
-          // Get first level
-          const int firstLevel = firstLevel_.at(var.name());
-
-          // Check whether the field is a 2D field added to a reference 3D field
-          if ((inputRefField.levels() > 1) && (field.levels() == 1)) {
-            // 2D level only
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              inputRefView(jnode, firstLevel) += view(jnode, 0);
-            }
-          } else {
-            // All levels
-            for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                inputRefView(jnode, firstLevel+jlevel) += view(jnode, jlevel);
-              }
-            }
-          }
-        }
-
-        if (strategy_ == "duplicated") {
-          // Square-root adjoint multiply
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
-          groupCentralBlock->multiplySqrtAD(fset3dTmp, cv, index);
-
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-        } else if (strategy_ == "crossed") {
-          // Create temporary control vector
-          atlas::Field ctlVecTmp = atlas::Field("genericCtlVec", make_datatype<double>(),
-            make_shape(groupCentralBlock->ctlVecSize()));
-
-          // Square-root adjoint multiply
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
-          groupCentralBlock->multiplySqrtAD(fset3dTmp, ctlVecTmp, 0);
-
-          // Add control vector contribution
-          const auto ctlVecTmpView = make_view<double, 1>(ctlVecTmp);
-          for (int jnode = 0; jnode < ctlVecTmp.shape(0); ++jnode) {
-            ctlVecView(index+jnode) += ctlVecTmpView(jnode);
-          }
-        }
+        // Update index
+        index += groupCentralBlock->ctlVecSize();
       }
-    } else if (strategy_ == "duplicated and weighted") {
-      // Duplicated and weighted strategy
-      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
-        // Get auxiliary outer block chain
-        const auto & groupAuxOuterBlockChain = groupAuxOuterBlockChains_[igroup];
-
-        // Get central block
-        const auto & groupCentralBlock = groupCentralBlocks_[igroup];
-
-        // Get variables
-        const auto vars = groupInputVars_[igroup];
-
-        for (size_t jvarI = 0; jvarI < vars.size(); ++jvarI) {
-          // Get variable
-          const auto varI = vars[jvarI];
-
-          // Create an empty FieldSet3D
-          oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
-
-          // Clone field
-          auto field = fset3d[varI.name()].clone();
-
-          // Rename field with the name of the group
-          field.rename(groupNames_[igroup]);
-
-          // Add field
-          fset3dTmp.add(field);
-
-          // Get field view
-          auto view = make_view<double, 2>(field);
-
-          // Set to zero
-          view.assign(0.0);
-
-          for (size_t jvarJ = jvarI; jvarJ < vars.size(); ++jvarJ) {
-            // Get variable
-            const auto varJ = vars[jvarJ];
-
-            // Get other field
-            const auto otherField = fset3d[varJ.name()];
-
-            // Get other field view
-            const auto otherView = make_view<double, 2>(otherField);
-
-            // Sum weighted off-diagonal fields
-            for (int jnode = 0; jnode < otherField.shape(0); ++jnode) {
-              for (int jlevel = 0; jlevel < otherField.shape(1); ++jlevel) {
-                view(jnode, jlevel) += wgtSqrt_[igroup](jvarJ, jvarI)*otherView(jnode, jlevel);
-              }
-            }
-          }
-
-          // Square-root adjoint multiply
-          if (groupAuxOuterBlockChain) groupAuxOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
-          groupCentralBlock->multiplySqrtAD(fset3dTmp, cv, index);
-
-          // Update index
-          index += groupCentralBlock->ctlVecSize();
-        }
-      }
-    } else {
-      throw eckit::Exception("invalid multivariate strategy", Here());
     }
+  } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
+    // Duplicated strategy or crossed strategy
+    for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+      // Get outer block chain
+      const auto & groupOuterBlockChain = groupOuterBlockChains_[igroup];
+
+      // Get central block
+      const auto & groupCentralBlock = groupCentralBlocks_[igroup];
+
+      // Create a FieldSet3D
+      oops::FieldSet3D fset3dTmp({fset3d.validTime(), fset3d.commGeom()});
+      fset3dTmp.init(geometryData_.functionSpace(), groupInnerVars_[igroup]);
+
+      // Get input reference field
+      auto inputRefField = fset3dTmp[groupNames_[igroup]];
+
+      // Get reference field view
+      auto inputRefView = make_view<double, 2>(inputRefField);
+      inputRefView.assign(0.0);
+
+      // Sum of fields
+      for (const auto & var : groupInputVars_[igroup]) {
+        // Get field
+        const auto field = fset3d[var.name()];
+
+        // Get field view
+        const auto view = make_view<double, 2>(field);
+
+        // Get first level
+        const int firstLevel = firstLevel_.at(var.name());
+
+        // Check whether the field is a 2D field added to a reference 3D field
+        if ((inputRefField.levels() > 1) && (field.levels() == 1)) {
+          // 2D level only
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            inputRefView(jnode, firstLevel) += view(jnode, 0);
+          }
+        } else {
+          // All levels
+          for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              inputRefView(jnode, firstLevel+jlevel) += view(jnode, jlevel);
+            }
+          }
+        }
+      }
+
+      if (strategy_ == "duplicated") {
+        // Square-root adjoint multiply
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
+        groupCentralBlock->multiplySqrtAD(fset3dTmp, cv, index);
+
+        // Update index
+        index += groupCentralBlock->ctlVecSize();
+      } else if (strategy_ == "crossed") {
+        // Create temporary control vector
+        atlas::Field ctlVecTmp = atlas::Field("genericCtlVec", make_datatype<double>(),
+          make_shape(groupCentralBlock->ctlVecSize()));
+
+        // Square-root adjoint multiply
+        if (groupOuterBlockChain) groupOuterBlockChain->applyOuterBlocksAD(fset3dTmp);
+        groupCentralBlock->multiplySqrtAD(fset3dTmp, ctlVecTmp, 0);
+
+        // Add control vector contribution
+        const auto ctlVecTmpView = make_view<double, 1>(ctlVecTmp);
+        for (int jnode = 0; jnode < ctlVecTmp.shape(0); ++jnode) {
+          ctlVecView(index+jnode) += ctlVecTmpView(jnode);
+        }
+      }
+    }
+  } else {
+    throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
   oops::Log::trace() << "SaberCentralBlock::multiplySqrtAD done" << std::endl;
@@ -1458,6 +1315,102 @@ void SaberCentralBlock::sqrtTest(const double & globalSqrtTolerance) const {
     }
   }
   oops::Log::trace() << "SaberCentralBlock::sqrtTest done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberCentralBlock::applyWeights(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "SaberCentralBlock::applyWeights starting" << std::endl;
+
+  // Check strategy
+  ASSERT(strategy_ == "duplicated and weighted");
+
+  // Deep copy
+  oops::FieldSet3D fset3dCopy(fset3d);
+
+  // Set input to zero
+  fset3d.zero();
+
+  for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+    for (size_t jvarI = 0; jvarI < groupInputVars_[igroup].size(); ++jvarI) {
+      // Get variable I
+      const auto varI = groupInputVars_[igroup][jvarI];
+
+      // Get field I
+      auto fieldI = fset3d[varI.name()];
+
+      // Get field I view
+      auto viewI = make_view<double, 2>(fieldI);
+
+      for (size_t jvarJ = 0; jvarJ <= jvarI; ++jvarJ) {
+        // Get variable J
+        const auto varJ = groupInputVars_[igroup][jvarJ];
+
+        // Get field J
+        const auto fieldJ = fset3dCopy[varJ.name()];
+
+        // Get field J view
+        const auto viewJ = make_view<double, 2>(fieldJ);
+
+        // Sum weighted off-diagonal fields
+        for (int jnode = 0; jnode < fieldJ.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < fieldJ.shape(1); ++jlevel) {
+            viewI(jnode, jlevel) += wgtSqrt_[igroup](jvarI, jvarJ)*viewJ(jnode, jlevel);
+          }
+        }
+      }
+    }
+  }
+
+  oops::Log::trace() << "SaberCentralBlock::applyWeights done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberCentralBlock::applyWeightsAD(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "SaberCentralBlock::applyWeightsAD starting" << std::endl;
+
+  // Check strategy
+  ASSERT(strategy_ == "duplicated and weighted");
+
+  // Deep copy
+  oops::FieldSet3D fset3dCopy(fset3d);
+
+  // Set input to zero
+  fset3d.zero();
+
+  for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+    for (size_t jvarI = 0; jvarI < groupInputVars_[igroup].size(); ++jvarI) {
+      // Get variable I
+      const auto varI = groupInputVars_[igroup][jvarI];
+
+      // Get field I
+      auto fieldI = fset3d[varI.name()];
+
+      // Get field I view
+      auto viewI = make_view<double, 2>(fieldI);
+
+      for (size_t jvarJ = jvarI; jvarJ < groupInputVars_[igroup].size(); ++jvarJ) {
+        // Get variable J
+        const auto varJ = groupInputVars_[igroup][jvarJ];
+
+        // Get field J
+        const auto fieldJ = fset3dCopy[varJ.name()];
+
+        // Get field J view
+        const auto viewJ = make_view<double, 2>(fieldJ);
+
+        // Sum weighted off-diagonal fields
+        for (int jnode = 0; jnode < fieldJ.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < fieldJ.shape(1); ++jlevel) {
+            viewI(jnode, jlevel) += wgtSqrt_[igroup](jvarJ, jvarI)*viewJ(jnode, jlevel);
+          }
+        }
+      }
+    }
+  }
+
+  oops::Log::trace() << "SaberCentralBlock::applyWeightsAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

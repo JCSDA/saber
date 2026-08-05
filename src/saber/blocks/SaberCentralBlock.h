@@ -59,9 +59,9 @@ class SaberCentralBlockGroupParameters : public oops::Parameters {
   oops::RequiredParameter<oops::Variables> variables{"variables", this};
 
   oops::RequiredParameter<SaberCentralBlockParametersWrapper>
-    centralBlock{"saber central block", this};
+    centralBlock{"group central block", this};
   oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
-    auxOuterBlocksParams{"auxiliary outer blocks", this};
+    outerBlocks{"group outer blocks", this};
 
   // Optional parameter specific to "duplicated"
   oops::Parameter<std::vector<std::string>>
@@ -83,7 +83,7 @@ class SaberCentralBlockParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SaberCentralBlockParameters, Parameters)
 
  public:
-  oops::Parameter<std::string> strategy{"multivariate strategy", "deprecated", this};
+  oops::Parameter<std::string> strategy{"multivariate strategy", "single", this};
   // Single block:
   oops::OptionalPolymorphicParameter<SaberBlockParametersBase, SaberCentralBlockFactory>
     singleBlock{"saber block name", this};
@@ -100,6 +100,17 @@ class SaberCentralBlockParameters : public oops::Parameters {
 };
 
 // -----------------------------------------------------------------------------
+
+/**
+ * @brief SaberCentralBlock wrapper class
+ * 
+ * This class is used in the SaberParametricBlockChain to wrap/contain either
+ * one or multiple central blocks to enable flexible covariance models capable
+ * of containing more than one central block (e.g./i.e. Scale-Dependent Localization).
+ *
+ * The set of specific central blocks contained by this wrapper are stored in
+ * the groupCentralBlocks_ private member variable.
+ */
 
 class SaberCentralBlock : public util::Printable {
  public:
@@ -207,8 +218,8 @@ class SaberCentralBlock : public util::Printable {
   std::vector<bool> doRead_;
   // Groups need to write MODEL data
   std::vector<bool> forceWrite_;
-  // Group auxiliary outer block chain
-  std::vector<std::unique_ptr<SaberOuterBlockChain>> groupAuxOuterBlockChains_;
+  // Group outer block chain
+  std::vector<std::unique_ptr<SaberOuterBlockChain>> groupOuterBlockChains_;
   // Group central block
   std::vector<std::unique_ptr<SaberCentralBlockBase>> groupCentralBlocks_;
 
@@ -216,6 +227,10 @@ class SaberCentralBlock : public util::Printable {
   std::vector<Eigen::MatrixXd> wgtSqrt_;
   // First level (for 3D and 2D fields summation)
   std::unordered_map<std::string, int> firstLevel_;
+
+  // Apply weights for the "duplicated and weighted" strategy
+  void applyWeights(oops::FieldSet3D &) const;
+  void applyWeightsAD(oops::FieldSet3D &) const;
 
   void print(std::ostream &) const {}
 };

@@ -110,7 +110,7 @@ background error:
               - eastward_wind
               - northward_wind
               value: 0.5
-            saber central block:
+            group central block:
               saber block name: BUMP_NICAS
               read:
                 general:
@@ -209,7 +209,7 @@ background error:
               - eastward_wind
               - northward_wind
               value: 0.5
-            saber central block:
+            group central block:
               saber block name: BUMP_NICAS
               read:
                 general:
