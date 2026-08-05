@@ -46,6 +46,7 @@ contains
    procedure :: alloc => balldata_alloc
    procedure :: dealloc => balldata_dealloc
    procedure :: pack => balldata_pack
+   procedure :: pack_sparse => balldata_pack_sparse
 end type balldata_type
 
 ! Horizontal data derived type
@@ -437,6 +438,57 @@ end if
 @:probe_out()
 
 end subroutine balldata_pack
+
+!----------------------------------------------------------------------
+! Subroutine: balldata_pack_sparse
+!> Pack ball data from a candidate list instead of a full nc1u-sized box
+!----------------------------------------------------------------------
+subroutine balldata_pack_sparse(balldata,n,ind,hnd,vnd,mnd)
+
+implicit none
+
+! Passed variables
+class(balldata_type),intent(inout) :: balldata !< Ball data
+integer,intent(in) :: n                        !< Number of candidates
+integer,intent(in) :: ind(n)                   !< Candidate indices in subset Sc1, universe
+real(kind_real),intent(in) :: hnd(n)           !< Horizontal normalized distance
+real(kind_real),intent(in) :: vnd(n)           !< Vertical normalized distance
+logical,intent(in) :: mnd(n)                   !< Mask for normalized distances
+
+! Local variables
+integer :: ibd,i
+
+! Set name
+@:set_name(balldata_pack_sparse)
+
+! Probe in
+@:probe_in()
+
+! Count non-missing values
+balldata%nbd = zss_count(mnd)
+
+! Allocation
+call balldata%alloc
+
+! Pack data
+! NOTE: ind must be sorted in ascending order. bd_to_c1u sets the order in which
+! convolution coefficients are appended to the linear operator, and linop_apply
+! accumulates in exactly that order, so any other ordering would perturb the
+! last bits of every result relative to the dense pack over 1..nc1u.
+ibd = 0
+do i=1,n
+   if (mnd(i)) then
+      ibd = ibd+1
+      balldata%bd_to_c1u(ibd) = ind(i)
+      balldata%hnd(ibd) = hnd(i)
+      balldata%vnd(ibd) = vnd(i)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine balldata_pack_sparse
 
 !----------------------------------------------------------------------
 ! Subroutine: hor_partial_dealloc
@@ -3981,9 +4033,22 @@ integer :: isu,ic1u,ic1b,jc1,jc1u,il1,il1s,il0,j,jl0,jl1,jl1s,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
 real(kind_real) :: rv_max(nicas_cmp%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
-real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
-logical :: valid
-logical,allocatable :: mnd(:)
+real(kind_real),allocatable :: nn_dist(:)
+logical :: valid,skip_jl0_check
+! Zero-size stand-ins for the vertically-rejected case, so pack_sparse can be
+! called with n=0 without any of the work arrays being allocated yet.
+integer :: ind_empty(1)
+real(kind_real) :: hnd_empty(1),vnd_empty(1)
+logical :: mnd_empty(1)
+! Cache of the jl1-invariant candidate list, keyed on the base sublevel jl1s,
+! kept sorted by increasing jc1u
+integer :: jl1s_cache,ncand
+integer,allocatable :: cand_jc1u(:),cand_order(:)
+real(kind_real),allocatable :: cand_hnd(:)
+logical,allocatable :: cand_mnd(:)
+! Per-jl1 selection over the candidate list
+real(kind_real),allocatable :: sel_vnd(:)
+logical,allocatable :: sel_mnd(:)
 
 ! Set name
 @:set_name(nicas_cmp_compute_convol_distance)
@@ -4007,8 +4072,14 @@ end do
 write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
 call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
+! The jl0 half of the arc check repeats the il0 half whenever the mask does not
+! vary with level, which is the common case for an ocean grid with a single
+! land/sea mask applied at every level.
+skip_jl0_check = geom%bnda_c0u%uniform
+
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il1s,il0,jl1,jl1s,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy), &
-!$omp&                             private(distv,distv_min), firstprivate(nn_index,nn_dist,hnd,vnd,mnd)
+!$omp&                             private(distv,distv_min,jl1s_cache,ncand), &
+!$omp&                             firstprivate(nn_index,nn_dist,cand_jc1u,cand_order,cand_hnd,cand_mnd,sel_vnd,sel_mnd)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
@@ -4018,28 +4089,45 @@ do isb=1,nicas_cmp%nsb
    il0 = nicas_cmp%l1_to_l0(il1)
    ic1b = nicas_cmp%hor(il1s)%c1u_to_c1b(ic1u)
 
+   ! The cached candidate list depends on isb through il1s/ic1u/il1/ic1b/il0,
+   ! so it must be invalidated for every new subgrid point.
+   jl1s_cache = -1
+   ncand = 0
+
    do jl1=1,nicas_cmp%nl1
       ! Vertical indices
       jl1s = nicas_cmp%hor(jl1)%il1s
       jl0 = nicas_cmp%l1_to_l0(jl1)
 
-      ! Allocation
-      allocate(hnd(nicas_cmp%hor(jl1s)%nc1u))
-      allocate(vnd(nicas_cmp%hor(jl1s)%nc1u))
-      allocate(mnd(nicas_cmp%hor(jl1s)%nc1u))
-
-      ! Initialization
-      mnd = .false.
-
       ! Find smallest possible vertical distance
+      ! NOTE: this test is done BEFORE allocating hnd/vnd/mnd. With many vertical
+      ! sublevels most (il1,jl1) pairs are vertically out of range, and the old
+      ! ordering paid three allocations plus an O(nc1u) "mnd = .false." for each
+      ! of them before discovering there was nothing to do. Packing with nc1u=0
+      ! is equivalent to packing an all-false mask: both give nbd=0.
       if (sup(geom%vert_coordavg(il0),geom%vert_coordavg(jl0))) then
          distv_min = max(vert_coord_min(il1)-vert_coord_max(jl1),zero)
       else
          distv_min = max(vert_coord_min(jl1)-vert_coord_max(il1),zero)
       end if
 
-      if (infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero)))) then
-         ! Count nearest neighbors
+      if (.not.(infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero))))) then
+         call nicas_cmp%ball(jl1,isb)%pack_sparse(0,ind_empty,hnd_empty,vnd_empty,mnd_empty)
+         cycle
+      end if
+
+      ! ---------------------------------------------------------------------
+      ! Everything below that depends only on the BASE sublevel jl1s -- the
+      ! neighbour search, the jc1u mapping, the il0 arc check and the horizontal
+      ! distance hnd -- is invariant across all jl1 sharing that base. With
+      ! "similar levels threshold" merging every sublevel onto one base, the old
+      ! code repeated all of it nl1 times with identical arguments, which is why
+      ! enabling the merge gave no speed-up. Compute it once per (isb,jl1s) and
+      ! keep only the genuinely jl1-dependent part (vertical distance, and the
+      ! jl0 arc check) inside the loop.
+      ! ---------------------------------------------------------------------
+      if (jl1s/=jl1s_cache) then
+         ncand = 0
          call nicas_cmp%hor(jl1s)%tree_c1%count_nearest_neighbors(nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),nn)
 
@@ -4047,6 +4135,18 @@ do isb=1,nicas_cmp%nsb
             ! Allocation
             allocate(nn_index(nn))
             allocate(nn_dist(nn))
+            if (allocated(cand_jc1u)) deallocate(cand_jc1u)
+            if (allocated(cand_order)) deallocate(cand_order)
+            if (allocated(cand_hnd)) deallocate(cand_hnd)
+            if (allocated(cand_mnd)) deallocate(cand_mnd)
+            if (allocated(sel_vnd)) deallocate(sel_vnd)
+            if (allocated(sel_mnd)) deallocate(sel_mnd)
+            allocate(cand_jc1u(nn))
+            allocate(cand_order(nn))
+            allocate(cand_hnd(nn))
+            allocate(cand_mnd(nn))
+            allocate(sel_vnd(nn))
+            allocate(sel_mnd(nn))
 
             ! Find nearest neighbors
             call nicas_cmp%hor(jl1s)%tree_c1%find_nearest_neighbors(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
@@ -4058,46 +4158,40 @@ do isb=1,nicas_cmp%nsb
                jc1u = nicas_cmp%c1_to_c1u(jc1,jl1s)
 
                if (jc1u>0) then
-                  ! Check arc validity
+                  ! Check arc validity (il0 part only; the jl0 part varies with jl1)
                   valid = .true.
                   if (nam%mask_check) then
                      call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,valid)
-                     if (il0/=jl0) call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,valid)
                   end if
 
                   if (valid) then
-                     ! Horizontal and vertical normalized distance, anisotropic coefficient
+                     ! Horizontal normalized distance, anisotropic coefficient
                      if (nicas_cmp%anisotropic) then
                         dx = nicas_cmp%hor(jl1s)%lon_c1u(jc1u)-nicas_cmp%hor(il1s)%lon_c1u(ic1u)
                         dy = nicas_cmp%hor(jl1s)%lat_c1u(jc1u)-nicas_cmp%hor(il1s)%lat_c1u(ic1u)
                         call lonlatmod(dx,dy)
                         dx = dx*cos(nicas_cmp%hor(il1s)%lat_c1u(ic1u))
-                        hnd(jc1u) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2+nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2 &
- & +two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
-                        mnd(jc1u) = inf(hnd(jc1u),half)
+                        ncand = ncand+1
+                        cand_jc1u(ncand) = jc1u
+                        cand_hnd(ncand) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2 &
+ & +nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2+two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
+                        cand_mnd(ncand) = inf(cand_hnd(ncand),half)
                      else
+                        ! NOTE: when rh<=0 and nn_dist>0 the original wrote neither
+                        ! hnd nor mnd, leaving mnd false, so such neighbours are
+                        ! simply not recorded as candidates here.
                         if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
-                           hnd(jc1u) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
-                           mnd(jc1u) = inf(hnd(jc1u),half)
+                           ncand = ncand+1
+                           cand_jc1u(ncand) = jc1u
+                           cand_hnd(ncand) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
+                           cand_mnd(ncand) = inf(cand_hnd(ncand),half)
                         elseif (.not.(nn_dist(j)>zero)) then
-                           hnd(jc1u) = zero
-                           mnd(jc1u) = .true.
+                           ncand = ncand+1
+                           cand_jc1u(ncand) = jc1u
+                           cand_hnd(ncand) = zero
+                           cand_mnd(ncand) = .true.
                         end if
-                     end if
-                     if (nam%from_gsi) then
-                        distv = real(abs(il0-jl0),kind_real)
-                     else
-                        distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
-                     end if
-                     if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
-                        vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-                        mnd(jc1u) = mnd(jc1u).and.inf(vnd(jc1u),half)
-                     elseif (distv>zero) then
-                        mnd(jc1u) = .false.
-                     else
-                        vnd(jc1u) = zero
                      end if
                   end if
                end if
@@ -4106,16 +4200,62 @@ do isb=1,nicas_cmp%nsb
             ! Release memory
             deallocate(nn_index)
             deallocate(nn_dist)
+
+            ! Sort candidates by increasing jc1u. The dense pack used to emit
+            ! bd_to_c1u in ascending order by scanning 1..nc1u, and that ordering
+            ! must be preserved exactly (see balldata_pack_sparse). Sorting here
+            ! rather than per jl1 means it is paid once per base sublevel.
+            if (ncand>1) then
+               call qsort(ncand,cand_jc1u(1:ncand),cand_order(1:ncand))
+               cand_hnd(1:ncand) = cand_hnd(cand_order(1:ncand))
+               cand_mnd(1:ncand) = cand_mnd(cand_order(1:ncand))
+            end if
          end if
+         jl1s_cache = jl1s
       end if
 
-      ! Pack data
-      call nicas_cmp%ball(jl1,isb)%pack(nicas_cmp%hor(jl1s)%nc1u,hnd,vnd,mnd)
+      ! Loop on the cached candidates
+      ! NOTE: only these ncand entries can ever be non-missing, so the work here
+      ! is O(ncand) rather than the O(nc1u) that the dense hnd/vnd/mnd box cost
+      ! -- an allocation, a full "mnd = .false." and two full scans in pack --
+      ! for every one of the nl1 sublevels.
+      do j=1,ncand
+         jc1u = cand_jc1u(j)
 
-      ! Release memory
-      deallocate(hnd)
-      deallocate(vnd)
-      deallocate(mnd)
+         ! Only the jl0 half of the arc check depends on jl1, and even that is
+         ! redundant when the boundaries do not vary with level
+         valid = .true.
+         if (nam%mask_check.and.(il0/=jl0).and.(.not.skip_jl0_check)) then
+            call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,valid)
+         end if
+
+         if (valid) then
+            sel_mnd(j) = cand_mnd(j)
+            if (nam%from_gsi) then
+               distv = real(abs(il0-jl0),kind_real)
+            else
+               distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
+            end if
+            if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
+               sel_vnd(j) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
+               sel_mnd(j) = sel_mnd(j).and.inf(sel_vnd(j),half)
+            elseif (distv>zero) then
+               sel_mnd(j) = .false.
+            else
+               sel_vnd(j) = zero
+            end if
+         else
+            sel_mnd(j) = .false.
+         end if
+      end do
+
+      ! Pack data
+      if (ncand>0) then
+         call nicas_cmp%ball(jl1,isb)%pack_sparse(ncand,cand_jc1u,cand_hnd,sel_vnd,sel_mnd)
+      else
+         call nicas_cmp%ball(jl1,isb)%pack_sparse(0,ind_empty,hnd_empty,vnd_empty,mnd_empty)
+      end if
    end do
 
    ! Update

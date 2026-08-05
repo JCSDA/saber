@@ -416,6 +416,7 @@
 #:set subr_list = subr_list + ["balldata_alloc"]
 #:set subr_list = subr_list + ["balldata_dealloc"]
 #:set subr_list = subr_list + ["balldata_pack"]
+#:set subr_list = subr_list + ["balldata_pack_sparse"]
 #:set subr_list = subr_list + ["hor_partial_dealloc"]
 #:set subr_list = subr_list + ["hor_dealloc"]
 #:set subr_list = subr_list + ["steps_dealloc"]

@@ -393,6 +393,10 @@ if (nam%mask_check) then
    call mpl%flush
    call mesh_c0u%init(mpl,rng,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
    call geom%bnda_c0u%init(mpl,geom%nc0u,geom%nl0,geom%gmask_hor_c0u,geom%gmask_c0u,mesh_c0u)
+   if (geom%bnda_c0u%uniform) then
+      write(mpl%info,'(a10,a)') '','Mask is level-independent, arc checks are shared between levels'
+      call mpl%flush
+   end if
 end if
 
 ! Setup horizontal distance

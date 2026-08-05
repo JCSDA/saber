@@ -8,6 +8,7 @@
 !----------------------------------------------------------------------
 module type_bnda
 
+use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: zero
 use tools_func, only: lonlat2xyz,vector_product,det
@@ -33,6 +34,7 @@ end type bnda_hor_type
 ! Boundaries derived type
 type bnda_type
    ! Set of horizontal boundaries
+   logical :: uniform = .false.              !< True if all levels share the same boundaries
    type(bnda_hor_type),allocatable :: hor(:) !< Set of horizontal boundaries
 contains
    procedure :: init => bnda_init
@@ -154,7 +156,7 @@ logical,intent(in) :: gmask(n,nl0)     !< 3D mask
 type(mesh_type),intent(in) :: mesh     !< Mesh
 
 ! Local variables
-integer :: il0
+integer :: il0,ndiff
 
 ! Set name
 @:set_name(bnda_init)
@@ -170,6 +172,18 @@ call bnda%hor(0)%init(mpl,mesh,gmask_hor)
 do il0=1,nl0
    call bnda%hor(il0)%init(mpl,mesh,gmask(:,il0))
 end do
+
+! Check whether the mask is level-independent. Equal masks give bitwise equal
+! boundary arcs, so a single check_arc then answers for every level and callers
+! can skip the duplicated calls. Counted rather than reduced as a logical, since
+! the universes overlap but together cover the whole grid: if any level differs
+! anywhere, at least one task sees it.
+ndiff = 0
+do il0=2,nl0
+   if (any(gmask(:,il0).neqv.gmask(:,1))) ndiff = ndiff+1
+end do
+call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
+bnda%uniform = (ndiff==0)
 
 ! Probe out
 @:probe_out()
@@ -205,6 +219,7 @@ if (allocated(bnda%hor)) then
    end do
    deallocate(bnda%hor)
 end if
+bnda%uniform = .false.
 
 ! Probe out
 @:probe_out()
@@ -282,6 +297,10 @@ if (allocated(bnda%hor)) then
                call mpl%flush
             end if
          end if
+
+         ! Once the arc is known to cross a boundary the answer cannot change,
+         ! so stop instead of walking the remaining segments.
+         if (.not.valid) exit
       end do
    end if
 end if
