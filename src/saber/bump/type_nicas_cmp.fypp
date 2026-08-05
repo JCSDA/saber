@@ -4034,7 +4034,7 @@ integer,allocatable :: nn_index(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
 real(kind_real) :: rv_max(nicas_cmp%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
 real(kind_real),allocatable :: nn_dist(:)
-logical :: valid,skip_jl0_check
+logical :: valid,check_jl0
 ! Zero-size stand-ins for the vertically-rejected case, so pack_sparse can be
 ! called with n=0 without any of the work arrays being allocated yet.
 integer :: ind_empty(1)
@@ -4049,6 +4049,10 @@ logical,allocatable :: cand_mnd(:)
 ! Per-jl1 selection over the candidate list
 real(kind_real),allocatable :: sel_vnd(:)
 logical,allocatable :: sel_mnd(:)
+! Boundary arcs pre-selected for the cap around the current subgrid point, one
+! selection per level rather than a coastline scan per candidate pair
+integer :: nbnda_max,nsel_il0,nsel_jl0,jl0_sel
+integer,allocatable :: sel_il0(:),sel_jl0(:)
 
 ! Set name
 @:set_name(nicas_cmp_compute_convol_distance)
@@ -4072,14 +4076,21 @@ end do
 write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
 call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
-! The jl0 half of the arc check repeats the il0 half whenever the mask does not
-! vary with level, which is the common case for an ocean grid with a single
-! land/sea mask applied at every level.
-skip_jl0_check = geom%bnda_c0u%uniform
+! Size the arc selection buffers once, for the largest coastline over all levels
+nbnda_max = 0
+if (nam%mask_check) then
+   do il0=1,nicas_cmp%nl0
+      nbnda_max = max(nbnda_max,geom%bnda_c0u%hor(il0)%n)
+   end do
+end if
+! NOTE: sel_il0/sel_jl0 are deliberately left unallocated here and allocated
+! per thread inside the region, matching nn_index/nn_dist above. Entering the
+! region already allocated makes each thread free the same block on exit.
 
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il1s,il0,jl1,jl1s,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy), &
-!$omp&                             private(distv,distv_min,jl1s_cache,ncand), &
-!$omp&                             firstprivate(nn_index,nn_dist,cand_jc1u,cand_order,cand_hnd,cand_mnd,sel_vnd,sel_mnd)
+!$omp&                             private(distv,distv_min,jl1s_cache,ncand,nsel_il0,nsel_jl0,jl0_sel,check_jl0), &
+!$omp&                             firstprivate(nn_index,nn_dist,cand_jc1u,cand_order,cand_hnd,cand_mnd,sel_vnd,sel_mnd), &
+!$omp&                             firstprivate(sel_il0,sel_jl0)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
@@ -4093,6 +4104,20 @@ do isb=1,nicas_cmp%nsb
    ! so it must be invalidated for every new subgrid point.
    jl1s_cache = -1
    ncand = 0
+
+   ! Every candidate neighbour lies within rh of this point, so every arc tested
+   ! below lies inside that cap. Selecting the boundary arcs that reach into the
+   ! cap once here replaces a scan of the whole universe coastline for each of
+   ! the nn candidates.
+   nsel_il0 = 0
+   nsel_jl0 = 0
+   jl0_sel = 0
+   if (nam%mask_check) then
+      if (.not.allocated(sel_il0)) allocate(sel_il0(max(nbnda_max,1)))
+      if (.not.allocated(sel_jl0)) allocate(sel_jl0(max(nbnda_max,1)))
+      call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),il0,nsel_il0,sel_il0)
+   end if
 
    do jl1=1,nicas_cmp%nl1
       ! Vertical indices
@@ -4162,7 +4187,8 @@ do isb=1,nicas_cmp%nsb
                   valid = .true.
                   if (nam%mask_check) then
                      call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,valid)
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,valid, &
+ & nsel=nsel_il0,sel=sel_il0)
                   end if
 
                   if (valid) then
@@ -4214,6 +4240,19 @@ do isb=1,nicas_cmp%nsb
          jl1s_cache = jl1s
       end if
 
+      ! Decide whether the jl0 half of the arc check is needed at all. Levels in
+      ! the same boundary class carry identical arcs, so the il0 call above has
+      ! already answered for jl0. Selecting arcs for the levels that do differ is
+      ! done once here rather than once per candidate.
+      check_jl0 = .false.
+      if (nam%mask_check.and.(il0/=jl0)) check_jl0 = &
+ & (geom%bnda_c0u%hor_id(il0)/=geom%bnda_c0u%hor_id(jl0))
+      if (check_jl0.and.(jl0/=jl0_sel)) then
+         call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),jl0,nsel_jl0,sel_jl0)
+         jl0_sel = jl0
+      end if
+
       ! Loop on the cached candidates
       ! NOTE: only these ncand entries can ever be non-missing, so the work here
       ! is O(ncand) rather than the O(nc1u) that the dense hnd/vnd/mnd box cost
@@ -4222,12 +4261,12 @@ do isb=1,nicas_cmp%nsb
       do j=1,ncand
          jc1u = cand_jc1u(j)
 
-         ! Only the jl0 half of the arc check depends on jl1, and even that is
-         ! redundant when the boundaries do not vary with level
+         ! Only the jl0 half of the arc check depends on jl1
          valid = .true.
-         if (nam%mask_check.and.(il0/=jl0).and.(.not.skip_jl0_check)) then
+         if (check_jl0) then
             call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,valid)
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,valid, &
+ & nsel=nsel_jl0,sel=sel_jl0)
          end if
 
          if (valid) then

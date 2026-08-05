@@ -10,7 +10,7 @@ module type_bnda
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: zero
+use tools_const, only: zero,half,one,pi
 use tools_func, only: lonlat2xyz,vector_product,det
 use tools_kinds, only: kind_real
 use tools_repro, only: repro_th
@@ -27,6 +27,12 @@ type bnda_hor_type
    real(kind_real),allocatable :: v1(:,:)  !< Mask boundary arcs, first vector
    real(kind_real),allocatable :: v2(:,:)  !< Mask boundary arcs, second vector
    real(kind_real),allocatable :: va(:,:)  !< Mask boundary arcs, orthogonal vector
+
+   ! Bounding cap of each arc, used to reject arcs without testing them
+   real(kind_real),allocatable :: vc(:,:)  !< Mask boundary arcs, cap centre
+   real(kind_real),allocatable :: r(:)     !< Mask boundary arcs, cap angular radius
+   real(kind_real),allocatable :: cosr(:)  !< Cosine of the cap angular radius
+   real(kind_real),allocatable :: sinr(:)  !< Sine of the cap angular radius
 contains
    procedure :: init => bnda_hor_init
 end type bnda_hor_type
@@ -34,13 +40,17 @@ end type bnda_hor_type
 ! Boundaries derived type
 type bnda_type
    ! Set of horizontal boundaries
-   logical :: uniform = .false.              !< True if all levels share the same boundaries
+   integer,allocatable :: hor_id(:)          !< Boundary class of each level (levels with
+                                             !< identical masks share a class)
    type(bnda_hor_type),allocatable :: hor(:) !< Set of horizontal boundaries
 contains
    procedure :: init => bnda_init
    procedure :: dealloc => bnda_dealloc
+   procedure :: select => bnda_select
    procedure :: check_arc => bnda_check_arc
 end type bnda_type
+
+real(kind_real),parameter :: sel_margin = 1.0e-12_kind_real !< Rounding margin on the cap rejection test
 
 private
 public :: bnda_type
@@ -64,7 +74,7 @@ logical,intent(in) :: gmask(mesh%n)            !< Mask
 ! Local variables
 integer :: i,ii,j,k,kk,knext,kknext,ibnda
 integer,allocatable :: bnda_to_grid(:,:)
-real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2),vc(3),norm,cosr
 
 ! Set name
 @:set_name(bnda_hor_init)
@@ -97,6 +107,10 @@ allocate(bnda_to_grid(2,bnda_hor%n))
 allocate(bnda_hor%v1(3,bnda_hor%n))
 allocate(bnda_hor%v2(3,bnda_hor%n))
 allocate(bnda_hor%va(3,bnda_hor%n))
+allocate(bnda_hor%vc(3,bnda_hor%n))
+allocate(bnda_hor%r(bnda_hor%n))
+allocate(bnda_hor%cosr(bnda_hor%n))
+allocate(bnda_hor%sinr(bnda_hor%n))
 
 ! Get boundary arcs
 ibnda = 0
@@ -131,6 +145,23 @@ do ibnda=1,bnda_hor%n
    bnda_hor%v1(:,ibnda) = (/xbnda(1),ybnda(1),zbnda(1)/)
    bnda_hor%v2(:,ibnda) = (/xbnda(2),ybnda(2),zbnda(2)/)
    call vector_product(bnda_hor%v1(:,ibnda),bnda_hor%v2(:,ibnda),bnda_hor%va(:,ibnda))
+
+   ! Bounding cap: centred on the arc midpoint, with an angular radius of half the
+   ! arc length. Two arcs whose caps do not overlap cannot cross, which lets
+   ! bnda_select discard most of the coastline without any crossing test.
+   vc = half*(bnda_hor%v1(:,ibnda)+bnda_hor%v2(:,ibnda))
+   norm = sqrt(sum(vc**2))
+   if (norm>zero) then
+      bnda_hor%vc(:,ibnda) = vc/norm
+   else
+      ! Antipodal end points: the cap degenerates to the whole sphere
+      bnda_hor%vc(:,ibnda) = bnda_hor%v1(:,ibnda)
+   end if
+   cosr = sum(bnda_hor%vc(:,ibnda)*bnda_hor%v1(:,ibnda))
+   cosr = max(-one,min(one,cosr))
+   bnda_hor%r(ibnda) = acos(cosr)
+   bnda_hor%cosr(ibnda) = cosr
+   bnda_hor%sinr(ibnda) = sin(bnda_hor%r(ibnda))
 end do
 
 ! Probe out
@@ -156,7 +187,8 @@ logical,intent(in) :: gmask(n,nl0)     !< 3D mask
 type(mesh_type),intent(in) :: mesh     !< Mesh
 
 ! Local variables
-integer :: il0,ndiff
+integer :: il0,jl0,i
+integer,allocatable :: ndiff(:)
 
 ! Set name
 @:set_name(bnda_init)
@@ -173,17 +205,45 @@ do il0=1,nl0
    call bnda%hor(il0)%init(mpl,mesh,gmask(:,il0))
 end do
 
-! Check whether the mask is level-independent. Equal masks give bitwise equal
-! boundary arcs, so a single check_arc then answers for every level and callers
-! can skip the duplicated calls. Counted rather than reduced as a logical, since
-! the universes overlap but together cover the whole grid: if any level differs
-! anywhere, at least one task sees it.
-ndiff = 0
-do il0=2,nl0
-   if (any(gmask(:,il0).neqv.gmask(:,1))) ndiff = ndiff+1
+! Group levels by mask. Equal masks give bitwise equal boundary arcs, so one
+! check_arc answers for every level in a class and callers can skip the
+! duplicated calls. A 3D mask rarely makes ALL levels agree, but on a real
+! bathymetry every level above the shallowest sea floor does, so the classes
+! recover most of what a global "uniform" flag would only give in the 2D case.
+! Differences are counted rather than reduced as a logical because the universes
+! overlap but together cover the whole grid: if two levels differ anywhere, at
+! least one task sees it. Every task drives the loop from allreduced values, so
+! the classes come out identical everywhere.
+allocate(bnda%hor_id(0:nl0))
+bnda%hor_id(0) = 0
+allocate(ndiff(nl0))
+do il0=1,nl0
+   ndiff = 1
+   do jl0=1,il0-1
+      if (bnda%hor_id(jl0)==jl0) then
+         ! Compare against a class representative only, and stop at the first
+         ! difference: levels that disagree usually do so almost immediately, so
+         ! only genuinely equal levels cost a full pass over the grid.
+         ndiff(jl0) = 0
+         do i=1,n
+            if (gmask(i,il0).neqv.gmask(i,jl0)) then
+               ndiff(jl0) = 1
+               exit
+            end if
+         end do
+      end if
+   end do
+   call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
+
+   bnda%hor_id(il0) = il0
+   do jl0=1,il0-1
+      if (ndiff(jl0)==0) then
+         bnda%hor_id(il0) = jl0
+         exit
+      end if
+   end do
 end do
-call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
-bnda%uniform = (ndiff==0)
+deallocate(ndiff)
 
 ! Probe out
 @:probe_out()
@@ -216,10 +276,14 @@ if (allocated(bnda%hor)) then
       if (allocated(bnda%hor(il0)%v1)) deallocate(bnda%hor(il0)%v1)
       if (allocated(bnda%hor(il0)%v2)) deallocate(bnda%hor(il0)%v2)
       if (allocated(bnda%hor(il0)%va)) deallocate(bnda%hor(il0)%va)
+      if (allocated(bnda%hor(il0)%vc)) deallocate(bnda%hor(il0)%vc)
+      if (allocated(bnda%hor(il0)%r)) deallocate(bnda%hor(il0)%r)
+      if (allocated(bnda%hor(il0)%cosr)) deallocate(bnda%hor(il0)%cosr)
+      if (allocated(bnda%hor(il0)%sinr)) deallocate(bnda%hor(il0)%sinr)
    end do
    deallocate(bnda%hor)
 end if
-bnda%uniform = .false.
+if (allocated(bnda%hor_id)) deallocate(bnda%hor_id)
 
 ! Probe out
 @:probe_out()
@@ -227,28 +291,97 @@ bnda%uniform = .false.
 end subroutine bnda_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: bnda_check_arc
-!> Check if an arc is crossing mask boundaries
+! Subroutine: bnda_select
+!> Select the boundary arcs that any arc inside a cap could possibly cross
 !----------------------------------------------------------------------
-subroutine bnda_check_arc(bnda,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid,prt)
+subroutine bnda_select(bnda,mpl,lon,lat,radius,il0,nsel,sel)
 
 implicit none
 
 ! Passed variables
-class(bnda_type),intent(in) :: bnda !< Boundaries
-type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: lon_s !< First point longitude
-real(kind_real),intent(in) :: lat_s !< First point latitude
-real(kind_real),intent(in) :: lon_e !< Second point longitude
-real(kind_real),intent(in) :: lat_e !< Second point latitude
-integer,intent(in) :: il0           !< Level
-logical,intent(inout) :: valid      !< True for valid arcs
-logical,intent(in),optional :: prt  !< Print values (very useful for debugging)
+class(bnda_type),intent(in) :: bnda   !< Boundaries
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+real(kind_real),intent(in) :: lon     !< Cap centre longitude
+real(kind_real),intent(in) :: lat     !< Cap centre latitude
+real(kind_real),intent(in) :: radius  !< Cap angular radius
+integer,intent(in) :: il0             !< Level
+integer,intent(out) :: nsel           !< Number of selected arcs
+integer,intent(inout) :: sel(:)       !< Selected arcs
 
 ! Local variables
 integer :: ibnda
+real(kind_real) :: v(3),cosrad,sinrad,cosmax
+
+! Set name
+@:set_name(bnda_select)
+
+! Probe in
+@:probe_in()
+
+! Every arc tested by the caller has both end points inside the cap, so an arc
+! whose own bounding cap is further than radius+r from the centre cannot be
+! crossed by any of them. Running this once per cap replaces a full scan of the
+! coastline for every candidate pair inside it.
+nsel = 0
+
+if (allocated(bnda%hor)) then
+   if (bnda%hor(il0)%n>0) then
+      call lonlat2xyz(mpl,lon,lat,v(1),v(2),v(3))
+      cosrad = cos(radius)
+      sinrad = sin(radius)
+
+      if (bnda%hor(il0)%n>size(sel)) call mpl%abort('${subr}$','sel buffer too small for the boundary arcs')
+
+      do ibnda=1,bnda%hor(il0)%n
+         if (radius+bnda%hor(il0)%r(ibnda)>=pi) then
+            ! The caps cover the sphere, no rejection possible
+            nsel = nsel+1
+            sel(nsel) = ibnda
+         else
+            ! cos(radius+r), expanded to keep this free of inverse trigonometry
+            cosmax = cosrad*bnda%hor(il0)%cosr(ibnda)-sinrad*bnda%hor(il0)%sinr(ibnda)
+
+            ! Margin of a few ulps, so that an arc grazing the cap edge is kept
+            ! rather than rejected on rounding
+            if (sum(v*bnda%hor(il0)%vc(:,ibnda))>=cosmax-sel_margin) then
+               nsel = nsel+1
+               sel(nsel) = ibnda
+            end if
+         end if
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_select
+
+!----------------------------------------------------------------------
+! Subroutine: bnda_check_arc
+!> Check if an arc is crossing mask boundaries
+!----------------------------------------------------------------------
+subroutine bnda_check_arc(bnda,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid,nsel,sel,prt)
+
+implicit none
+
+! Passed variables
+class(bnda_type),intent(in) :: bnda    !< Boundaries
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+real(kind_real),intent(in) :: lon_s    !< First point longitude
+real(kind_real),intent(in) :: lat_s    !< First point latitude
+real(kind_real),intent(in) :: lon_e    !< Second point longitude
+real(kind_real),intent(in) :: lat_e    !< Second point latitude
+integer,intent(in) :: il0              !< Level
+logical,intent(inout) :: valid         !< True for valid arcs
+integer,intent(in),optional :: nsel    !< Number of pre-selected arcs (from bnda_select)
+integer,intent(in),optional :: sel(:)  !< Pre-selected arcs (from bnda_select)
+logical,intent(in),optional :: prt     !< Print values (very useful for debugging)
+
+! Local variables
+integer :: i,ibnda,nloop
 real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4),tmin,tmax
-logical :: lprt
+logical :: lprt,luse_sel
 
 ! Set name
 @:set_name(bnda_check_arc)
@@ -261,6 +394,17 @@ if (allocated(bnda%hor)) then
    lprt = .false.
    if (present(prt)) lprt = prt
 
+   ! Restrict the scan to the arcs pre-selected for the enclosing cap, when the
+   ! caller has computed one. The selection is conservative, so the outcome is
+   ! identical to scanning the whole coastline.
+   luse_sel = .false.
+   if (present(nsel).and.present(sel)) luse_sel = .true.
+   if (luse_sel) then
+      nloop = nsel
+   else
+      nloop = bnda%hor(il0)%n
+   end if
+
    if (valid) then
       ! Transform to cartesian coordinates
       call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
@@ -270,7 +414,13 @@ if (allocated(bnda%hor)) then
       call vector_product(v1,v2,va)
 
       ! Check if arc is crossing boundary arcs
-      do ibnda=1,bnda%hor(il0)%n
+      do i=1,nloop
+         if (luse_sel) then
+            ibnda = sel(i)
+         else
+            ibnda = i
+         end if
+
          if (valid) then
             ! Compute factors
             call vector_product(va,bnda%hor(il0)%va(:,ibnda),vp)

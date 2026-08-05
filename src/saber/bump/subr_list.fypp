@@ -138,6 +138,7 @@
 #:set subr_list = subr_list + ["bnda_init"]
 #:set subr_list = subr_list + ["bnda_dealloc"]
 #:set subr_list = subr_list + ["bnda_check_arc"]
+#:set subr_list = subr_list + ["bnda_select"]
 #:set subr_list = subr_list + ["mesh_get_bnda"]
 #:set subr_list = subr_list + ["mesh_check_arc"]
 #:set subr_list = subr_list + ["bump_create"]

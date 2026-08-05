@@ -326,7 +326,7 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in) :: fieldset             !< Fieldset containing geometry elements
 
 ! Local variables
-integer :: il0,jl0off,jl0r,jc3,jc4,iproc,iv,ig
+integer :: il0,jl0off,jl0r,jc3,jc4,iproc,iv,ig,nbnda_class
 integer,allocatable :: order_c0a(:)
 real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
 type(mesh_type) :: mesh_c0u
@@ -393,10 +393,13 @@ if (nam%mask_check) then
    call mpl%flush
    call mesh_c0u%init(mpl,rng,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
    call geom%bnda_c0u%init(mpl,geom%nc0u,geom%nl0,geom%gmask_hor_c0u,geom%gmask_c0u,mesh_c0u)
-   if (geom%bnda_c0u%uniform) then
-      write(mpl%info,'(a10,a)') '','Mask is level-independent, arc checks are shared between levels'
-      call mpl%flush
-   end if
+   nbnda_class = 0
+   do il0=1,geom%nl0
+      if (geom%bnda_c0u%hor_id(il0)==il0) nbnda_class = nbnda_class+1
+   end do
+   write(mpl%info,'(a10,a,i4,a,i4,a)') '','Boundary classes: ',nbnda_class,' distinct masks over ', &
+ & geom%nl0,' levels (arc checks are shared within a class)'
+   call mpl%flush
 end if
 
 ! Setup horizontal distance
