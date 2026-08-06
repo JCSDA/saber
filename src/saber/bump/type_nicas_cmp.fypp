@@ -4144,12 +4144,12 @@ do isb=1,nicas_cmp%nsb
       ! ---------------------------------------------------------------------
       ! Everything below that depends only on the BASE sublevel jl1s -- the
       ! neighbour search, the jc1u mapping, the il0 arc check and the horizontal
-      ! distance hnd -- is invariant across all jl1 sharing that base. With
-      ! "similar levels threshold" merging every sublevel onto one base, the old
-      ! code repeated all of it nl1 times with identical arguments, which is why
-      ! enabling the merge gave no speed-up. Compute it once per (isb,jl1s) and
-      ! keep only the genuinely jl1-dependent part (vertical distance, and the
-      ! jl0 arc check) inside the loop.
+      ! distance hnd -- is invariant across all jl1 sharing that base. Sublevels
+      ! sharing a horizontal length-scale already share their horizontal setup
+      ! (compute_horizontal), but the convolution repeated all of the above nl1
+      ! times with identical arguments. Compute it once per (isb,jl1s) and keep
+      ! only the genuinely jl1-dependent part (vertical distance, and the jl0 arc
+      ! check) inside the loop.
       ! ---------------------------------------------------------------------
       if (jl1s/=jl1s_cache) then
          ncand = 0
