@@ -66,6 +66,7 @@ type hor_type
    integer :: nc1u                                      !< Number of points in subset Sc1, universe
    integer,allocatable :: proc_to_nc1a(:)               !< Processor to halo A size for subset Sc1
    integer,allocatable :: proc_to_c1_offset(:)          !< Processor to offset on subset Sc1
+   integer,allocatable :: proc_to_c1u_offset(:)         !< Processor to universe offset on subset Sc1
    real(kind_real),allocatable :: lon_c1a(:)            !< Longitudes on subset Sc1, halo A
    real(kind_real),allocatable :: lat_c1a(:)            !< Latitudes on subset Sc1, halo A
    integer,allocatable :: order_c1a(:)                  !< Subset Sc1 order for halo A
@@ -197,6 +198,7 @@ type nicas_cmp_type
    integer,allocatable :: order_inv_su(:)               !< Subgrid inverse order for universe
    integer,allocatable :: proc_to_nsa(:)                !< Processor to halo A size for subgrid
    integer,allocatable :: proc_to_s_offset(:)           !< Processor to offset on subgrid
+   integer,allocatable :: proc_to_su_offset(:)          !< Processor to universe offset on subgrid
    logical,allocatable :: lcheck_sa(:)                  !< Detection of halo A on subgrid
    logical,allocatable :: lcheck_sb(:)                  !< Detection of halo B on subgrid
    integer,allocatable :: su_to_s(:)                    !< Subgrid, universe to global
@@ -510,6 +512,7 @@ class(hor_type),intent(inout) :: hor !< Horizontal data
 ! Release memory
 if (allocated(hor%proc_to_nc1a)) deallocate(hor%proc_to_nc1a)
 if (allocated(hor%proc_to_c1_offset)) deallocate(hor%proc_to_c1_offset)
+if (allocated(hor%proc_to_c1u_offset)) deallocate(hor%proc_to_c1u_offset)
 if (allocated(hor%lon_c1a)) deallocate(hor%lon_c1a)
 if (allocated(hor%lat_c1a)) deallocate(hor%lat_c1a)
 if (allocated(hor%order_c1a)) deallocate(hor%order_c1a)
@@ -736,6 +739,7 @@ end if
 if (allocated(nicas_cmp%order_inv_su)) deallocate(nicas_cmp%order_inv_su)
 if (allocated(nicas_cmp%proc_to_nsa)) deallocate(nicas_cmp%proc_to_nsa)
 if (allocated(nicas_cmp%proc_to_s_offset)) deallocate(nicas_cmp%proc_to_s_offset)
+if (allocated(nicas_cmp%proc_to_su_offset)) deallocate(nicas_cmp%proc_to_su_offset)
 if (allocated(nicas_cmp%lcheck_sa)) deallocate(nicas_cmp%lcheck_sa)
 if (allocated(nicas_cmp%lcheck_sb)) deallocate(nicas_cmp%lcheck_sb)
 if (allocated(nicas_cmp%su_to_s)) deallocate(nicas_cmp%su_to_s)
@@ -1707,6 +1711,7 @@ if (any(nicas_cmp%vlev)) then
          ! Allocation
          allocate(nicas_cmp%hor(il1s)%proc_to_nc1a(mpl%nproc))
          allocate(nicas_cmp%hor(il1s)%proc_to_c1_offset(mpl%nproc))
+         allocate(nicas_cmp%hor(il1s)%proc_to_c1u_offset(mpl%nproc))
 
          ! Communication
          call mpl%f_comm%allgather(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%proc_to_nc1a)
@@ -1716,6 +1721,17 @@ if (any(nicas_cmp%vlev)) then
          do iproc=2,mpl%nproc
             nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc-1) &
  & +nicas_cmp%hor(il1s)%proc_to_nc1a(iproc-1)
+         end do
+
+         ! Subset Sc1 offset for the universe
+         ! Note: c1_to_c1u used to recompute this prefix sum, an O(nproc) loop,
+         ! on every call -- and it is called once per candidate neighbour in the
+         ! convolution.
+         nicas_cmp%hor(il1s)%proc_to_c1u_offset(1) = 0
+         do iproc=2,mpl%nproc
+            nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc-1)
+            if (nicas_cmp%myuniverse(iproc-1)) nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = &
+ & nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc)+nicas_cmp%hor(il1s)%proc_to_nc1a(iproc-1)
          end do
 
          if (nicas_cmp%interp_in_global_file) then
@@ -1812,6 +1828,17 @@ if (any(nicas_cmp%vlev)) then
    nicas_cmp%proc_to_s_offset(1) = 0
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_s_offset(iproc) = nicas_cmp%proc_to_s_offset(iproc-1)+nicas_cmp%proc_to_nsa(iproc-1)
+   end do
+
+   ! Subgrid offset for the universe
+   ! Note: s_to_su used to recompute this prefix sum, an O(nproc) loop, on every
+   ! call, inside loops that run over the whole global subgrid.
+   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
+   nicas_cmp%proc_to_su_offset(1) = 0
+   do iproc=2,mpl%nproc
+      nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
+      if (nicas_cmp%myuniverse(iproc-1)) nicas_cmp%proc_to_su_offset(iproc) = &
+ & nicas_cmp%proc_to_su_offset(iproc)+nicas_cmp%proc_to_nsa(iproc-1)
    end do
 
    ! Automatic conversions on subgrid
@@ -2857,14 +2884,17 @@ if (.not.nam%load_nicas_global) then
             jl0 = nicas_cmp%l1_to_l0(jl1)
             ndiff = 0
             do ic0a=1,geom%nc0a
-               if (ndiff==0) then
-                  if (nicas_cmp%rhs(ic0a,il0)>zero) then
-                     if (abs(nicas_cmp%rhs(ic0a,jl0)-nicas_cmp%rhs(ic0a,il0))/nicas_cmp%rhs(ic0a,il0)>nam%sim_levs_th) &
+               if (nicas_cmp%rhs(ic0a,il0)>zero) then
+                  if (abs(nicas_cmp%rhs(ic0a,jl0)-nicas_cmp%rhs(ic0a,il0))/nicas_cmp%rhs(ic0a,il0)>nam%sim_levs_th) &
  & ndiff = ndiff+1
-                  else
-                     if (nicas_cmp%rhs(ic0a,jl0)>zero) ndiff = ndiff+1
-                  end if
+               else
+                  if (nicas_cmp%rhs(ic0a,jl0)>zero) ndiff = ndiff+1
                end if
+
+               ! ndiff is only ever tested against zero, so there is nothing to
+               ! learn after the first difference. The old guard skipped the body
+               ! but still walked the rest of the local grid.
+               if (ndiff>0) exit
             end do
             call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
             if (ndiff==0) nicas_cmp%hor(il1)%il1s = jl1
@@ -3073,6 +3103,7 @@ do il1=1,nicas_cmp%nl1
          ! Allocation
          allocate(nicas_cmp%hor(il1s)%proc_to_nc1a(mpl%nproc))
          allocate(nicas_cmp%hor(il1s)%proc_to_c1_offset(mpl%nproc))
+         allocate(nicas_cmp%hor(il1s)%proc_to_c1u_offset(mpl%nproc))
 
          ! Communication
          call mpl%f_comm%allgather(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%proc_to_nc1a)
@@ -3082,6 +3113,17 @@ do il1=1,nicas_cmp%nl1
          do iproc=2,mpl%nproc
             nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc-1) &
  & +nicas_cmp%hor(il1s)%proc_to_nc1a(iproc-1)
+         end do
+
+         ! Subset Sc1 offset for the universe
+         ! Note: c1_to_c1u used to recompute this prefix sum, an O(nproc) loop,
+         ! on every call -- and it is called once per candidate neighbour in the
+         ! convolution.
+         nicas_cmp%hor(il1s)%proc_to_c1u_offset(1) = 0
+         do iproc=2,mpl%nproc
+            nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc-1)
+            if (nicas_cmp%myuniverse(iproc-1)) nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = &
+ & nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc)+nicas_cmp%hor(il1s)%proc_to_nc1a(iproc-1)
          end do
       end if
 
@@ -3610,6 +3652,17 @@ if (.not.nam%load_nicas_global) then
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_s_offset(iproc) = nicas_cmp%proc_to_s_offset(iproc-1)+nicas_cmp%proc_to_nsa(iproc-1)
    end do
+
+   ! Subgrid offset for the universe
+   ! Note: s_to_su used to recompute this prefix sum, an O(nproc) loop, on every
+   ! call, inside loops that run over the whole global subgrid.
+   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
+   nicas_cmp%proc_to_su_offset(1) = 0
+   do iproc=2,mpl%nproc
+      nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
+      if (nicas_cmp%myuniverse(iproc-1)) nicas_cmp%proc_to_su_offset(iproc) = &
+ & nicas_cmp%proc_to_su_offset(iproc)+nicas_cmp%proc_to_nsa(iproc-1)
+   end do
 end if
 
 ! Automatic conversions on subgrid
@@ -4042,7 +4095,7 @@ real(kind_real) :: hnd_empty(1),vnd_empty(1)
 logical :: mnd_empty(1)
 ! Cache of the jl1-invariant candidate list, keyed on the base sublevel jl1s,
 ! kept sorted by increasing jc1u
-integer :: jl1s_cache,ncand
+integer :: jl1s_cache,ncand,cand_max
 integer,allocatable :: cand_jc1u(:),cand_order(:)
 real(kind_real),allocatable :: cand_hnd(:)
 logical,allocatable :: cand_mnd(:)
@@ -4086,11 +4139,15 @@ end if
 ! NOTE: sel_il0/sel_jl0 are deliberately left unallocated here and allocated
 ! per thread inside the region, matching nn_index/nn_dist above. Entering the
 ! region already allocated makes each thread free the same block on exit.
+! cand_max is the current capacity of the per-thread candidate buffers; it is
+! firstprivate so each thread starts empty and then grows monotonically, rather
+! than freeing and reallocating all eight buffers on every (isb,jl1s).
+cand_max = 0
 
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il1s,il0,jl1,jl1s,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy), &
 !$omp&                             private(distv,distv_min,jl1s_cache,ncand,nsel_il0,nsel_jl0,jl0_sel,check_jl0), &
 !$omp&                             firstprivate(nn_index,nn_dist,cand_jc1u,cand_order,cand_hnd,cand_mnd,sel_vnd,sel_mnd), &
-!$omp&                             firstprivate(sel_il0,sel_jl0)
+!$omp&                             firstprivate(sel_il0,sel_jl0,cand_max)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
@@ -4157,25 +4214,32 @@ do isb=1,nicas_cmp%nsb
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),nn)
 
          if (nn>0) then
-            ! Allocation
-            allocate(nn_index(nn))
-            allocate(nn_dist(nn))
-            if (allocated(cand_jc1u)) deallocate(cand_jc1u)
-            if (allocated(cand_order)) deallocate(cand_order)
-            if (allocated(cand_hnd)) deallocate(cand_hnd)
-            if (allocated(cand_mnd)) deallocate(cand_mnd)
-            if (allocated(sel_vnd)) deallocate(sel_vnd)
-            if (allocated(sel_mnd)) deallocate(sel_mnd)
-            allocate(cand_jc1u(nn))
-            allocate(cand_order(nn))
-            allocate(cand_hnd(nn))
-            allocate(cand_mnd(nn))
-            allocate(sel_vnd(nn))
-            allocate(sel_mnd(nn))
+            ! Grow the work buffers only when the current capacity is too small.
+            ! They are reused across subgrid points, so after the first few the
+            ! allocator is not touched at all.
+            if (nn>cand_max) then
+               if (allocated(nn_index)) deallocate(nn_index)
+               if (allocated(nn_dist)) deallocate(nn_dist)
+               if (allocated(cand_jc1u)) deallocate(cand_jc1u)
+               if (allocated(cand_order)) deallocate(cand_order)
+               if (allocated(cand_hnd)) deallocate(cand_hnd)
+               if (allocated(cand_mnd)) deallocate(cand_mnd)
+               if (allocated(sel_vnd)) deallocate(sel_vnd)
+               if (allocated(sel_mnd)) deallocate(sel_mnd)
+               cand_max = nn
+               allocate(nn_index(cand_max))
+               allocate(nn_dist(cand_max))
+               allocate(cand_jc1u(cand_max))
+               allocate(cand_order(cand_max))
+               allocate(cand_hnd(cand_max))
+               allocate(cand_mnd(cand_max))
+               allocate(sel_vnd(cand_max))
+               allocate(sel_mnd(cand_max))
+            end if
 
             ! Find nearest neighbors
             call nicas_cmp%hor(jl1s)%tree_c1%find_nearest_neighbors(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nn,nn_index,nn_dist)
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nn,nn_index(1:nn),nn_dist(1:nn))
 
             ! Loop on nearest neighbors
             do j=1,nn
@@ -4222,10 +4286,6 @@ do isb=1,nicas_cmp%nsb
                   end if
                end if
             end do
-
-            ! Release memory
-            deallocate(nn_index)
-            deallocate(nn_dist)
 
             ! Sort candidates by increasing jc1u. The dense pack used to emit
             ! bd_to_c1u in ascending order by scanning 1..nc1u, and that ordering
@@ -4324,7 +4384,8 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: n_s_max,ithread,isu,isa,isb,jc1u,jl1,jbd,jsu
 integer :: c_n_s(mpl%nthread)
-real(kind_real) :: S,S_tot(nicas_cmp%nsa,mpl%nthread)
+real(kind_real) :: S
+real(kind_real),allocatable :: S_tot(:,:)
 type(linop_type) :: c(mpl%nthread)
 
 ! Set name
@@ -4345,7 +4406,15 @@ write(mpl%info,'(a13,a)') '','Compute weights: '
 call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 c_n_s = 0
-S_tot = zero
+
+! Filter normalization accumulator
+! Note: only written and read under filter mode, so it is not allocated at all
+! otherwise -- it is an nsa x nthread array, well past the automatic-array
+! stack threshold.
+if (nicas_cmp%filter_mode) then
+   allocate(S_tot(nicas_cmp%nsa,mpl%nthread))
+   S_tot = zero
+end if
 
 ! Compute weights
 !$omp parallel do schedule(static) private(isb,isu,ithread,jl1,jbd,jc1u,jsu,S,isa)
@@ -4404,6 +4473,9 @@ if (nicas_cmp%filter_mode) then
    do isa=1,nicas_cmp%nsa
       nicas_cmp%filter_norm_row_a(isa) = sum(S_tot(isa,:))
    end do
+
+   ! Release memory
+   deallocate(S_tot)
 end if
 
 ! Release memory
@@ -4505,9 +4577,11 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
+integer :: nlr_max,ntouch,ntouch_max,itouch
 integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:)
+integer,allocatable :: touched(:),touch_order(:)
 integer,allocatable :: c_ind_sa(:,:),c_ind_sb(:,:)
-real(kind_real) :: S_add
+real(kind_real) :: S_add,norm_sum
 real(kind_real),allocatable :: c_S_sa(:,:),c_S_sb(:,:)
 real(kind_real),allocatable :: list(:),S_list_interp(:),S_list_convol(:)
 type(linop_type),allocatable :: v(:),h(:,:),c(:)
@@ -4693,8 +4767,23 @@ do il0=1,nicas_cmp%nl0
       call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
-      !$omp parallel do schedule(static) private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
-      !$omp&                             firstprivate(isb_list,S_list_interp,S_list_convol)
+      ! The accumulator S_list_convol is nsu long, but only the handful of
+      ! entries reached from one grid point are ever non-zero. It used to be
+      ! allocated, zeroed, squared into a temporary and summed in full for every
+      ! wet point, i.e. four O(nsu) passes to do O(nlr*nnz) of work. It is now a
+      ! sparse accumulator: allocated once per thread, and the indices written
+      ! are recorded so that the sum and the reset touch only those.
+      !$omp parallel private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
+      !$omp&         private(nlr_max,ntouch,ntouch_max,itouch,norm_sum), &
+      !$omp&         private(isb_list,S_list_interp,S_list_convol,touched,touch_order)
+
+      ! Allocation
+      allocate(S_list_convol(nicas_cmp%nsu))
+      S_list_convol = zero
+      nlr_max = 0
+      ntouch_max = 0
+
+      !$omp do schedule(static)
       do ic0a=1,geom%nc0a
          ! Index
          if (geom%gmask_c0a(ic0a,il0)) then
@@ -4703,68 +4792,106 @@ do il0=1,nicas_cmp%nl0
             do jv=1,v(il0)%n_s
                il1 = v(il0)%col(jv)
                il1s = nicas_cmp%hor(il1)%il1s
-               if (geom%gmask_c0a(ic0a,il0)) nlr = nlr+h(ic0a,il1s)%n_s
+               nlr = nlr+h(ic0a,il1s)%n_s
             end do
 
-            ! Allocation
-            allocate(isb_list(nlr))
-            allocate(S_list_interp(nlr))
-            allocate(S_list_convol(nicas_cmp%nsu))
+            ! Grow the candidate lists only when the current capacity is short
+            if (nlr>nlr_max) then
+               if (allocated(isb_list)) deallocate(isb_list)
+               if (allocated(S_list_interp)) deallocate(S_list_interp)
+               nlr_max = nlr
+               allocate(isb_list(nlr_max))
+               allocate(S_list_interp(nlr_max))
+            end if
 
             ! Initialization
-            isb_list = 0
-            S_list_interp = zero
-            S_list_convol = zero
+            isb_list(1:nlr) = 0
+            S_list_interp(1:nlr) = zero
 
             ! Adjoint interpolation
             nlr = 0
             do jv=1,v(il0)%n_s
                il1 = v(il0)%col(jv)
                il1s = nicas_cmp%hor(il1)%il1s
-               if (geom%gmask_c0a(ic0a,il0)) then
-                  do ih=1,h(ic0a,il1s)%n_s
-                     isb_add = h(ic0a,il1s)%col(ih)
-                     S_add = v(il0)%Svec(jv,ic0a)*h(ic0a,il1s)%S(ih)*nicas_cmp%inorm_sb(isb_add)
-                     if (nlr==0) then
-                        ilr = 1
-                        nlr = 1
-                     else
-                        do ilr=1,nlr
-                           if (isb_add==isb_list(ilr)) exit
-                        end do
-                        if (ilr==nlr+1) nlr = nlr+1
-                     end if
-                     isb_list(ilr) = isb_add
-                     S_list_interp(ilr) = S_list_interp(ilr)+S_add
-                  end do
-               end if
+               do ih=1,h(ic0a,il1s)%n_s
+                  isb_add = h(ic0a,il1s)%col(ih)
+                  S_add = v(il0)%Svec(jv,ic0a)*h(ic0a,il1s)%S(ih)*nicas_cmp%inorm_sb(isb_add)
+                  if (nlr==0) then
+                     ilr = 1
+                     nlr = 1
+                  else
+                     do ilr=1,nlr
+                        if (isb_add==isb_list(ilr)) exit
+                     end do
+                     if (ilr==nlr+1) nlr = nlr+1
+                  end if
+                  isb_list(ilr) = isb_add
+                  S_list_interp(ilr) = S_list_interp(ilr)+S_add
+               end do
             end do
 
+            ! Grow the touched-index list to the number of scatter operations
+            ntouch = 0
+            do ilr=1,nlr
+               ntouch = ntouch+c(isb_list(ilr))%n_s
+            end do
+            if (ntouch>ntouch_max) then
+               if (allocated(touched)) deallocate(touched)
+               if (allocated(touch_order)) deallocate(touch_order)
+               ntouch_max = ntouch
+               allocate(touched(ntouch_max))
+               allocate(touch_order(ntouch_max))
+            end if
+
             ! Convolution
+            ntouch = 0
             do ilr=1,nlr
                isb = isb_list(ilr)
                do ic=1,c(isb)%n_s
                   jsu = c(isb)%col(ic)
                   S_list_convol(jsu) = S_list_convol(jsu)+c(isb)%S(ic)*S_list_interp(ilr)
+                  ntouch = ntouch+1
+                  touched(ntouch) = jsu
                end do
             end do
 
             ! Sum of squared values
-            nicas_cmp%norm(ic0a,il0) = zss_sum(S_list_convol**2)
+            ! Sorting the touched indices makes this run in ascending jsu order,
+            ! which is exactly the order the dense scan over 1..nsu used. The
+            ! entries it skips are untouched, hence exactly zero, and adding zero
+            ! to a running sum is exact -- so the result is unchanged bit for bit.
+            if (ntouch>1) call qsort(ntouch,touched(1:ntouch),touch_order(1:ntouch))
+            norm_sum = zero
+            do itouch=1,ntouch
+               if (itouch>1) then
+                  if (touched(itouch)==touched(itouch-1)) cycle
+               end if
+               norm_sum = norm_sum+S_list_convol(touched(itouch))**2
+            end do
 
             ! Normalization factor
-            nicas_cmp%norm(ic0a,il0) = one/sqrt(nicas_cmp%norm(ic0a,il0))
+            nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
+
+            ! Reset the accumulator for the next point. Duplicated indices are
+            ! harmless here, so no de-duplication is needed.
+            do itouch=1,ntouch
+               S_list_convol(touched(itouch)) = zero
+            end do
 
             ! Update
             if (nicas_cmp%verbosity) call mpl%prog_print(ic0a)
-
-            ! Release memory
-            deallocate(isb_list)
-            deallocate(S_list_interp)
-            deallocate(S_list_convol)
          end if
       end do
-      !$omp end parallel do
+      !$omp end do
+
+      ! Release memory
+      if (allocated(isb_list)) deallocate(isb_list)
+      if (allocated(S_list_interp)) deallocate(S_list_interp)
+      if (allocated(touched)) deallocate(touched)
+      if (allocated(touch_order)) deallocate(touch_order)
+      deallocate(S_list_convol)
+
+      !$omp end parallel
       if (nicas_cmp%verbosity) call mpl%prog_final
    end if
 end do
@@ -5053,6 +5180,7 @@ logical,intent(in),optional :: steps                   !< Steps flag
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: alpha_a(nicas_cmp%nsa),alpha_b(nicas_cmp%nsb)
+real(kind_real),allocatable :: alpha_a2(:,:),alpha_b2(:,:),alpha_c2(:,:)
 logical :: lsteps
 
 ! Set name
@@ -5108,18 +5236,34 @@ if (any(nicas_cmp%vlev)) then
       ! Check dimension
       if (cv_cmp%n/=nicas_cmp%nsa*geom%nl0) call mpl%abort('${subr}$','wrong control vector dimension')
 
+      ! The levels share one horizontal convolution, so their halo exchanges are
+      ! independent and can travel together. Doing them level by level issued
+      ! 2*nl0 MPI_Alltoallv over the whole communicator per apply; the rank-2
+      ! com variants send all levels in one, giving 2.
+
+      ! Allocation
+      allocate(alpha_a2(nicas_cmp%nsa,geom%nl0))
+      allocate(alpha_b2(nicas_cmp%nsb,geom%nl0))
+      allocate(alpha_c2(nicas_cmp%nsc,geom%nl0))
+
+      ! Initialization
+      alpha_a2 = reshape(cv_cmp%alpha(1:nicas_cmp%nsa*geom%nl0),(/nicas_cmp%nsa,geom%nl0/))
+
+      ! Halo extension from zone A to zone C
+      call nicas_cmp%com_s_AC%ext(mpl,alpha_a2,alpha_c2)
+
+      ! Convolution square-root
       do il0=1,geom%nl0
-         ! Initialization
-         alpha_a = cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa)
+         call nicas_cmp%c%apply(mpl,alpha_c2(:,il0),alpha_a2(:,il0),msdst=.false.)
+         alpha_a2(:,il0) = alpha_a2(:,il0)*nicas_cmp%inorm
+      end do
 
-         ! Convolution square-root
-         call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
+      ! Halo extension from zone A to zone B
+      call nicas_cmp%com_s_AB%ext(mpl,alpha_a2,alpha_b2)
 
-         ! Halo extension from zone A to zone B
-         call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
-
+      do il0=1,geom%nl0
          ! Interpolation
-         call nicas_cmp%apply_interp(mpl,alpha_b,fld(:,il0:il0))
+         call nicas_cmp%apply_interp(mpl,alpha_b2(:,il0),fld(:,il0:il0))
 
          !$omp parallel do schedule(static) private(ic0a)
          do ic0a=1,geom%nc0a
@@ -5133,6 +5277,11 @@ if (any(nicas_cmp%vlev)) then
          end do
          !$omp end parallel do
       end do
+
+      ! Release memory
+      deallocate(alpha_a2)
+      deallocate(alpha_b2)
+      deallocate(alpha_c2)
    end if
 end if
 
@@ -5160,6 +5309,7 @@ logical,intent(in),optional :: steps                  !< Steps flag
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: fld_tmp(geom%nc0a,nicas_cmp%nl0),alpha_b(nicas_cmp%nsb)
+real(kind_real),allocatable :: alpha_a2(:,:),alpha_b2(:,:),alpha_c2(:,:)
 logical :: lsteps
 
 ! Set name
@@ -5215,6 +5365,14 @@ if (any(nicas_cmp%vlev)) then
  & cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
    else
       ! Same horizontal convolution for all levels, no vertical convolution
+      ! Adjoint of the batched forward: the per-level halo reductions travel
+      ! together, so this issues 2 MPI_Alltoallv per apply rather than 2*nl0.
+
+      ! Allocation
+      allocate(alpha_a2(nicas_cmp%nsa,geom%nl0))
+      allocate(alpha_b2(nicas_cmp%nsb,geom%nl0))
+      allocate(alpha_c2(nicas_cmp%nsc,geom%nl0))
+
       do il0=1,geom%nl0
          ! Initialization
          fld_tmp(:,1) = fld(:,il0)
@@ -5232,14 +5390,28 @@ if (any(nicas_cmp%vlev)) then
          !$omp end parallel do
 
          ! Adjoint interpolation
-         call nicas_cmp%apply_interp_ad(mpl,fld_tmp,alpha_b)
-
-         ! Halo reduction from zone B to zone A
-         call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa))
-
-         ! Convolution square-root adjoint
-         call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa))
+         call nicas_cmp%apply_interp_ad(mpl,fld_tmp,alpha_b2(:,il0))
       end do
+
+      ! Halo reduction from zone B to zone A
+      call nicas_cmp%com_s_AB%red(mpl,alpha_b2,alpha_a2)
+
+      ! Convolution square-root adjoint
+      do il0=1,geom%nl0
+         alpha_a2(:,il0) = alpha_a2(:,il0)*nicas_cmp%inorm
+         call nicas_cmp%c%apply_ad(mpl,alpha_a2(:,il0),alpha_c2(:,il0))
+      end do
+
+      ! Halo reduction from zone C to zone A
+      call nicas_cmp%com_s_AC%red(mpl,alpha_c2,alpha_a2)
+
+      ! Copy out
+      cv_cmp%alpha(1:nicas_cmp%nsa*geom%nl0) = reshape(alpha_a2,(/nicas_cmp%nsa*geom%nl0/))
+
+      ! Release memory
+      deallocate(alpha_a2)
+      deallocate(alpha_b2)
+      deallocate(alpha_c2)
    end if
 end if
 
@@ -5274,7 +5446,11 @@ real(kind_real) :: alpha_c(nicas_cmp%nsc)
 call nicas_cmp%com_s_AC%ext(mpl,alpha,alpha_c)
 
 ! Convolution
-call nicas_cmp%c%apply(mpl,alpha_c,alpha)
+! Note: msdst=.false. because every zone A subgrid point is a row of the
+! convolution, so no destination is ever missing. The adjoint (apply_ad) has no
+! missing-destination handling at all, so any row that did go missing here would
+! break the convolution adjoint test below.
+call nicas_cmp%c%apply(mpl,alpha_c,alpha,msdst=.false.)
 
 ! Internal normalization
 alpha = alpha*nicas_cmp%inorm
@@ -5518,12 +5694,16 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 fld = zero
 
 ! Vertical interpolation
-!$omp parallel do schedule(static) private(ic0a,il0) firstprivate(gamma_tmp,fld_tmp)
-do ic0a=1,nicas_cmp%nc0a
-   ! Allocation
-   allocate(gamma_tmp(nicas_cmp%nl1))
-   allocate(fld_tmp(nicas_cmp%nl0))
+! Note: the work arrays are allocated once per thread, outside the loop over
+! columns, rather than once per column.
+!$omp parallel private(ic0a,il0,gamma_tmp,fld_tmp)
 
+! Allocation
+allocate(gamma_tmp(nicas_cmp%nl1))
+allocate(fld_tmp(nicas_cmp%nl0))
+
+!$omp do schedule(static)
+do ic0a=1,nicas_cmp%nc0a
    ! Copy data
    gamma_tmp = gamma(ic0a,:)
 
@@ -5534,12 +5714,14 @@ do ic0a=1,nicas_cmp%nc0a
    do il0=1,nicas_cmp%nl0
       if (nicas_cmp%vlev(il0)) fld(ic0a,il0) = fld_tmp(il0)
    end do
-
-   ! Release memory
-   deallocate(gamma_tmp)
-   deallocate(fld_tmp)
 end do
-!$omp end parallel do
+!$omp end do
+
+! Release memory
+deallocate(gamma_tmp)
+deallocate(fld_tmp)
+
+!$omp end parallel
 
 ! Probe out
 @:probe_out()
@@ -5571,12 +5753,16 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 @:probe_in()
 
 ! Vertical interpolation
-!$omp parallel do schedule(static) private(ic0a) firstprivate(gamma_tmp,fld_tmp)
-do ic0a=1,nicas_cmp%nc0a
-   ! Allocation
-   allocate(gamma_tmp(nicas_cmp%nl1))
-   allocate(fld_tmp(nicas_cmp%nl0))
+! Note: the work arrays are allocated once per thread, outside the loop over
+! columns, rather than once per column.
+!$omp parallel private(ic0a,gamma_tmp,fld_tmp)
 
+! Allocation
+allocate(gamma_tmp(nicas_cmp%nl1))
+allocate(fld_tmp(nicas_cmp%nl0))
+
+!$omp do schedule(static)
+do ic0a=1,nicas_cmp%nc0a
    ! Copy data
    fld_tmp = fld(ic0a,:)
 
@@ -5585,12 +5771,14 @@ do ic0a=1,nicas_cmp%nc0a
 
    ! Copy data
    gamma(ic0a,:) = gamma_tmp
-
-   ! Release memory
-   deallocate(gamma_tmp)
-   deallocate(fld_tmp)
 end do
-!$omp end parallel do
+!$omp end do
+
+! Release memory
+deallocate(gamma_tmp)
+deallocate(fld_tmp)
+
+!$omp end parallel
 
 ! Probe out
 @:probe_out()
@@ -5762,7 +5950,7 @@ alpha2 = alpha2_save
 ! Adjoint test
 alpha_c = zero
 call nicas_cmp%com_s_AC%ext(mpl,alpha1,alpha_c)
-call nicas_cmp%c%apply(mpl,alpha_c,alpha1_save)
+call nicas_cmp%c%apply(mpl,alpha_c,alpha1_save,msdst=.false.)
 alpha_c = zero
 call nicas_cmp%c%apply_ad(mpl,alpha2,alpha_c)
 call nicas_cmp%com_s_AC%red(mpl,alpha_c,alpha2_save)
@@ -6001,6 +6189,9 @@ integer,intent(in) :: il1s                    !< Base sublevel
 ! Returned variable
 integer :: iproc
 
+! Local variables
+integer :: ilo,ihi,imid
+
 ! Set name
 @:set_name(nicas_cmp_c1_to_proc)
 
@@ -6008,12 +6199,20 @@ integer :: iproc
 @:probe_in()
 
 ! Find processor
-do iproc=1,nicas_cmp%nproc-1
-   if ((nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc)<ic1).and.(ic1<=nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc+1))) then
-@:probe_out()
-      return
+! Note: proc_to_c1_offset is monotone, so the owning processor is found by
+! bisection rather than by scanning every processor. This is called once per
+! candidate neighbour in the convolution, so the O(nproc) scan showed up.
+ilo = 1
+ihi = nicas_cmp%nproc
+do while (ilo<ihi)
+   imid = (ilo+ihi)/2
+   if (ic1<=nicas_cmp%hor(il1s)%proc_to_c1_offset(imid+1)) then
+      ihi = imid
+   else
+      ilo = imid+1
    end if
 end do
+iproc = ilo
 
 ! Probe out
 @:probe_out()
@@ -6037,7 +6236,7 @@ integer,intent(in) :: il1s                    !< Base sublevel index
 integer :: ic1u
 
 ! Local variable
-integer :: iproc,ic1a,offset,jproc
+integer :: iproc,ic1a
 
 ! Set name
 @:set_name(nicas_cmp_c1_to_c1u)
@@ -6052,14 +6251,10 @@ if (nicas_cmp%myuniverse(iproc)) then
    ! Get halo A index
    ic1a = ic1-nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc)
 
-   ! Compute universe offset
-   offset = 0
-   do jproc=1,iproc-1
-      if (nicas_cmp%myuniverse(jproc)) offset = offset+nicas_cmp%hor(il1s)%proc_to_nc1a(jproc)
-   end do
-
    ! Get universe index
-   ic1u = offset+ic1a
+   ! Note: the universe offset is precomputed alongside proc_to_c1_offset rather
+   ! than re-derived by an O(nproc) prefix sum on every call.
+   ic1u = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc)+ic1a
 else
    ! Not in my universe
    ic1u = 0
@@ -6120,6 +6315,9 @@ integer,intent(in) :: is                      !< Global index
 ! Returned variable
 integer :: iproc
 
+! Local variables
+integer :: ilo,ihi,imid
+
 ! Set name
 @:set_name(nicas_cmp_s_to_proc)
 
@@ -6127,12 +6325,19 @@ integer :: iproc
 @:probe_in()
 
 ! Find processor
-do iproc=1,nicas_cmp%nproc-1
-   if ((nicas_cmp%proc_to_s_offset(iproc)<is).and.(is<=nicas_cmp%proc_to_s_offset(iproc+1))) then
-@:probe_out()
-      return
+! Note: proc_to_s_offset is monotone, so bisect rather than scan. This is
+! called once per point in loops over the whole global subgrid.
+ilo = 1
+ihi = nicas_cmp%nproc
+do while (ilo<ihi)
+   imid = (ilo+ihi)/2
+   if (is<=nicas_cmp%proc_to_s_offset(imid+1)) then
+      ihi = imid
+   else
+      ilo = imid+1
    end if
 end do
+iproc = ilo
 
 ! Probe out
 @:probe_out()
@@ -6155,7 +6360,7 @@ integer,intent(in) :: is                      !< Global index
 integer :: isu
 
 ! Local variable
-integer :: iproc,isa,offset,jproc
+integer :: iproc,isa
 
 ! Set name
 @:set_name(nicas_cmp_s_to_su)
@@ -6170,14 +6375,10 @@ if (nicas_cmp%myuniverse(iproc)) then
    ! Get halo A index
    isa = is-nicas_cmp%proc_to_s_offset(iproc)
 
-   ! Compute universe offset
-   offset = 0
-   do jproc=1,iproc-1
-      if (nicas_cmp%myuniverse(jproc)) offset = offset+nicas_cmp%proc_to_nsa(jproc)
-   end do
-
    ! Get universe index
-   isu = offset+isa
+   ! Note: the universe offset is precomputed alongside proc_to_s_offset rather
+   ! than re-derived by an O(nproc) prefix sum on every call.
+   isu = nicas_cmp%proc_to_su_offset(iproc)+isa
 else
    ! Not in my universe
    isu = 0

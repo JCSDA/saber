@@ -1996,9 +1996,14 @@ integer :: nssa_val,irmax,irvalmax,itry,irval,ir,irep,is_min,js,nrep
 integer :: nn_index(2),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: proc_to_icxmin(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:),to_valid(:),order(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
+! Packed send/receive buffers for the per-sampling-point allgathers
+integer :: ibuf_min(2)
+integer,allocatable :: proc_to_ibuf_min(:,:)
 integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
 real(kind_real) :: lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,dist_max,d,nn_dist(2),dist_min,x,y,distx,disty
 real(kind_real),allocatable :: rhc_cxa(:),proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
+real(kind_real) :: rbuf_min(4)
+real(kind_real),allocatable :: proc_to_rbuf_min(:,:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: lon_ssa(:),lat_ssa(:),rh_ssa(:),lon_rep(:),lat_rep(:),rh_rep(:),dist_rep(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:),lon_ss(:),lat_ss(:),rh_ss(:)
@@ -2306,6 +2311,8 @@ else
          allocate(proc_to_zmin(mpl%nproc))
          allocate(proc_to_chmin(mpl%nproc))
          allocate(proc_to_icxmin(mpl%nproc))
+         allocate(proc_to_rbuf_min(4,mpl%nproc))
+         allocate(proc_to_ibuf_min(2,mpl%nproc))
 
          ! Initialization
          lmask_ssa = .true.
@@ -2351,12 +2358,20 @@ else
 
          if (parallel) then
             ! Communication
-            call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
-            call mpl%f_comm%allgather(xmin,proc_to_xmin)
-            call mpl%f_comm%allgather(ymin,proc_to_ymin)
-            call mpl%f_comm%allgather(zmin,proc_to_zmin)
-            call mpl%f_comm%allgather(chmin,proc_to_chmin)
-            call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+            ! Note: the six scalar allgathers are packed into two, one for the
+            ! reals and one for the integers. This runs once per sampling point
+            ! over the global subset, so the number of collectives -- not the
+            ! bytes moved -- is what the loop costs.
+            rbuf_min = (/xmin,ymin,zmin,chmin/)
+            ibuf_min = (/nodemin,icxmin/)
+            call mpl%allgather(rbuf_min,proc_to_rbuf_min)
+            call mpl%allgather(ibuf_min,proc_to_ibuf_min)
+            proc_to_xmin = proc_to_rbuf_min(1,:)
+            proc_to_ymin = proc_to_rbuf_min(2,:)
+            proc_to_zmin = proc_to_rbuf_min(3,:)
+            proc_to_chmin = proc_to_rbuf_min(4,:)
+            proc_to_nodemin = proc_to_ibuf_min(1,:)
+            proc_to_icxmin = proc_to_ibuf_min(2,:)
 
             ! Find processor handling the minimum distance
             iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
@@ -2427,12 +2442,20 @@ else
 
             if (parallel) then
                ! Communication
-               call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
-               call mpl%f_comm%allgather(xmin,proc_to_xmin)
-               call mpl%f_comm%allgather(ymin,proc_to_ymin)
-               call mpl%f_comm%allgather(zmin,proc_to_zmin)
-               call mpl%f_comm%allgather(chmin,proc_to_chmin)
-               call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+               ! Note: the six scalar allgathers are packed into two, one for
+               ! the reals and one for the integers. This is the hot one -- it
+               ! runs once per sampling point over the global subset, so the
+               ! number of collectives, not the bytes moved, is what it costs.
+               rbuf_min = (/xmin,ymin,zmin,chmin/)
+               ibuf_min = (/nodemin,icxmin/)
+               call mpl%allgather(rbuf_min,proc_to_rbuf_min)
+               call mpl%allgather(ibuf_min,proc_to_ibuf_min)
+               proc_to_xmin = proc_to_rbuf_min(1,:)
+               proc_to_ymin = proc_to_rbuf_min(2,:)
+               proc_to_zmin = proc_to_rbuf_min(3,:)
+               proc_to_chmin = proc_to_rbuf_min(4,:)
+               proc_to_nodemin = proc_to_ibuf_min(1,:)
+               proc_to_icxmin = proc_to_ibuf_min(2,:)
 
                ! Find processor handling the minimum distance
                iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
@@ -2478,6 +2501,8 @@ else
          deallocate(proc_to_chmin)
          deallocate(proc_to_nodemin)
          deallocate(proc_to_icxmin)
+         deallocate(proc_to_rbuf_min)
+         deallocate(proc_to_ibuf_min)
       end if
 
       ! Release memory
