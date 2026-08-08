@@ -848,7 +848,7 @@ if (any(nicas_cmp%vlev)) then
    allocate(nicas_cmp%hor(nicas_cmp%nl1))
 
    do il1=1,nicas_cmp%nl1
-      ! Get group  
+      ! Get group
       write(levname,'(a,i3.3)') 'sublevel_',il1
       nicas_cmp%hor(il1)%levid = inquire_grp(mpl,nicas_cmp%cmpid,levname)
 
@@ -3424,7 +3424,7 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1').and.compute_interp) then
       if (il1==il1s) then
          ! Level
          il0s = nicas_cmp%l1_to_l0(il1s)
-   
+
          ! Allocation
          allocate(fld_src_c1a(nicas_cmp%hor(il1s)%nc1a))
          allocate(fld_src_c1b(nicas_cmp%hor(il1s)%nc1b))
@@ -3434,53 +3434,53 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1').and.compute_interp) then
          allocate(grad_op_c1a(nicas_cmp%hor(il1s)%nc1a,3))
          allocate(grad_op_c1(nicas_cmp%hor(il1s)%nc1,3))
          allocate(grad(nicas_cmp%hor(il1s)%nc1a))
-   
+
          ! Function parameters
          alon = 3.0_kind_real
          alat = 3.0_kind_real
-   
+
          ! Define source function and its derivatives
          do ic1a=1,nicas_cmp%hor(il1s)%nc1a
             lon = nicas_cmp%hor(il1s)%lon_c1a(ic1a)
             lat = nicas_cmp%hor(il1s)%lat_c1a(ic1a)
-   
+
             ! Function
             fld_src_c1a(ic1a) = cos(alon*lon)*cos(alat*lat)
-   
+
             ! X-derivative
             grad_ref_c1a(ic1a,1) = sin(alon*lon)*alon*cos(alat*lat)*sin(lon)+cos(alon*lon)*sin(alat*lat)*alat*sin(lat)*cos(lon)
-   
+
             ! Y-derivative
             grad_ref_c1a(ic1a,2) = -sin(alon*lon)*alon*cos(alat*lat)*cos(lon)+cos(alon*lon)*sin(alat*lat)*alat*sin(lat)*sin(lon)
-   
+
             ! Z-derivative
             grad_ref_c1a(ic1a,3) = -cos(alon*lon)*sin(alat*lat)*alat*cos(lat)
          end do
-   
+
          ! Define reference destination function
          do ic0a=1,geom%nc0a
             lon = geom%lon_c0a(ic0a)
             lat = geom%lat_c0a(ic0a)
             nicas_cmp%fld_ref(ic0a,il0s) = cos(alon*lon)*cos(alat*lat)
          end do
-   
+
          ! Compute gradient
          call mpl%loc_to_glb(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%nc1,nicas_cmp%hor(il1s)%c1a_to_c1,fld_src_c1a, &
  & fld_src_c1,.true.)
-   
+
          ! SSRF gradient estimation
          do ic1a=1,nicas_cmp%hor(il1s)%nc1a
             ic1 = nicas_cmp%hor(il1s)%c1a_to_c1(ic1a)
             call nicas_cmp%hor(il1s)%mesh_c1%compute_grad(mpl,ic1,fld_src_c1,g)
             grad_ssrf_c1a(ic1a,:) = g
          end do
-   
+
          ! Compute gradient operator
          do ic1a=1,nicas_cmp%hor(il1s)%nc1a
             ic1 = nicas_cmp%hor(il1s)%c1a_to_c1(ic1a)
             call grad(ic1a)%compute_grad(mpl,ic1,nicas_cmp%hor(il1s)%mesh_c1)
          end do
-   
+
          ! Apply operator
          do ic1a=1,nicas_cmp%hor(il1s)%nc1a
             grad_op_c1a(ic1a,:) = zero
@@ -3488,21 +3488,21 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1').and.compute_interp) then
                grad_op_c1a(ic1a,:) = grad_op_c1a(ic1a,:)+grad(ic1a)%Svec(i_s,:)*fld_src_c1(grad(ic1a)%col(i_s))
             end do
          end do
-   
+
          ! SSRF C1 estimation
          call nicas_cmp%hor(il1s)%mesh_c1%compute_c1_interp(mpl,nicas_cmp%hor(il1s)%tree_c1,fld_src_c1, &
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,nicas_cmp%fld_ssrf(:,il0s))
-   
+
          ! Interpolation operator
          call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,fld_src_c1a,fld_src_c1b)
          call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%apply(mpl,fld_src_c1b,nicas_cmp%fld_op(:,il0s))
-   
+
          ! SSRF C1 estimation using gradient operator
          call mpl%loc_to_glb(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%nc1,nicas_cmp%hor(il1s)%c1a_to_c1,grad_op_c1a, &
  & grad_op_c1,.true.)
          call nicas_cmp%hor(il1s)%mesh_c1%compute_c1_interp(mpl,nicas_cmp%hor(il1s)%tree_c1,fld_src_c1, &
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,nicas_cmp%fld_ssrf_from_op(:,il0s),grad_op_c1)
-   
+
          ! Print results
          write(mpl%info,'(a19,a,i3,a)') '','Sublevel ',il1s,': '
          call mpl%flush(flush=nicas_cmp%verbosity)
@@ -3525,7 +3525,7 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1').and.compute_interp) then
          write(mpl%info,'(a22,a,e15.8,a,e15.8,a,e15.8,a)') '','Check operator:   ', &
  & sum(abs(nicas_cmp%fld_op(:,il0s)-nicas_cmp%fld_ssrf_from_op(:,il0s)))/real(geom%nc0a,kind_real)
          call mpl%flush(flush=nicas_cmp%verbosity)
-   
+
          ! Release memory
          deallocate(fld_src_c1a)
          deallocate(fld_src_c1b)
@@ -3803,10 +3803,10 @@ if (.not.nam%load_nicas_global) then
 
       ! Base sublevel
       il1s = nicas_cmp%hor(il1)%il1s
-   
+
       ! Index
       il0 = nicas_cmp%l1_to_l0(il1)
-   
+
       ! Allocation
       allocate(rh_c0b(nicas_cmp%hor(il1s)%nc0b))
       allocate(rh_c1a(nicas_cmp%hor(il1s)%nc1a))
@@ -4111,144 +4111,143 @@ do isb=1,nicas_cmp%nsb
          distv_min = max(vert_coord_min(jl1)-vert_coord_max(il1),zero)
       end if
 
-      if (.not.(infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero))))) then
-         call nicas_cmp%ball(jl1,isb)%pack_empty()
-         cycle
-      end if
+      if (infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero)))) then
+         if (jl1s/=jl1s_cache) then
+            ! Initialization
+            nc1s = 0
 
-      if (jl1s/=jl1s_cache) then
-         ! Initialization
-         nc1s = 0
-
-         ! Count nearest neighbors
-         call nicas_cmp%hor(jl1s)%tree_c1%count_nearest_neighbors(nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+            ! Count nearest neighbors
+            call nicas_cmp%hor(jl1s)%tree_c1%count_nearest_neighbors(nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),nn)
 
-         if (nn>0) then
-            if (nn>nn_max) then
-               ! Update nn_max
-               nn_max = nn
+            if (nn>0) then
+               if (nn>nn_max) then
+                  ! Update nn_max
+                  nn_max = nn
 
-               ! Allocation
-               if (allocated(nn_index)) deallocate(nn_index)
-               if (allocated(nn_dist)) deallocate(nn_dist)
-               if (allocated(c1s_to_c1u)) deallocate(c1s_to_c1u)
-               if (allocated(order_c1s)) deallocate(order_c1s)
-               if (allocated(hnd_c1s)) deallocate(hnd_c1s)
-               if (allocated(vnd_c1s)) deallocate(vnd_c1s)
-               if (allocated(mnd_c1s_2d)) deallocate(mnd_c1s_2d)
-               if (allocated(mnd_c1s_3d)) deallocate(mnd_c1s_3d)
-               allocate(nn_index(nn_max))
-               allocate(nn_dist(nn_max))
-               allocate(c1s_to_c1u(nn_max))
-               allocate(order_c1s(nn_max))
-               allocate(hnd_c1s(nn_max))
-               allocate(vnd_c1s(nn_max))
-               allocate(mnd_c1s_2d(nn_max))
-               allocate(mnd_c1s_3d(nn_max))
-            end if
+                  ! Allocation
+                  if (allocated(nn_index)) deallocate(nn_index)
+                  if (allocated(nn_dist)) deallocate(nn_dist)
+                  if (allocated(c1s_to_c1u)) deallocate(c1s_to_c1u)
+                  if (allocated(order_c1s)) deallocate(order_c1s)
+                  if (allocated(hnd_c1s)) deallocate(hnd_c1s)
+                  if (allocated(vnd_c1s)) deallocate(vnd_c1s)
+                  if (allocated(mnd_c1s_2d)) deallocate(mnd_c1s_2d)
+                  if (allocated(mnd_c1s_3d)) deallocate(mnd_c1s_3d)
+                  allocate(nn_index(nn_max))
+                  allocate(nn_dist(nn_max))
+                  allocate(c1s_to_c1u(nn_max))
+                  allocate(order_c1s(nn_max))
+                  allocate(hnd_c1s(nn_max))
+                  allocate(vnd_c1s(nn_max))
+                  allocate(mnd_c1s_2d(nn_max))
+                  allocate(mnd_c1s_3d(nn_max))
+               end if
 
-            ! Find nearest neighbors
-            call nicas_cmp%hor(jl1s)%tree_c1%find_nearest_neighbors(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+               ! Find nearest neighbors
+               call nicas_cmp%hor(jl1s)%tree_c1%find_nearest_neighbors(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nn,nn_index(1:nn),nn_dist(1:nn))
 
-            ! Loop on nearest neighbors
-            do j=1,nn
-               jc1 = nn_index(j)
-               jc1u = nicas_cmp%c1_to_c1u(jc1,jl1s)
+               ! Loop on nearest neighbors
+               do j=1,nn
+                  jc1 = nn_index(j)
+                  jc1u = nicas_cmp%c1_to_c1u(jc1,jl1s)
 
-               if (jc1u>0) then
-                  ! Check arc validity (il0 part only, the jl0 part varies with jl1)
-                  valid = .true.
-                  if (nam%mask_check) then
-                     call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+                  if (jc1u>0) then
+                     ! Check arc validity (il0 part only, the jl0 part varies with jl1)
+                     valid = .true.
+                     if (nam%mask_check) then
+                        call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,nsel_il0,sel_il0,valid)
-                  end if
+                     end if
 
-                  if (valid) then
-                     ! Horizontal normalized distance, anisotropic coefficient
-                     if (nicas_cmp%anisotropic) then
-                        dx = nicas_cmp%hor(jl1s)%lon_c1u(jc1u)-nicas_cmp%hor(il1s)%lon_c1u(ic1u)
-                        dy = nicas_cmp%hor(jl1s)%lat_c1u(jc1u)-nicas_cmp%hor(il1s)%lat_c1u(ic1u)
-                        call lonlatmod(dx,dy)
-                        dx = dx*cos(nicas_cmp%hor(il1s)%lat_c1u(ic1u))
-                        nc1s = nc1s+1
-                        c1s_to_c1u(nc1s) = jc1u
-                        hnd_c1s(nc1s) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2 &
+                     if (valid) then
+                        ! Horizontal normalized distance, anisotropic coefficient
+                        if (nicas_cmp%anisotropic) then
+                           dx = nicas_cmp%hor(jl1s)%lon_c1u(jc1u)-nicas_cmp%hor(il1s)%lon_c1u(ic1u)
+                           dy = nicas_cmp%hor(jl1s)%lat_c1u(jc1u)-nicas_cmp%hor(il1s)%lat_c1u(ic1u)
+                           call lonlatmod(dx,dy)
+                           dx = dx*cos(nicas_cmp%hor(il1s)%lat_c1u(ic1u))
+                           nc1s = nc1s+1
+                           c1s_to_c1u(nc1s) = jc1u
+                           hnd_c1s(nc1s) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2 &
  & +nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2+two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
-                        mnd_c1s_2d(nc1s) = inf(hnd_c1s(nc1s),half)
-                     else
-                        if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
-                           nc1s = nc1s+1
-                           c1s_to_c1u(nc1s) = jc1u
-                           hnd_c1s(nc1s) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
                            mnd_c1s_2d(nc1s) = inf(hnd_c1s(nc1s),half)
-                        elseif (.not.(nn_dist(j)>zero)) then
-                           nc1s = nc1s+1
-                           c1s_to_c1u(nc1s) = jc1u
-                           hnd_c1s(nc1s) = zero
-                           mnd_c1s_2d(nc1s) = .true.
+                        else
+                           if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
+                              nc1s = nc1s+1
+                              c1s_to_c1u(nc1s) = jc1u
+                              hnd_c1s(nc1s) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
+                              mnd_c1s_2d(nc1s) = inf(hnd_c1s(nc1s),half)
+                           elseif (.not.(nn_dist(j)>zero)) then
+                              nc1s = nc1s+1
+                              c1s_to_c1u(nc1s) = jc1u
+                              hnd_c1s(nc1s) = zero
+                              mnd_c1s_2d(nc1s) = .true.
+                           end if
                         end if
                      end if
                   end if
+               end do
+
+               ! Sort candidates
+               if (nc1s>1) then
+                  call qsort(nc1s,c1s_to_c1u(1:nc1s),order_c1s(1:nc1s))
+                  hnd_c1s(1:nc1s) = hnd_c1s(order_c1s(1:nc1s))
+                  mnd_c1s_2d(1:nc1s) = mnd_c1s_2d(order_c1s(1:nc1s))
                end if
-            end do
-
-            ! Sort candidates
-            if (nc1s>1) then
-               call qsort(nc1s,c1s_to_c1u(1:nc1s),order_c1s(1:nc1s))
-               hnd_c1s(1:nc1s) = hnd_c1s(order_c1s(1:nc1s))
-               mnd_c1s_2d(1:nc1s) = mnd_c1s_2d(order_c1s(1:nc1s))
             end if
+
+            ! Update cached jl1s
+            jl1s_cache = jl1s
          end if
 
-         ! Update cached jl1s
-         jl1s_cache = jl1s
-      end if
-
-      ! Decide whether the jl0 half of the arc check is needed at all
-      check_jl0 = .false.
-      if (nam%mask_check.and.(il0/=jl0)) check_jl0 = (geom%bnda_c0u%hor(il0)%id/=geom%bnda_c0u%hor(jl0)%id)
-      if (check_jl0.and.(jl0/=jl0_sel)) then
-         call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
+         ! Decide whether the jl0 half of the arc check is needed at all
+         check_jl0 = .false.
+         if (nam%mask_check.and.(il0/=jl0)) check_jl0 = (geom%bnda_c0u%hor(il0)%id/=geom%bnda_c0u%hor(jl0)%id)
+         if (check_jl0.and.(jl0/=jl0_sel)) then
+            call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),jl0,nsel_jl0,sel_jl0)
-         jl0_sel = jl0
-      end if
+            jl0_sel = jl0
+         end if
 
-      ! Loop on the cached candidates
-      do ic1s=1,nc1s
-         jc1u = c1s_to_c1u(ic1s)
+         ! Loop on the cached candidates
+         do ic1s=1,nc1s
+            jc1u = c1s_to_c1u(ic1s)
 
-         ! Only the jl0 half of the arc check depends on jl1
-         valid = .true.
-         if (check_jl0) then
-            call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u),nicas_cmp%hor(il1s)%lat_c1u(ic1u), &
+            ! Only the jl0 half of the arc check depends on jl1
+            valid = .true.
+            if (check_jl0) then
+               call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u),nicas_cmp%hor(il1s)%lat_c1u(ic1u), &
  & nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,nsel_jl0,sel_jl0,valid)
-         end if
-
-         if (valid) then
-            mnd_c1s_3d(ic1s) = mnd_c1s_2d(ic1s)
-            if (nam%from_gsi) then
-               distv = real(abs(il0-jl0),kind_real)
-            else
-               distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
             end if
-            if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
-               vnd_c1s(ic1s) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-               mnd_c1s_3d(ic1s) = mnd_c1s_3d(ic1s).and.inf(vnd_c1s(ic1s),half)
-            elseif (distv>zero) then
+
+            if (valid) then
+               mnd_c1s_3d(ic1s) = mnd_c1s_2d(ic1s)
+               if (nam%from_gsi) then
+                  distv = real(abs(il0-jl0),kind_real)
+               else
+                  distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
+               end if
+               if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
+                  vnd_c1s(ic1s) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
+                  mnd_c1s_3d(ic1s) = mnd_c1s_3d(ic1s).and.inf(vnd_c1s(ic1s),half)
+               elseif (distv>zero) then
+                  mnd_c1s_3d(ic1s) = .false.
+               else
+                  vnd_c1s(ic1s) = zero
+               end if
+            else
                mnd_c1s_3d(ic1s) = .false.
-            else
-               vnd_c1s(ic1s) = zero
             end if
-         else
-            mnd_c1s_3d(ic1s) = .false.
-         end if
-      end do
+         end do
 
-      ! Pack data
-      if (nc1s>0) then
-         call nicas_cmp%ball(jl1,isb)%pack(nc1s,c1s_to_c1u,hnd_c1s,vnd_c1s,mnd_c1s_3d)
+         ! Pack data
+         if (nc1s>0) then
+            call nicas_cmp%ball(jl1,isb)%pack(nc1s,c1s_to_c1u,hnd_c1s,vnd_c1s,mnd_c1s_3d)
+         else
+            call nicas_cmp%ball(jl1,isb)%pack_empty()
+         end if
       else
          call nicas_cmp%ball(jl1,isb)%pack_empty()
       end if
@@ -4744,12 +4743,9 @@ do il0=1,nicas_cmp%nl0
 
             ! Sum of squared values
             if (ntouch>1) call qsort(ntouch,touched(1:ntouch),touch_order(1:ntouch))
-            norm_sum = zero
-            do itouch=1,ntouch
-               if (itouch>1) then
-                  if (touched(itouch)==touched(itouch-1)) cycle
-               end if
-               norm_sum = norm_sum+S_list_convol(touched(itouch))**2
+            norm_sum = S_list_convol(touched(1))**2
+            do itouch=2,ntouch
+               if (touched(itouch)>touched(itouch-1)) norm_sum = norm_sum+S_list_convol(touched(itouch))**2
             end do
 
             ! Normalization factor
@@ -5004,7 +5000,7 @@ if (any(nicas_cmp%vlev)) then
       ! Same horizontal convolution for all levels, no vertical convolution
 
       do il0=1,geom%nl0
-         ! Save global sum 
+         ! Save global sum
          sums = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
          call mpl%f_comm%allreduce(sums,fckit_mpi_sum())
          sums = sums/geom%nc0_gmask(il0)
