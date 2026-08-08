@@ -46,7 +46,7 @@ contains
    procedure :: alloc => balldata_alloc
    procedure :: dealloc => balldata_dealloc
    procedure :: pack => balldata_pack
-   procedure :: pack_sparse => balldata_pack_sparse
+   procedure :: pack_empty => balldata_pack_empty
 end type balldata_type
 
 ! Horizontal data derived type
@@ -391,77 +391,23 @@ end subroutine balldata_dealloc
 ! Subroutine: balldata_pack
 !> Pack data into balldata object
 !----------------------------------------------------------------------
-subroutine balldata_pack(balldata,nc1u,hnd,vnd,mnd)
+subroutine balldata_pack(balldata,nc1s,c1s_to_c1u,hnd,vnd,mnd)
 
 implicit none
 
 ! Passed variables
 class(balldata_type),intent(inout) :: balldata !< Ball data
-integer,intent(in) :: nc1u                     !< Horizontal box size
-real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
-real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
-logical,intent(in) :: mnd(nc1u)                !< Mask for normalized distances
+integer,intent(in) :: nc1s                     !< Sparse horizontal box size
+integer,intent(in) :: c1s_to_c1u(nc1s)         !< Indices in subset Sc1, universe
+real(kind_real),intent(in) :: hnd(nc1s)        !< Horizontal normalized distance
+real(kind_real),intent(in) :: vnd(nc1s)        !< Vertical normalized distance
+logical,intent(in) :: mnd(nc1s)                !< Mask for normalized distances
 
 ! Local variables
-integer :: ibd,ic1u
+integer :: ibd,ic1s
 
 ! Set name
 @:set_name(balldata_pack)
-
-! Probe in
-@:probe_in()
-
-if (nc1u>0) then
-   ! Count non-missing values
-   balldata%nbd = zss_count(mnd)
-
-   ! Allocation
-   call balldata%alloc
-
-   ! Pack data
-   ibd = 0
-   do ic1u=1,nc1u
-      if (mnd(ic1u)) then
-         ibd = ibd+1
-         balldata%bd_to_c1u(ibd) = ic1u
-         balldata%hnd(ibd) = hnd(ic1u)
-         balldata%vnd(ibd) = vnd(ic1u)
-      end if
-   end do
-else
-   ! Count non-missing values
-   balldata%nbd = 0
-
-   ! Allocation
-   call balldata%alloc
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine balldata_pack
-
-!----------------------------------------------------------------------
-! Subroutine: balldata_pack_sparse
-!> Pack ball data from a candidate list instead of a full nc1u-sized box
-!----------------------------------------------------------------------
-subroutine balldata_pack_sparse(balldata,n,ind,hnd,vnd,mnd)
-
-implicit none
-
-! Passed variables
-class(balldata_type),intent(inout) :: balldata !< Ball data
-integer,intent(in) :: n                        !< Number of candidates
-integer,intent(in) :: ind(n)                   !< Candidate indices in subset Sc1, universe
-real(kind_real),intent(in) :: hnd(n)           !< Horizontal normalized distance
-real(kind_real),intent(in) :: vnd(n)           !< Vertical normalized distance
-logical,intent(in) :: mnd(n)                   !< Mask for normalized distances
-
-! Local variables
-integer :: ibd,i
-
-! Set name
-@:set_name(balldata_pack_sparse)
 
 ! Probe in
 @:probe_in()
@@ -473,24 +419,48 @@ balldata%nbd = zss_count(mnd)
 call balldata%alloc
 
 ! Pack data
-! NOTE: ind must be sorted in ascending order. bd_to_c1u sets the order in which
-! convolution coefficients are appended to the linear operator, and linop_apply
-! accumulates in exactly that order, so any other ordering would perturb the
-! last bits of every result relative to the dense pack over 1..nc1u.
 ibd = 0
-do i=1,n
-   if (mnd(i)) then
+do ic1s=1,nc1s
+   if (mnd(ic1s)) then
       ibd = ibd+1
-      balldata%bd_to_c1u(ibd) = ind(i)
-      balldata%hnd(ibd) = hnd(i)
-      balldata%vnd(ibd) = vnd(i)
+      balldata%bd_to_c1u(ibd) = c1s_to_c1u(ic1s)
+      balldata%hnd(ibd) = hnd(ic1s)
+      balldata%vnd(ibd) = vnd(ic1s)
    end if
 end do
 
 ! Probe out
 @:probe_out()
 
-end subroutine balldata_pack_sparse
+end subroutine balldata_pack
+
+!----------------------------------------------------------------------
+! Subroutine: balldata_pack_empty
+!> Pack no data into balldata object
+!----------------------------------------------------------------------
+subroutine balldata_pack_empty(balldata)
+
+implicit none
+
+! Passed variables
+class(balldata_type),intent(inout) :: balldata !< Ball data
+
+! Set name
+@:set_name(balldata_pack_empty)
+
+! Probe in
+@:probe_in()
+
+! No data
+balldata%nbd = 0
+
+! Allocation
+call balldata%alloc
+
+! Probe out
+@:probe_out()
+
+end subroutine balldata_pack_empty
 
 !----------------------------------------------------------------------
 ! Subroutine: hor_partial_dealloc
@@ -1724,9 +1694,6 @@ if (any(nicas_cmp%vlev)) then
          end do
 
          ! Subset Sc1 offset for the universe
-         ! Note: c1_to_c1u used to recompute this prefix sum, an O(nproc) loop,
-         ! on every call -- and it is called once per candidate neighbour in the
-         ! convolution.
          nicas_cmp%hor(il1s)%proc_to_c1u_offset(1) = 0
          do iproc=2,mpl%nproc
             nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc-1)
@@ -1831,8 +1798,6 @@ if (any(nicas_cmp%vlev)) then
    end do
 
    ! Subgrid offset for the universe
-   ! Note: s_to_su used to recompute this prefix sum, an O(nproc) loop, on every
-   ! call, inside loops that run over the whole global subgrid.
    if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
@@ -2890,10 +2855,6 @@ if (.not.nam%load_nicas_global) then
                else
                   if (nicas_cmp%rhs(ic0a,jl0)>zero) ndiff = ndiff+1
                end if
-
-               ! ndiff is only ever tested against zero, so there is nothing to
-               ! learn after the first difference. The old guard skipped the body
-               ! but still walked the rest of the local grid.
                if (ndiff>0) exit
             end do
             call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
@@ -3116,9 +3077,6 @@ do il1=1,nicas_cmp%nl1
          end do
 
          ! Subset Sc1 offset for the universe
-         ! Note: c1_to_c1u used to recompute this prefix sum, an O(nproc) loop,
-         ! on every call -- and it is called once per candidate neighbour in the
-         ! convolution.
          nicas_cmp%hor(il1s)%proc_to_c1u_offset(1) = 0
          do iproc=2,mpl%nproc
             nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc) = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc-1)
@@ -3654,8 +3612,6 @@ if (.not.nam%load_nicas_global) then
    end do
 
    ! Subgrid offset for the universe
-   ! Note: s_to_su used to recompute this prefix sum, an O(nproc) loop, on every
-   ! call, inside loops that run over the whole global subgrid.
    if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
@@ -4082,30 +4038,13 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: isu,ic1u,ic1b,jc1,jc1u,il1,il1s,il0,j,jl0,jl1,jl1s,isb,nn
-integer,allocatable :: nn_index(:)
+integer :: isu,ic1u,ic1b,ic1s,jc1,jc1u,il1,il1s,il0,j,jl0,jl1,jl1s,isb,nn,nn_max,jl1s_cache,nc1s,nbnda_max,nsel_il0,nsel_jl0,jl0_sel
+integer,allocatable :: nn_index(:),c1s_to_c1u(:),order_c1s(:),sel_il0(:),sel_jl0(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
 real(kind_real) :: rv_max(nicas_cmp%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
-real(kind_real),allocatable :: nn_dist(:)
+real(kind_real),allocatable :: nn_dist(:),hnd_c1s(:),vnd_c1s(:)
 logical :: valid,check_jl0
-! Zero-size stand-ins for the vertically-rejected case, so pack_sparse can be
-! called with n=0 without any of the work arrays being allocated yet.
-integer :: ind_empty(1)
-real(kind_real) :: hnd_empty(1),vnd_empty(1)
-logical :: mnd_empty(1)
-! Cache of the jl1-invariant candidate list, keyed on the base sublevel jl1s,
-! kept sorted by increasing jc1u
-integer :: jl1s_cache,ncand,cand_max
-integer,allocatable :: cand_jc1u(:),cand_order(:)
-real(kind_real),allocatable :: cand_hnd(:)
-logical,allocatable :: cand_mnd(:)
-! Per-jl1 selection over the candidate list
-real(kind_real),allocatable :: sel_vnd(:)
-logical,allocatable :: sel_mnd(:)
-! Boundary arcs pre-selected for the cap around the current subgrid point, one
-! selection per level rather than a coastline scan per candidate pair
-integer :: nbnda_max,nsel_il0,nsel_jl0,jl0_sel
-integer,allocatable :: sel_il0(:),sel_jl0(:)
+logical,allocatable :: mnd_c1s_2d(:),mnd_c1s_3d(:)
 
 ! Set name
 @:set_name(nicas_cmp_compute_convol_distance)
@@ -4129,25 +4068,12 @@ end do
 write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distances: '
 call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
-! Size the arc selection buffers once, for the largest coastline over all levels
-nbnda_max = 0
-if (nam%mask_check) then
-   do il0=1,nicas_cmp%nl0
-      nbnda_max = max(nbnda_max,geom%bnda_c0u%hor(il0)%n)
-   end do
-end if
-! NOTE: sel_il0/sel_jl0 are deliberately left unallocated here and allocated
-! per thread inside the region, matching nn_index/nn_dist above. Entering the
-! region already allocated makes each thread free the same block on exit.
-! cand_max is the current capacity of the per-thread candidate buffers; it is
-! firstprivate so each thread starts empty and then grows monotonically, rather
-! than freeing and reallocating all eight buffers on every (isb,jl1s).
-cand_max = 0
+nn_max = 0
 
-!$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il1s,il0,jl1,jl1s,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy), &
-!$omp&                             private(distv,distv_min,jl1s_cache,ncand,nsel_il0,nsel_jl0,jl0_sel,check_jl0), &
-!$omp&                             firstprivate(nn_index,nn_dist,cand_jc1u,cand_order,cand_hnd,cand_mnd,sel_vnd,sel_mnd), &
-!$omp&                             firstprivate(sel_il0,sel_jl0,cand_max)
+!$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,ic1s,il1,il1s,il0,jl1,jl1s,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy), &
+!$omp&                             private(distv,distv_min,jl1s_cache,nc1s,nsel_il0,nsel_jl0,jl0_sel,check_jl0), &
+!$omp&                             firstprivate(nn_index,nn_dist,c1s_to_c1u,order_c1s,hnd_c1s,vnd_c1s,mnd_c1s_2d,mnd_c1s_3d), &
+!$omp&                             firstprivate(sel_il0,sel_jl0,nn_max)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
@@ -4157,23 +4083,20 @@ do isb=1,nicas_cmp%nsb
    il0 = nicas_cmp%l1_to_l0(il1)
    ic1b = nicas_cmp%hor(il1s)%c1u_to_c1b(ic1u)
 
-   ! The cached candidate list depends on isb through il1s/ic1u/il1/ic1b/il0,
-   ! so it must be invalidated for every new subgrid point.
+   ! Initialization
    jl1s_cache = -1
-   ncand = 0
-
-   ! Every candidate neighbour lies within rh of this point, so every arc tested
-   ! below lies inside that cap. Selecting the boundary arcs that reach into the
-   ! cap once here replaces a scan of the whole universe coastline for each of
-   ! the nn candidates.
+   nc1s = 0
    nsel_il0 = 0
    nsel_jl0 = 0
    jl0_sel = 0
    if (nam%mask_check) then
-      if (.not.allocated(sel_il0)) allocate(sel_il0(max(nbnda_max,1)))
-      if (.not.allocated(sel_jl0)) allocate(sel_jl0(max(nbnda_max,1)))
-      call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),il0,nsel_il0,sel_il0)
+      ! Allocation
+      if (.not.allocated(sel_il0)) allocate(sel_il0(max(geom%bnda_c0u%nmax,1)))
+      if (.not.allocated(sel_jl0)) allocate(sel_jl0(max(geom%bnda_c0u%nmax,1)))
+
+      ! Select boundary arcs
+      call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u),nicas_cmp%hor(il1s)%lat_c1u(ic1u), &
+ & nicas_cmp%hor(il1)%rh_c1b(ic1b),il0,nsel_il0,sel_il0)
    end if
 
    do jl1=1,nicas_cmp%nl1
@@ -4182,11 +4105,6 @@ do isb=1,nicas_cmp%nsb
       jl0 = nicas_cmp%l1_to_l0(jl1)
 
       ! Find smallest possible vertical distance
-      ! NOTE: this test is done BEFORE allocating hnd/vnd/mnd. With many vertical
-      ! sublevels most (il1,jl1) pairs are vertically out of range, and the old
-      ! ordering paid three allocations plus an O(nc1u) "mnd = .false." for each
-      ! of them before discovering there was nothing to do. Packing with nc1u=0
-      ! is equivalent to packing an all-false mask: both give nbd=0.
       if (sup(geom%vert_coordavg(il0),geom%vert_coordavg(jl0))) then
          distv_min = max(vert_coord_min(il1)-vert_coord_max(jl1),zero)
       else
@@ -4194,47 +4112,40 @@ do isb=1,nicas_cmp%nsb
       end if
 
       if (.not.(infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero))))) then
-         call nicas_cmp%ball(jl1,isb)%pack_sparse(0,ind_empty,hnd_empty,vnd_empty,mnd_empty)
+         call nicas_cmp%ball(jl1,isb)%pack_empty()
          cycle
       end if
 
-      ! ---------------------------------------------------------------------
-      ! Everything below that depends only on the BASE sublevel jl1s -- the
-      ! neighbour search, the jc1u mapping, the il0 arc check and the horizontal
-      ! distance hnd -- is invariant across all jl1 sharing that base. Sublevels
-      ! sharing a horizontal length-scale already share their horizontal setup
-      ! (compute_horizontal), but the convolution repeated all of the above nl1
-      ! times with identical arguments. Compute it once per (isb,jl1s) and keep
-      ! only the genuinely jl1-dependent part (vertical distance, and the jl0 arc
-      ! check) inside the loop.
-      ! ---------------------------------------------------------------------
       if (jl1s/=jl1s_cache) then
-         ncand = 0
+         ! Initialization
+         nc1s = 0
+
+         ! Count nearest neighbors
          call nicas_cmp%hor(jl1s)%tree_c1%count_nearest_neighbors(nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),nn)
 
          if (nn>0) then
-            ! Grow the work buffers only when the current capacity is too small.
-            ! They are reused across subgrid points, so after the first few the
-            ! allocator is not touched at all.
-            if (nn>cand_max) then
+            if (nn>nn_max) then
+               ! Update nn_max
+               nn_max = nn
+
+               ! Allocation
                if (allocated(nn_index)) deallocate(nn_index)
                if (allocated(nn_dist)) deallocate(nn_dist)
-               if (allocated(cand_jc1u)) deallocate(cand_jc1u)
-               if (allocated(cand_order)) deallocate(cand_order)
-               if (allocated(cand_hnd)) deallocate(cand_hnd)
-               if (allocated(cand_mnd)) deallocate(cand_mnd)
-               if (allocated(sel_vnd)) deallocate(sel_vnd)
-               if (allocated(sel_mnd)) deallocate(sel_mnd)
-               cand_max = nn
-               allocate(nn_index(cand_max))
-               allocate(nn_dist(cand_max))
-               allocate(cand_jc1u(cand_max))
-               allocate(cand_order(cand_max))
-               allocate(cand_hnd(cand_max))
-               allocate(cand_mnd(cand_max))
-               allocate(sel_vnd(cand_max))
-               allocate(sel_mnd(cand_max))
+               if (allocated(c1s_to_c1u)) deallocate(c1s_to_c1u)
+               if (allocated(order_c1s)) deallocate(order_c1s)
+               if (allocated(hnd_c1s)) deallocate(hnd_c1s)
+               if (allocated(vnd_c1s)) deallocate(vnd_c1s)
+               if (allocated(mnd_c1s_2d)) deallocate(mnd_c1s_2d)
+               if (allocated(mnd_c1s_3d)) deallocate(mnd_c1s_3d)
+               allocate(nn_index(nn_max))
+               allocate(nn_dist(nn_max))
+               allocate(c1s_to_c1u(nn_max))
+               allocate(order_c1s(nn_max))
+               allocate(hnd_c1s(nn_max))
+               allocate(vnd_c1s(nn_max))
+               allocate(mnd_c1s_2d(nn_max))
+               allocate(mnd_c1s_3d(nn_max))
             end if
 
             ! Find nearest neighbors
@@ -4247,12 +4158,11 @@ do isb=1,nicas_cmp%nsb
                jc1u = nicas_cmp%c1_to_c1u(jc1,jl1s)
 
                if (jc1u>0) then
-                  ! Check arc validity (il0 part only; the jl0 part varies with jl1)
+                  ! Check arc validity (il0 part only, the jl0 part varies with jl1)
                   valid = .true.
                   if (nam%mask_check) then
                      call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,valid, &
- & nsel=nsel_il0,sel=sel_il0)
+ & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),il0,nsel_il0,sel_il0,valid)
                   end if
 
                   if (valid) then
@@ -4262,51 +4172,43 @@ do isb=1,nicas_cmp%nsb
                         dy = nicas_cmp%hor(jl1s)%lat_c1u(jc1u)-nicas_cmp%hor(il1s)%lat_c1u(ic1u)
                         call lonlatmod(dx,dy)
                         dx = dx*cos(nicas_cmp%hor(il1s)%lat_c1u(ic1u))
-                        ncand = ncand+1
-                        cand_jc1u(ncand) = jc1u
-                        cand_hnd(ncand) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2 &
+                        nc1s = nc1s+1
+                        c1s_to_c1u(nc1s) = jc1u
+                        hnd_c1s(nc1s) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2 &
  & +nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2+two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
-                        cand_mnd(ncand) = inf(cand_hnd(ncand),half)
+                        mnd_c1s_2d(nc1s) = inf(hnd_c1s(nc1s),half)
                      else
-                        ! NOTE: when rh<=0 and nn_dist>0 the original wrote neither
-                        ! hnd nor mnd, leaving mnd false, so such neighbours are
-                        ! simply not recorded as candidates here.
                         if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
-                           ncand = ncand+1
-                           cand_jc1u(ncand) = jc1u
-                           cand_hnd(ncand) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
-                           cand_mnd(ncand) = inf(cand_hnd(ncand),half)
+                           nc1s = nc1s+1
+                           c1s_to_c1u(nc1s) = jc1u
+                           hnd_c1s(nc1s) = nn_dist(j)/nicas_cmp%hor(il1s)%rh_c1b(ic1b)
+                           mnd_c1s_2d(nc1s) = inf(hnd_c1s(nc1s),half)
                         elseif (.not.(nn_dist(j)>zero)) then
-                           ncand = ncand+1
-                           cand_jc1u(ncand) = jc1u
-                           cand_hnd(ncand) = zero
-                           cand_mnd(ncand) = .true.
+                           nc1s = nc1s+1
+                           c1s_to_c1u(nc1s) = jc1u
+                           hnd_c1s(nc1s) = zero
+                           mnd_c1s_2d(nc1s) = .true.
                         end if
                      end if
                   end if
                end if
             end do
 
-            ! Sort candidates by increasing jc1u. The dense pack used to emit
-            ! bd_to_c1u in ascending order by scanning 1..nc1u, and that ordering
-            ! must be preserved exactly (see balldata_pack_sparse). Sorting here
-            ! rather than per jl1 means it is paid once per base sublevel.
-            if (ncand>1) then
-               call qsort(ncand,cand_jc1u(1:ncand),cand_order(1:ncand))
-               cand_hnd(1:ncand) = cand_hnd(cand_order(1:ncand))
-               cand_mnd(1:ncand) = cand_mnd(cand_order(1:ncand))
+            ! Sort candidates
+            if (nc1s>1) then
+               call qsort(nc1s,c1s_to_c1u(1:nc1s),order_c1s(1:nc1s))
+               hnd_c1s(1:nc1s) = hnd_c1s(order_c1s(1:nc1s))
+               mnd_c1s_2d(1:nc1s) = mnd_c1s_2d(order_c1s(1:nc1s))
             end if
          end if
+
+         ! Update cached jl1s
          jl1s_cache = jl1s
       end if
 
-      ! Decide whether the jl0 half of the arc check is needed at all. Levels in
-      ! the same boundary class carry identical arcs, so the il0 call above has
-      ! already answered for jl0. Selecting arcs for the levels that do differ is
-      ! done once here rather than once per candidate.
+      ! Decide whether the jl0 half of the arc check is needed at all
       check_jl0 = .false.
-      if (nam%mask_check.and.(il0/=jl0)) check_jl0 = &
- & (geom%bnda_c0u%hor_id(il0)/=geom%bnda_c0u%hor_id(jl0))
+      if (nam%mask_check.and.(il0/=jl0)) check_jl0 = (geom%bnda_c0u%hor(il0)%id/=geom%bnda_c0u%hor(jl0)%id)
       if (check_jl0.and.(jl0/=jl0_sel)) then
          call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
  & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(il1)%rh_c1b(ic1b),jl0,nsel_jl0,sel_jl0)
@@ -4314,46 +4216,41 @@ do isb=1,nicas_cmp%nsb
       end if
 
       ! Loop on the cached candidates
-      ! NOTE: only these ncand entries can ever be non-missing, so the work here
-      ! is O(ncand) rather than the O(nc1u) that the dense hnd/vnd/mnd box cost
-      ! -- an allocation, a full "mnd = .false." and two full scans in pack --
-      ! for every one of the nl1 sublevels.
-      do j=1,ncand
-         jc1u = cand_jc1u(j)
+      do ic1s=1,nc1s
+         jc1u = c1s_to_c1u(ic1s)
 
          ! Only the jl0 half of the arc check depends on jl1
          valid = .true.
          if (check_jl0) then
-            call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u), &
- & nicas_cmp%hor(il1s)%lat_c1u(ic1u),nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,valid, &
- & nsel=nsel_jl0,sel=sel_jl0)
+            call geom%bnda_c0u%check_arc(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u),nicas_cmp%hor(il1s)%lat_c1u(ic1u), &
+ & nicas_cmp%hor(jl1s)%lon_c1u(jc1u),nicas_cmp%hor(jl1s)%lat_c1u(jc1u),jl0,nsel_jl0,sel_jl0,valid)
          end if
 
          if (valid) then
-            sel_mnd(j) = cand_mnd(j)
+            mnd_c1s_3d(ic1s) = mnd_c1s_2d(ic1s)
             if (nam%from_gsi) then
                distv = real(abs(il0-jl0),kind_real)
             else
                distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
             end if
             if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
-               sel_vnd(j) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-               sel_mnd(j) = sel_mnd(j).and.inf(sel_vnd(j),half)
+               vnd_c1s(ic1s) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
+               mnd_c1s_3d(ic1s) = mnd_c1s_3d(ic1s).and.inf(vnd_c1s(ic1s),half)
             elseif (distv>zero) then
-               sel_mnd(j) = .false.
+               mnd_c1s_3d(ic1s) = .false.
             else
-               sel_vnd(j) = zero
+               vnd_c1s(ic1s) = zero
             end if
          else
-            sel_mnd(j) = .false.
+            mnd_c1s_3d(ic1s) = .false.
          end if
       end do
 
       ! Pack data
-      if (ncand>0) then
-         call nicas_cmp%ball(jl1,isb)%pack_sparse(ncand,cand_jc1u,cand_hnd,sel_vnd,sel_mnd)
+      if (nc1s>0) then
+         call nicas_cmp%ball(jl1,isb)%pack(nc1s,c1s_to_c1u,hnd_c1s,vnd_c1s,mnd_c1s_3d)
       else
-         call nicas_cmp%ball(jl1,isb)%pack_sparse(0,ind_empty,hnd_empty,vnd_empty,mnd_empty)
+         call nicas_cmp%ball(jl1,isb)%pack_empty()
       end if
    end do
 
@@ -4408,9 +4305,6 @@ if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 c_n_s = 0
 
 ! Filter normalization accumulator
-! Note: only written and read under filter mode, so it is not allocated at all
-! otherwise -- it is an nsa x nthread array, well past the automatic-array
-! stack threshold.
 if (nicas_cmp%filter_mode) then
    allocate(S_tot(nicas_cmp%nsa,mpl%nthread))
    S_tot = zero
@@ -4578,8 +4472,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
 integer :: nlr_max,ntouch,ntouch_max,itouch
-integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:)
-integer,allocatable :: touched(:),touch_order(:)
+integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),touched(:),touch_order(:)
 integer,allocatable :: c_ind_sa(:,:),c_ind_sb(:,:)
 real(kind_real) :: S_add,norm_sum
 real(kind_real),allocatable :: c_S_sa(:,:),c_S_sb(:,:)
@@ -4767,12 +4660,6 @@ do il0=1,nicas_cmp%nl0
       call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
-      ! The accumulator S_list_convol is nsu long, but only the handful of
-      ! entries reached from one grid point are ever non-zero. It used to be
-      ! allocated, zeroed, squared into a temporary and summed in full for every
-      ! wet point, i.e. four O(nsu) passes to do O(nlr*nnz) of work. It is now a
-      ! sparse accumulator: allocated once per thread, and the indices written
-      ! are recorded so that the sum and the reset touch only those.
       !$omp parallel private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
       !$omp&         private(nlr_max,ntouch,ntouch_max,itouch,norm_sum), &
       !$omp&         private(isb_list,S_list_interp,S_list_convol,touched,touch_order)
@@ -4856,10 +4743,6 @@ do il0=1,nicas_cmp%nl0
             end do
 
             ! Sum of squared values
-            ! Sorting the touched indices makes this run in ascending jsu order,
-            ! which is exactly the order the dense scan over 1..nsu used. The
-            ! entries it skips are untouched, hence exactly zero, and adding zero
-            ! to a running sum is exact -- so the result is unchanged bit for bit.
             if (ntouch>1) call qsort(ntouch,touched(1:ntouch),touch_order(1:ntouch))
             norm_sum = zero
             do itouch=1,ntouch
@@ -4872,8 +4755,7 @@ do il0=1,nicas_cmp%nl0
             ! Normalization factor
             nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
 
-            ! Reset the accumulator for the next point. Duplicated indices are
-            ! harmless here, so no de-duplication is needed.
+            ! Reset the accumulator for the next point
             do itouch=1,ntouch
                S_list_convol(touched(itouch)) = zero
             end do
@@ -5236,11 +5118,6 @@ if (any(nicas_cmp%vlev)) then
       ! Check dimension
       if (cv_cmp%n/=nicas_cmp%nsa*geom%nl0) call mpl%abort('${subr}$','wrong control vector dimension')
 
-      ! The levels share one horizontal convolution, so their halo exchanges are
-      ! independent and can travel together. Doing them level by level issued
-      ! 2*nl0 MPI_Alltoallv over the whole communicator per apply; the rank-2
-      ! com variants send all levels in one, giving 2.
-
       ! Allocation
       allocate(alpha_a2(nicas_cmp%nsa,geom%nl0))
       allocate(alpha_b2(nicas_cmp%nsb,geom%nl0))
@@ -5365,8 +5242,6 @@ if (any(nicas_cmp%vlev)) then
  & cv_cmp%alpha(nicas_cmp%ias:nicas_cmp%iae))
    else
       ! Same horizontal convolution for all levels, no vertical convolution
-      ! Adjoint of the batched forward: the per-level halo reductions travel
-      ! together, so this issues 2 MPI_Alltoallv per apply rather than 2*nl0.
 
       ! Allocation
       allocate(alpha_a2(nicas_cmp%nsa,geom%nl0))
@@ -5446,10 +5321,6 @@ real(kind_real) :: alpha_c(nicas_cmp%nsc)
 call nicas_cmp%com_s_AC%ext(mpl,alpha,alpha_c)
 
 ! Convolution
-! Note: msdst=.false. because every zone A subgrid point is a row of the
-! convolution, so no destination is ever missing. The adjoint (apply_ad) has no
-! missing-destination handling at all, so any row that did go missing here would
-! break the convolution adjoint test below.
 call nicas_cmp%c%apply(mpl,alpha_c,alpha,msdst=.false.)
 
 ! Internal normalization
@@ -5694,8 +5565,6 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 fld = zero
 
 ! Vertical interpolation
-! Note: the work arrays are allocated once per thread, outside the loop over
-! columns, rather than once per column.
 !$omp parallel private(ic0a,il0,gamma_tmp,fld_tmp)
 
 ! Allocation
@@ -5753,8 +5622,6 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 @:probe_in()
 
 ! Vertical interpolation
-! Note: the work arrays are allocated once per thread, outside the loop over
-! columns, rather than once per column.
 !$omp parallel private(ic0a,gamma_tmp,fld_tmp)
 
 ! Allocation
@@ -6199,9 +6066,6 @@ integer :: ilo,ihi,imid
 @:probe_in()
 
 ! Find processor
-! Note: proc_to_c1_offset is monotone, so the owning processor is found by
-! bisection rather than by scanning every processor. This is called once per
-! candidate neighbour in the convolution, so the O(nproc) scan showed up.
 ilo = 1
 ihi = nicas_cmp%nproc
 do while (ilo<ihi)
@@ -6252,8 +6116,6 @@ if (nicas_cmp%myuniverse(iproc)) then
    ic1a = ic1-nicas_cmp%hor(il1s)%proc_to_c1_offset(iproc)
 
    ! Get universe index
-   ! Note: the universe offset is precomputed alongside proc_to_c1_offset rather
-   ! than re-derived by an O(nproc) prefix sum on every call.
    ic1u = nicas_cmp%hor(il1s)%proc_to_c1u_offset(iproc)+ic1a
 else
    ! Not in my universe
@@ -6325,8 +6187,6 @@ integer :: ilo,ihi,imid
 @:probe_in()
 
 ! Find processor
-! Note: proc_to_s_offset is monotone, so bisect rather than scan. This is
-! called once per point in loops over the whole global subgrid.
 ilo = 1
 ihi = nicas_cmp%nproc
 do while (ilo<ihi)
@@ -6376,8 +6236,6 @@ if (nicas_cmp%myuniverse(iproc)) then
    isa = is-nicas_cmp%proc_to_s_offset(iproc)
 
    ! Get universe index
-   ! Note: the universe offset is precomputed alongside proc_to_s_offset rather
-   ! than re-derived by an O(nproc) prefix sum on every call.
    isu = nicas_cmp%proc_to_su_offset(iproc)+isa
 else
    ! Not in my universe
