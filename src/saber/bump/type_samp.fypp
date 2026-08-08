@@ -2554,7 +2554,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc,nsel
 integer,allocatable :: sel(:)
-real(kind_real) :: a,d,rad
+real(kind_real) :: a,d,radius
 logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
 
@@ -2702,10 +2702,10 @@ do ic1a=1,samp%nc1a
 
                if (valid.and.allocated(geom%bnda_c0u%hor)) then
                   ! Compute radius
-                  call sphere_dist(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),rad)
+                  call sphere_dist(samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),radius)
 
                   ! Select boundary arcs
-                  call geom%bnda_c0u%select(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),rad,il0,nsel,sel)
+                  call geom%bnda_c0u%select(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),radius,il0,nsel,sel)
 
                   ! Check mask boundaries
                   call geom%bnda_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
