@@ -1989,17 +1989,12 @@ integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global
 ! Local variables
 integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash,iss,iproc
 integer :: nssa_val,irmax,irvalmax,itry,irval,ir,irep,is_min,js,nrep
-integer :: nn_index(2),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
-integer,allocatable :: proc_to_icxmin(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:),to_valid(:),order(:)
+integer :: nn_index(2),ibuf_min(2),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
+integer,allocatable :: proc_to_ibuf_min(:,:),proc_to_icxmin(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:),to_valid(:),order(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
-! Packed send/receive buffers for the per-sampling-point allgathers
-integer :: ibuf_min(2)
-integer,allocatable :: proc_to_ibuf_min(:,:)
 integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
-real(kind_real) :: lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,dist_max,d,nn_dist(2),dist_min,x,y,distx,disty
-real(kind_real),allocatable :: rhc_cxa(:),proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
-real(kind_real) :: rbuf_min(4)
-real(kind_real),allocatable :: proc_to_rbuf_min(:,:)
+real(kind_real) :: lonlat(2),rbuf_min(4),valmin,xmin,ymin,zmin,chmin,dist,dist_max,d,nn_dist(2),dist_min,x,y,distx,disty
+real(kind_real),allocatable :: rhc_cxa(:),proc_to_rbuf_min(:,:),proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: lon_ssa(:),lat_ssa(:),rh_ssa(:),lon_rep(:),lat_rep(:),rh_rep(:),dist_rep(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:),lon_ss(:),lat_ss(:),rh_ss(:)
@@ -2354,10 +2349,6 @@ else
 
          if (parallel) then
             ! Communication
-            ! Note: the six scalar allgathers are packed into two, one for the
-            ! reals and one for the integers. This runs once per sampling point
-            ! over the global subset, so the number of collectives -- not the
-            ! bytes moved -- is what the loop costs.
             rbuf_min = (/xmin,ymin,zmin,chmin/)
             ibuf_min = (/nodemin,icxmin/)
             call mpl%allgather(rbuf_min,proc_to_rbuf_min)
@@ -2438,10 +2429,6 @@ else
 
             if (parallel) then
                ! Communication
-               ! Note: the six scalar allgathers are packed into two, one for
-               ! the reals and one for the integers. This is the hot one -- it
-               ! runs once per sampling point over the global subset, so the
-               ! number of collectives, not the bytes moved, is what it costs.
                rbuf_min = (/xmin,ymin,zmin,chmin/)
                ibuf_min = (/nodemin,icxmin/)
                call mpl%allgather(rbuf_min,proc_to_rbuf_min)

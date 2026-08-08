@@ -963,11 +963,6 @@ real(kind_real) :: prog
 
 if (mpl%nprog>0) then
    ! Update progression array
-   ! Note: the number of completed entries is accumulated here rather than
-   ! recovered with count(mpl%done). This routine is called once per point from
-   ! loops over the whole local grid, several of them inside OpenMP regions, so
-   ! a full scan of mpl%done per call made the display cost O(nprog^2) per
-   ! thread. mpl%done is kept as the guard that makes a repeated index idempotent.
    if (present(i)) then
       if (.not.mpl%done(i)) then
          mpl%done(i) = .true.
