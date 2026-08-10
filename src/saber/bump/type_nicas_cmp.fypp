@@ -1667,6 +1667,7 @@ if (any(nicas_cmp%vlev)) then
    ! Allocation
    allocate(nicas_cmp%proc_to_nsa(mpl%nproc))
    allocate(nicas_cmp%proc_to_s_offset(mpl%nproc))
+   allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    allocate(nicas_cmp%sa_to_c1a(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_l1(nicas_cmp%nsa))
    allocate(lon_sa(nicas_cmp%nsa))
@@ -1692,7 +1693,6 @@ if (any(nicas_cmp%vlev)) then
    end do
 
    ! Subgrid offset for the universe
-   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
@@ -3352,6 +3352,7 @@ end do
 if (.not.nam%load_nicas_global) then
    allocate(nicas_cmp%proc_to_nsa(mpl%nproc))
    allocate(nicas_cmp%proc_to_s_offset(mpl%nproc))
+   allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    allocate(nicas_cmp%sa_to_s(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_c1a(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_l1(nicas_cmp%nsa))
@@ -3403,7 +3404,6 @@ if (.not.nam%load_nicas_global) then
    end do
 
    ! Subgrid offset for the universe
-   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
