@@ -1773,6 +1773,7 @@ if (any(nicas_cmp%vlev)) then
    ! Allocation
    allocate(nicas_cmp%proc_to_nsa(mpl%nproc))
    allocate(nicas_cmp%proc_to_s_offset(mpl%nproc))
+   allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    allocate(nicas_cmp%sa_to_c1a(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_l1(nicas_cmp%nsa))
    allocate(lon_sa(nicas_cmp%nsa))
@@ -1798,7 +1799,6 @@ if (any(nicas_cmp%vlev)) then
    end do
 
    ! Subgrid offset for the universe
-   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
@@ -3561,6 +3561,7 @@ end do
 if (.not.nam%load_nicas_global) then
    allocate(nicas_cmp%proc_to_nsa(mpl%nproc))
    allocate(nicas_cmp%proc_to_s_offset(mpl%nproc))
+   allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    allocate(nicas_cmp%sa_to_s(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_c1a(nicas_cmp%nsa))
    allocate(nicas_cmp%sa_to_l1(nicas_cmp%nsa))
@@ -3612,7 +3613,6 @@ if (.not.nam%load_nicas_global) then
    end do
 
    ! Subgrid offset for the universe
-   if (.not.allocated(nicas_cmp%proc_to_su_offset)) allocate(nicas_cmp%proc_to_su_offset(mpl%nproc))
    nicas_cmp%proc_to_su_offset(1) = 0
    do iproc=2,mpl%nproc
       nicas_cmp%proc_to_su_offset(iproc) = nicas_cmp%proc_to_su_offset(iproc-1)
@@ -4038,7 +4038,7 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: isu,ic1u,ic1b,ic1s,jc1,jc1u,il1,il1s,il0,j,jl0,jl1,jl1s,isb,nn,nn_max,jl1s_cache,nc1s,nbnda_max,nsel_il0,nsel_jl0,jl0_sel
+integer :: isu,ic1u,ic1b,ic1s,jc1,jc1u,il1,il1s,il0,j,jl0,jl1,jl1s,isb,nn,nn_max,jl1s_cache,nc1s,nsel_il0,nsel_jl0,jl0_sel
 integer,allocatable :: nn_index(:),c1s_to_c1u(:),order_c1s(:),sel_il0(:),sel_jl0(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
 real(kind_real) :: rv_max(nicas_cmp%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
