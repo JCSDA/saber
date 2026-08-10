@@ -4225,9 +4225,8 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
-integer :: nlr_max,ntouch,ntouch_max,itouch
-integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),touched(:),touch_order(:)
+integer :: i_s,ic1b,ic1s,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nc1s,nc1s_max,nlr,nlr_max,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
+integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),c1s_to_c1u(:),order_c1s(:)
 integer,allocatable :: c_ind_sa(:,:),c_ind_sb(:,:)
 real(kind_real) :: S_add,norm_sum
 real(kind_real),allocatable :: c_S_sa(:,:),c_S_sb(:,:)
@@ -4416,14 +4415,14 @@ do il0=1,nicas_cmp%nl0
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
       !$omp parallel private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
-      !$omp&         private(nlr_max,ntouch,ntouch_max,itouch,norm_sum), &
-      !$omp&         private(isb_list,S_list_interp,S_list_convol,touched,touch_order)
+      !$omp&         private(nlr_max,nc1s,nc1s_max,ic1s,norm_sum), &
+      !$omp&         private(isb_list,S_list_interp,S_list_convol,c1s_to_c1u,order_c1s)
 
       ! Allocation
       allocate(S_list_convol(nicas_cmp%nsu))
       S_list_convol = zero
       nlr_max = 0
-      ntouch_max = 0
+      nc1s_max = 0
 
       !$omp do schedule(static)
       do ic0a=1,geom%nc0a
@@ -4472,44 +4471,44 @@ do il0=1,nicas_cmp%nl0
                end do
             end do
 
-            ! Grow the touched-index list to the number of scatter operations
-            ntouch = 0
+            ! Grow the c1s_to_c1u-index list to the number of scatter operations
+            nc1s = 0
             do ilr=1,nlr
-               ntouch = ntouch+c(isb_list(ilr))%n_s
+               nc1s = nc1s+c(isb_list(ilr))%n_s
             end do
-            if (ntouch>ntouch_max) then
-               if (allocated(touched)) deallocate(touched)
-               if (allocated(touch_order)) deallocate(touch_order)
-               ntouch_max = ntouch
-               allocate(touched(ntouch_max))
-               allocate(touch_order(ntouch_max))
+            if (nc1s>nc1s_max) then
+               if (allocated(c1s_to_c1u)) deallocate(c1s_to_c1u)
+               if (allocated(order_c1s)) deallocate(order_c1s)
+               nc1s_max = nc1s
+               allocate(c1s_to_c1u(nc1s_max))
+               allocate(order_c1s(nc1s_max))
             end if
 
             ! Convolution
-            ntouch = 0
+            nc1s = 0
             do ilr=1,nlr
                isb = isb_list(ilr)
                do ic=1,c(isb)%n_s
                   jsu = c(isb)%col(ic)
                   S_list_convol(jsu) = S_list_convol(jsu)+c(isb)%S(ic)*S_list_interp(ilr)
-                  ntouch = ntouch+1
-                  touched(ntouch) = jsu
+                  nc1s = nc1s+1
+                  c1s_to_c1u(nc1s) = jsu
                end do
             end do
 
             ! Sum of squared values
-            if (ntouch>1) call qsort(ntouch,touched(1:ntouch),touch_order(1:ntouch))
-            norm_sum = S_list_convol(touched(1))**2
-            do itouch=2,ntouch
-               if (touched(itouch)>touched(itouch-1)) norm_sum = norm_sum+S_list_convol(touched(itouch))**2
+            if (nc1s>1) call qsort(nc1s,c1s_to_c1u(1:nc1s),order_c1s(1:nc1s))
+            norm_sum = S_list_convol(c1s_to_c1u(1))**2
+            do ic1s=2,nc1s
+               if (c1s_to_c1u(ic1s)>c1s_to_c1u(ic1s-1)) norm_sum = norm_sum+S_list_convol(c1s_to_c1u(ic1s))**2
             end do
 
             ! Normalization factor
             nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
 
             ! Reset the accumulator for the next point
-            do itouch=1,ntouch
-               S_list_convol(touched(itouch)) = zero
+            do ic1s=1,nc1s
+               S_list_convol(c1s_to_c1u(ic1s)) = zero
             end do
 
             ! Update
@@ -4521,8 +4520,8 @@ do il0=1,nicas_cmp%nl0
       ! Release memory
       if (allocated(isb_list)) deallocate(isb_list)
       if (allocated(S_list_interp)) deallocate(S_list_interp)
-      if (allocated(touched)) deallocate(touched)
-      if (allocated(touch_order)) deallocate(touch_order)
+      if (allocated(c1s_to_c1u)) deallocate(c1s_to_c1u)
+      if (allocated(order_c1s)) deallocate(order_c1s)
       deallocate(S_list_convol)
 
       !$omp end parallel
