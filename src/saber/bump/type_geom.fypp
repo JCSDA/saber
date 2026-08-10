@@ -422,6 +422,9 @@ if (nam%mask_check) then
    write(mpl%info,'(a7,a)') '','Setup mask boundaries'
    call mpl%flush
    call geom%bnda_c0u%init(mpl,geom%nc0u,geom%nl0,geom%gmask_hor_c0u,geom%gmask_c0u,geom%mesh_c0u)
+   write(mpl%info,'(a10,a,i4,a,i4,a)') '','Boundary classes: ',geom%bnda_c0u%nclass,' distinct masks over ', &
+ & geom%nl0,' levels (arc checks are shared within a class)'
+   call mpl%flush
 end if
 
 ! Setup horizontal distance

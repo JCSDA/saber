@@ -76,6 +76,7 @@ type mpl_type
    ! Progression print
    integer :: nprog                       !< Progression array size
    integer :: progint                     !< Progression integer
+   integer :: ndone                       !< Number of entries marked done
    logical,allocatable :: done(:)         !< Progression array
 
    ! Timers
@@ -893,6 +894,7 @@ allocate(mpl%done(nprog))
 ! Initialization
 mpl%nprog = nprog
 mpl%progint = ddis
+mpl%ndone = 0
 mpl%done = .false.
 
 end subroutine mpl_prog_init
@@ -918,10 +920,16 @@ real(kind_real) :: prog
 
 if (mpl%nprog>0) then
    ! Update progression array
-   if (present(i)) mpl%done(i) = .true.
+   if (present(i)) then
+      if (.not.mpl%done(i)) then
+         mpl%done(i) = .true.
+         !$omp atomic
+         mpl%ndone = mpl%ndone+1
+      end if
+   end if
 
    ! Print message
-   prog = hundred*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
+   prog = hundred*real(mpl%ndone,kind_real)/real(mpl%nprog,kind_real)
    ithread = 0
    !$ ithread = omp_get_thread_num()
    do while ((int(prog)>mpl%progint).and.(ithread==0))
