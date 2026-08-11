@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use iso_fortran_env, only: output_unit
 !$ use omp_lib
 use tools_const, only: zero,half,hundred,thousand
-use tools_kinds, only: kind_int,kind_real
+use tools_kinds, only: kind_int,kind_long,kind_real
 use tools_log, only: write_log
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
@@ -24,7 +24,7 @@ integer,parameter :: ddis = 5 !< Progression display step
 
 type timer_type
    character(len=1024) :: name               !< Timer name
-   integer :: clock_start                    !< Timer start
+   integer(kind_long) :: clock_start         !< Timer start
    integer :: ncall                          !< Number of calls
    real(kind_real),allocatable :: elapsed(:) !< Elapsed time
 end type timer_type
@@ -85,8 +85,8 @@ type mpl_type
    type(timer_type),allocatable :: t(:)   !< Timers
 
    ! Timing common info
-   integer :: count_rate                  !< Clock count rate
-   integer :: count_max                   !< Clock count maximum
+   integer(kind_long) :: count_rate       !< Clock count rate
+   integer(kind_long) :: count_max        !< Clock count maximum
 contains
    procedure :: init => mpl_init
    procedure :: final => mpl_final
@@ -1095,7 +1095,8 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 character(len=*),intent(in) :: name  !< Timer name
 
 ! Local variables
-integer :: it,clock_stop,nel
+integer :: it,nel
+integer(kind_long) :: clock_stop
 real(kind_real) :: elapsed
 real(kind_real),allocatable :: tmp(:)
 logical :: found
