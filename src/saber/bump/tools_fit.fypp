@@ -294,11 +294,13 @@ do icmp=1,ncmp
    call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vert_coord,rv(:,icmp),ver_fit)
 
    do il0=1,nl0
+      ! Horizontal component. It depends on il0 only, so it is computed once per
+      ! level instead of being recomputed identically for each of the nl0r
+      ! vertical separations below.
+      if (mpl%msv%isnot(rh(il0,icmp))) call diag_iso(mpl,nc3,disth,'hor',rh(il0,icmp),hor_fit)
+
       do jl0r=1,nl0r
          if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(rh(il0,icmp))) then
-            ! Horizontal component
-            call diag_iso(mpl,nc3,disth,'hor',rh(il0,icmp),hor_fit)
-
             do jc3=1,nc3
                ! Fit function
                if (mpl%msv%isnot(fit(jc3,jl0r,il0))) fit(jc3,jl0r,il0) = fit(jc3,jl0r,il0) &
@@ -360,11 +362,15 @@ do icmp=1,ncmp
    call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vert_coord,rv(:,icmp),ver_fit)
 
    do il0=1,nl0
+      ! Horizontal component. It depends on il0 only, so it is computed once per
+      ! level instead of being recomputed identically for each of the nl0r
+      ! vertical separations below.
+      if (mpl%msv%isnot(D11(il0,icmp)).and.mpl%msv%isnot(D22(il0,icmp)).and.mpl%msv%isnot(D12(il0,icmp))) &
+ & call diag_tensor(mpl,nc3,nc4,disth,as,D11(il0,icmp),D22(il0,icmp),D12(il0,icmp),hor_fit)
+
       do jl0r=1,nl0r
          if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(D11(il0,icmp)).and.mpl%msv%isnot(D22(il0,icmp)) &
  & .and.mpl%msv%isnot(D12(il0,icmp))) then
-            ! Horizontal component
-            call diag_tensor(mpl,nc3,nc4,disth,as,D11(il0,icmp),D22(il0,icmp),D12(il0,icmp),hor_fit)
             do jc4=1,nc4
                do jc3=1,nc3
                   ! Fit function

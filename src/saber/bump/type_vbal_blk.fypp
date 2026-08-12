@@ -17,7 +17,7 @@ use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
-use type_samp, only: samp_type
+use type_samp, only: samp_type,samp_flt_type
 
 implicit none
 
@@ -422,6 +422,7 @@ real(kind_real) :: cov_c1a_pack(samp%nc1a,geom%nl0**2)
 real(kind_real) :: cov_c1e(samp%nc1e,geom%nl0,geom%nl0)
 real(kind_real) :: cov_c1e_pack(samp%nc1e,geom%nl0**2)
 real(kind_real),allocatable :: list_cov(:),cov_c2a(:),cov_c2b(:)
+type(samp_flt_type) :: flt
 
 ! Set name
 @:set_name(vbal_blk_compute_spatial_average)
@@ -494,6 +495,10 @@ if (nam%diag_rhflt>zero) then
    allocate(cov_c2a(samp%nc2a))
    allocate(cov_c2b(samp%nc2b))
 
+   ! Setup the filtering halo once: it depends only on the filtering radius and
+   ! on the sampling geometry, not on the level pair below.
+   call samp%diag_filter_setup(mpl,nam%diag_rhflt,flt)
+
    do il0=1,geom%nl0
       do jl0=1,geom%nl0
          ! Copy halo A
@@ -503,8 +508,8 @@ if (nam%diag_rhflt>zero) then
          end do
 
          ! Filter
-         call samp%diag_filter(mpl,'median',nam%diag_rhflt,cov_c2a)
-         call samp%diag_filter(mpl,'average',nam%diag_rhflt,cov_c2a)
+         call samp%diag_filter(mpl,flt,'median',cov_c2a)
+         call samp%diag_filter(mpl,flt,'average',cov_c2a)
 
          ! Extend to halo B
          call samp%com_c2_AB%ext(mpl,cov_c2a,cov_c2b)
@@ -515,6 +520,7 @@ if (nam%diag_rhflt>zero) then
    end do
 
    ! Release memory
+   call flt%dealloc
    deallocate(cov_c2a)
    deallocate(cov_c2b)
 end if

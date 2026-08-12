@@ -35,6 +35,22 @@ use type_tree, only: tree_type
 
 implicit none
 
+! Diagnostic filtering derived type
+! Note: the halo F used by samp_diag_filter depends only on the filtering radius
+! and on the (fixed) sampling geometry -- not on the level, the component, the
+! group or the field being filtered. Building it is a global, root-serialized
+! operation, so it is built once by the caller and reused across the whole
+! filtering loop instead of being rebuilt on every call.
+type samp_flt_type
+   real(kind_real) :: rflt                                !< Filtering radius the halo was built for
+   integer :: nc2f                                        !< Number of points in subset Sc2, halo F
+   integer,allocatable :: c2u_to_c2f(:)                   !< Subset Sc2, universe, to subset Sc2, halo F
+   integer,allocatable :: c2f_to_c2(:)                    !< Subset Sc2, halo F, to subset Sc2, global
+   type(com_type) :: com_c2_AF                            !< Communication between halos A and F (filtering) on subset Sc2
+contains
+   procedure :: dealloc => samp_flt_dealloc
+end type samp_flt_type
+
 ! Sampling derived type
 type samp_type
    ! Parameters
@@ -173,6 +189,7 @@ contains
    procedure :: compute_mpi_c0c => samp_compute_mpi_c0c
    procedure :: compute_mpi_d => samp_compute_mpi_d
    procedure :: compute_mpi_e => samp_compute_mpi_e
+   procedure :: diag_filter_setup => samp_diag_filter_setup
    procedure :: diag_filter => samp_diag_filter
    procedure :: diag_fill => samp_diag_fill
    procedure :: c1_to_c1a => samp_c1_to_c1a
@@ -184,7 +201,7 @@ contains
 end type samp_type
 
 private
-public :: samp_type
+public :: samp_type,samp_flt_type
 
 contains
 
@@ -2596,11 +2613,16 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
    write(mpl%info,'(a7,a)') '','Compute HDIAG pairs: '
    call mpl%flush(newl=.false.)
    call mpl%prog_init(nam%nc3*nam%nc4*samp%nc1a)
+   ! Note: mpl%ndone is maintained alongside mpl%done here. This loop marks
+   ! entries directly rather than through prog_print, so without this the
+   ! progression display would stay at 0%, and the completion test below would
+   ! be an O(nc3*nc4*nc1a) reduction executed once per random point drawn.
    do ic1a=1,samp%nc1a
       mpl%done((ic1a-1)*nam%nc3*nam%nc4+1) = .true.
    end do
+   mpl%ndone = samp%nc1a
    if (samp%nc1a>0) then
-      done = all(mpl%done)
+      done = (mpl%ndone==nam%nc3*nam%nc4*samp%nc1a)
    else
       done = .true.
    end if
@@ -2654,6 +2676,9 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
                         samp%smask_c3a(ic1a,jc3,jc4,:) = samp%smask_c0u(jc0u,:)
                         c3a_free(ic1a,jc3,jc4) = .false.
                         mpl%done((ic1a-1)*nam%nc3*nam%nc4+(jc3-1)*nam%nc4+jc4) = .true.
+                        ! The c3a_free guard makes this idempotent
+                        !$omp atomic
+                        mpl%ndone = mpl%ndone+1
                      end if
                   end if
                end if
@@ -2665,7 +2690,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
          call mpl%prog_print
       end if
       if (samp%nc1a>0) then
-         done = all(mpl%done)
+         done = (mpl%ndone==nam%nc3*nam%nc4*samp%nc1a)
       else
          done = .true.
       end if
@@ -3645,36 +3670,56 @@ call mpl%flush
 end subroutine samp_compute_mpi_e
 
 !----------------------------------------------------------------------
-! Subroutine: samp_diag_filter
-!> Filter diagnostics
+! Subroutine: samp_flt_dealloc
+!> Release diagnostic filtering data
 !----------------------------------------------------------------------
-subroutine samp_diag_filter(samp,mpl,filter_type,rflt,diag_c2a,val_c2a)
+subroutine samp_flt_dealloc(flt)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp                       !< Sampling
-type(mpl_type),intent(inout) :: mpl                       !< MPI data
-character(len=*),intent(in) :: filter_type                !< Filter type
-real(kind_real),intent(in) :: rflt                        !< Filter support radius
-real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      !< Filtered diagnostic
-real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) !< Useful value for filtering
-
-! Local variables
-integer :: ic2,ic2a,nc2f,ic2f,ic2u,jc2u,nc2eff,ic2eff,kc2u,kc2f
-integer :: c2u_to_c2f(samp%nc2u)
-integer,allocatable :: c2f_to_c2(:),order(:)
-real(kind_real) :: distnorm,norm,wgt
-real(kind_real),allocatable :: diag_c2f(:),diag_eff(:),diag_eff_dist(:)
-real(kind_real),allocatable :: val_c2f(:),val_eff(:)
-logical :: lcheck_c2f(samp%nc2u)
-type(com_type) :: com_c2_AF
+class(samp_flt_type),intent(inout) :: flt !< Diagnostic filtering data
 
 ! Set name
-@:set_name(samp_diag_filter)
+@:set_name(samp_flt_dealloc)
 
 ! Probe in
 @:probe_in()
+
+if (allocated(flt%c2u_to_c2f)) deallocate(flt%c2u_to_c2f)
+if (allocated(flt%c2f_to_c2)) deallocate(flt%c2f_to_c2)
+call flt%com_c2_AF%dealloc
+
+! Probe out
+@:probe_out()
+
+end subroutine samp_flt_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: samp_diag_filter_setup
+!> Setup diagnostic filtering halo
+!----------------------------------------------------------------------
+subroutine samp_diag_filter_setup(samp,mpl,rflt,flt)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(in) :: samp        !< Sampling
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+real(kind_real),intent(in) :: rflt         !< Filter support radius
+type(samp_flt_type),intent(inout) :: flt   !< Diagnostic filtering data
+
+! Local variables
+integer :: ic2,ic2a,ic2f,ic2u,jc2u,kc2u
+logical :: lcheck_c2f(samp%nc2u)
+
+! Set name
+@:set_name(samp_diag_filter_setup)
+
+! Probe in
+@:probe_in()
+
+flt%rflt = rflt
 
 if (rflt>zero) then
    ! Define halo F
@@ -3690,33 +3735,72 @@ if (rflt>zero) then
          if (jc2u>samp%nc2u) exit
       end do
    end do
-   nc2f = zss_count(lcheck_c2f)
+   flt%nc2f = zss_count(lcheck_c2f)
 
    ! Allocation
-   allocate(c2f_to_c2(nc2f))
+   allocate(flt%c2f_to_c2(flt%nc2f))
+   allocate(flt%c2u_to_c2f(samp%nc2u))
 
    ! Global-local conversion for halo F
-   c2u_to_c2f = mpl%msv%vali
+   flt%c2u_to_c2f = mpl%msv%vali
    ic2f = 0
    do ic2u=1,samp%nc2u
       if (lcheck_c2f(ic2u)) then
          ic2f = ic2f+1
          ic2 = samp%c2u_to_c2(ic2u)
-         c2f_to_c2(ic2f) = ic2
-         c2u_to_c2f(ic2u) = ic2f
+         flt%c2f_to_c2(ic2f) = ic2
+         flt%c2u_to_c2f(ic2u) = ic2f
       end if
    end do
 
    ! Setup communications
-   call com_c2_AF%setup(mpl,'com_c2_AF',samp%nc2a,nc2f,samp%nc2,samp%c2a_to_c2,c2f_to_c2)
+   call flt%com_c2_AF%setup(mpl,'com_c2_AF',samp%nc2a,flt%nc2f,samp%nc2,samp%c2a_to_c2,flt%c2f_to_c2)
+end if
 
+! Probe out
+@:probe_out()
+
+end subroutine samp_diag_filter_setup
+
+!----------------------------------------------------------------------
+! Subroutine: samp_diag_filter
+!> Filter diagnostics
+!----------------------------------------------------------------------
+subroutine samp_diag_filter(samp,mpl,flt,filter_type,diag_c2a,val_c2a)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(in) :: samp                       !< Sampling
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+type(samp_flt_type),intent(in) :: flt                     !< Diagnostic filtering data
+character(len=*),intent(in) :: filter_type                !< Filter type
+real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      !< Filtered diagnostic
+real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) !< Useful value for filtering
+
+! Local variables
+integer :: ic2a,jc2u,nc2eff,ic2eff,kc2u,kc2f
+integer,allocatable :: order(:)
+real(kind_real) :: rflt,distnorm,norm,wgt
+real(kind_real),allocatable :: diag_c2f(:),diag_eff(:),diag_eff_dist(:)
+real(kind_real),allocatable :: val_c2f(:),val_eff(:)
+
+! Set name
+@:set_name(samp_diag_filter)
+
+! Probe in
+@:probe_in()
+
+rflt = flt%rflt
+
+if (rflt>zero) then
    ! Allocation
-   allocate(diag_c2f(nc2f))
-   if (present(val_c2a)) allocate(val_c2f(nc2f))
+   allocate(diag_c2f(flt%nc2f))
+   if (present(val_c2a)) allocate(val_c2f(flt%nc2f))
 
    ! Halo extension
-   call com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
-   if (present(val_c2a)) call com_c2_AF%ext(mpl,val_c2a,val_c2f)
+   call flt%com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
+   if (present(val_c2a)) call flt%com_c2_AF%ext(mpl,val_c2a,val_c2f)
 
    !!$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), & ! TODO: buggy with PGI
    !!$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
@@ -3727,7 +3811,7 @@ if (rflt>zero) then
       do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
          ! Check the point validity
          kc2u = samp%nn_c2a_index(jc2u,ic2a)
-         kc2f = c2u_to_c2f(kc2u)
+         kc2f = flt%c2u_to_c2f(kc2u)
          if (mpl%msv%isnot(diag_c2f(kc2f))) nc2eff = nc2eff+1
          jc2u = jc2u+1
          if (jc2u>samp%nc2u) exit
@@ -3745,7 +3829,7 @@ if (rflt>zero) then
          do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
             ! Check the point validity
             kc2u = samp%nn_c2a_index(jc2u,ic2a)
-            kc2f = c2u_to_c2f(kc2u)
+            kc2f = flt%c2u_to_c2f(kc2u)
             if (mpl%msv%isnot(diag_c2f(kc2f))) then
                ic2eff = ic2eff+1
                diag_eff(ic2eff) = diag_c2f(kc2f)
@@ -3805,8 +3889,6 @@ if (rflt>zero) then
    !!$omp end parallel do
 
    ! Release memory
-   deallocate(c2f_to_c2)
-   call com_c2_AF%dealloc
    deallocate(diag_c2f)
    if (present(val_c2a)) deallocate(val_c2f)
 end if

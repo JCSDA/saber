@@ -542,6 +542,8 @@
 #:set subr_list = subr_list + ["samp_compute_mpi_c0c"]
 #:set subr_list = subr_list + ["samp_compute_mpi_d"]
 #:set subr_list = subr_list + ["samp_compute_mpi_e"]
+#:set subr_list = subr_list + ["samp_flt_dealloc"]
+#:set subr_list = subr_list + ["samp_diag_filter_setup"]
 #:set subr_list = subr_list + ["samp_diag_filter"]
 #:set subr_list = subr_list + ["samp_diag_fill"]
 #:set subr_list = subr_list + ["samp_c1_to_c1a"]
