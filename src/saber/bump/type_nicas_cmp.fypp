@@ -4225,14 +4225,14 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: i_s,ic1b,iss,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nss,nss_max,nlr,nlr_max,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
-integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),ss_to_su(:),order_ss(:)
-integer,allocatable :: c_ind_sa(:,:),c_ind_sb(:,:)
+integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,nlr_max,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
+integer :: iss,nss,nss_max,istamp
+integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),c_ind_sa(:,:),c_ind_sb(:,:)
+integer,allocatable :: ss_to_su(:),stamp(:)
 real(kind_real) :: S_add,norm_sum
 real(kind_real),allocatable :: c_S_sa(:,:),c_S_sb(:,:)
 real(kind_real),allocatable :: list(:),S_list_interp(:),S_list_convol(:)
 type(linop_type),allocatable :: v(:),h(:,:),c(:)
-logical :: sort_data
 
 ! Set name
 @:set_name(nicas_cmp_compute_normalization)
@@ -4409,11 +4409,6 @@ allocate(nicas_cmp%norm(geom%nc0a,nicas_cmp%nl0))
 
 ! Initialization
 nicas_cmp%norm = mpl%msv%valr
-if (nicas_cmp%interp_type=='si') then
-   sort_data = .false.
-else
-   sort_data = .true.
-end if
 
 ! Compute normalization weights
 do il0=1,nicas_cmp%nl0
@@ -4423,11 +4418,17 @@ do il0=1,nicas_cmp%nl0
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
       !$omp parallel private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
-      !$omp&         private(nlr_max,nss,nss_max,iss,norm_sum), &
-      !$omp&         private(isb_list,S_list_interp,S_list_convol,ss_to_su,order_ss)
+      !$omp&         private(nlr_max,nss,nss_max,iss,norm_sum,istamp), &
+      !$omp&         private(isb_list,S_list_interp,S_list_convol,stamp,ss_to_su)
 
       ! Allocation
       allocate(S_list_convol(nicas_cmp%nsu))
+      allocate(stamp(nicas_cmp%nsu))
+
+      ! Initialization
+      S_list_convol = zero
+      istamp = 0
+      stamp = 0
       nlr_max = 0
       nss_max = 0
 
@@ -4455,7 +4456,6 @@ do il0=1,nicas_cmp%nl0
             ! Initialization
             isb_list(1:nlr) = 0
             S_list_interp(1:nlr) = zero
-            S_list_convol = zero
 
             ! Adjoint interpolation
             nlr = 0
@@ -4479,49 +4479,48 @@ do il0=1,nicas_cmp%nl0
                end do
             end do
 
-            if (sort_data) then
-               ! Grow the ss_to_su-index list to the number of scatter operations
-               nss = 0
-               do ilr=1,nlr
-                  nss = nss+c(isb_list(ilr))%n_s
-               end do
-               if (nss>nss_max) then
-                  if (allocated(ss_to_su)) deallocate(ss_to_su)
-                  if (allocated(order_ss)) deallocate(order_ss)
-                  nss_max = nss
-                  allocate(ss_to_su(nss_max))
-                  allocate(order_ss(nss_max))
-               end if
+            ! Grow the ss_to_su-index list to the number of scatter operations
+            nss = 0
+            do ilr=1,nlr
+               nss = nss+c(isb_list(ilr))%n_s
+            end do
+            if (nss>nss_max) then
+               if (allocated(ss_to_su)) deallocate(ss_to_su)
+               nss_max = nss
+               allocate(ss_to_su(nss_max))
             end if
 
             ! Convolution
-            if (sort_data) nss = 0
+            istamp = istamp+1
+            nss = 0
             do ilr=1,nlr
                isb = isb_list(ilr)
                do ic=1,c(isb)%n_s
                   jsu = c(isb)%col(ic)
-                  S_list_convol(jsu) = S_list_convol(jsu)+c(isb)%S(ic)*S_list_interp(ilr)
-                  if (sort_data) then
+                  if (stamp(jsu)/=istamp) then
+                     stamp(jsu) = istamp
+                     S_list_convol(jsu) = c(isb)%S(ic)*S_list_interp(ilr)
                      nss = nss+1
                      ss_to_su(nss) = jsu
+                  else
+                     S_list_convol(jsu) = S_list_convol(jsu)+c(isb)%S(ic)*S_list_interp(ilr)
                   end if
                end do
             end do
 
-            if (sort_data) then
-               ! Sort data + restricted sum of squared values
-               if (nss>1) call qsort(nss,ss_to_su(1:nss),order_ss(1:nss))
-               norm_sum = S_list_convol(ss_to_su(1))**2
-               do iss=2,nss
-                  if (ss_to_su(iss)>ss_to_su(iss-1)) norm_sum = norm_sum+S_list_convol(ss_to_su(iss))**2
-               end do
-            else
-               ! Full sum of squared values
-               norm_sum = zss_sum(S_list_convol**2)
-            end if
+            ! Sum of squared values
+            norm_sum = zero
+            do iss=1,nss
+               norm_sum = norm_sum+S_list_convol(ss_to_su(iss))**2
+            end do
 
             ! Normalization factor
-            nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
+            if (nss>0) then
+               nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
+            else
+               call mpl%warning('${subr}$','grid point without valid normalization factor')
+               nicas_cmp%norm(ic0a,il0) = one
+            end if
 
             ! Update
             if (nicas_cmp%verbosity) call mpl%prog_print(ic0a)
@@ -4533,8 +4532,8 @@ do il0=1,nicas_cmp%nl0
       if (allocated(isb_list)) deallocate(isb_list)
       if (allocated(S_list_interp)) deallocate(S_list_interp)
       if (allocated(ss_to_su)) deallocate(ss_to_su)
-      if (allocated(order_ss)) deallocate(order_ss)
       deallocate(S_list_convol)
+      deallocate(stamp)
 
       !$omp end parallel
       if (nicas_cmp%verbosity) call mpl%prog_final

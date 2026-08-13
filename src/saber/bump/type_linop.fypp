@@ -1251,7 +1251,7 @@ do ithread=1,mpl%nthread
    c(ithread)%n_s = n_s_max
    call c(ithread)%alloc
 end do
-if (allocated(bnda%hor)) allocate(sel(max(bnda%hor(il0)%n,1)))
+if (allocated(bnda%hor)) allocate(sel(bnda%hor(il0)%n))
 
 ! Initialization
 c_n_s = 0
