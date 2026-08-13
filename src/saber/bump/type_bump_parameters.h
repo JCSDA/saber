@@ -547,6 +547,10 @@ struct NICASDef {
   std::pair<const char *, bool> forced_radii =
     std::make_pair("explicit length-scales", false);
 
+  // Force specific support radii for samping
+  std::pair<const char *, bool> forced_radii_sampling =
+    std::make_pair("explicit length-scales for sampling", false);
+
   // Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
   std::pair<const char *, double> nicas_si_factor =
     std::make_pair("smooth interpolation factor", 0.25);

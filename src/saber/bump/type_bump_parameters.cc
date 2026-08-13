@@ -308,6 +308,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nicas_draw_type, nicasConf);
   // Force specific support radii
   param(nicasDef.forced_radii, nicasConf);
+  // Force specific support radii for sampling
+  param(nicasDef.forced_radii_sampling, nicasConf);
   // Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
   param(nicasDef.nicas_si_factor, nicasConf);
   // Normalization randomization size
