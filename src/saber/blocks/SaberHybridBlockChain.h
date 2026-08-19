@@ -115,6 +115,9 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
   /// @brief Control vector size
   size_t ctlVecSize() const override
     {throw eckit::NotImplemented("ctlVecSize not implemented yet", Here());}
+  /// @brief Generate a random control vector.
+  void randomCtlVec(atlas::Field &, const size_t &) const override
+    {throw eckit::NotImplemented("randomCtlVec not implemented yet", Here());}
   /// @brief Square-root multiplication
   void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const override
     {throw eckit::NotImplemented("multiplySqrt not implemented yet", Here());}

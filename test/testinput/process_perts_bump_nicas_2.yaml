@@ -33,7 +33,7 @@ bands:
     model write:
       filepath: testdata/process_perts_bump_nicas_2/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
-recursive filters: true
+recursive perturbations processing: true
 ensemble pert:
   date: *date
   members from template:

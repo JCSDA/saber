@@ -67,11 +67,9 @@ SaberOuterBlockChain::SaberOuterBlockChain(
 
     // Check block doesn't expect calibration, as this could be done with the standard ctor
     if (saberOuterBlockParams.doCalibration()) {
-      throw eckit::UserError("The generic constructor of the SABER outer block chain "
-                             "does not allow covariance calibration.", Here());
-    }
-
-    if (saberOuterBlockParams.doRead()) {
+      // Block calibration, without ensemble
+      calibrateBlock(fset4dXb);
+    } else if (saberOuterBlockParams.doRead()) {
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
       outerBlocks_.back().first->read();
@@ -100,6 +98,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
 }
 
 // -----------------------------------------------------------------------------
+
 std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
     SaberOuterBlockChain::initBlock(
             const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper,
@@ -198,6 +197,27 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
 
   return std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>(
               saberOuterBlockParams, currentOuterVars, activeVars);
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberOuterBlockChain::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
+  oops::Log::trace() << "calibrateBlock starting" << std::endl;
+
+  // Create empty ensemble
+  std::vector<util::DateTime> dates;
+  std::vector<int> ensmems;
+  oops::FieldSets fsetEns(dates, fset4dXb.commTime(), ensmems, fset4dXb.commEns());
+
+  // Direct calibration
+  oops::Log::info() << "Info     : Direct calibration (without ensemble)" << std::endl;
+  outerBlocks_.back().first->directCalibration(fsetEns);
+
+  // Write calibration data
+  oops::Log::info() << "Info     : Write calibration data" << std::endl;
+  outerBlocks_.back().first->write();
+
+  oops::Log::trace() << "calibrateBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

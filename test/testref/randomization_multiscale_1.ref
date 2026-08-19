@@ -1,0 +1,307 @@
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Effective levels:   1   3   5 
+                Horizontal support radius:   10000.00 km (  10000.00 km -   10000.00 km)
+                Estimated nc1 from horizontal support radius:       94
+                   Decimate full grid, at least       94 points required,     736 valid points found
+                   Subgrid hash:  -1614970791
+                Final nc1:       94
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                         94
+             nc1(  2) =                         94
+             nc1(  3) =                         94
+             ns =                              282
+             v%n_s =                             7
+             c%n_s[global] =                  8266
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Effective levels:   1   2   3   4   5 
+                Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                Estimated nc1 from horizontal support radius:      376
+                   Decimate full grid, at least      376 points required,    1082 valid points found
+                   Subgrid hash:   1574939643
+                Final nc1:      376
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        376
+             nc1(  2) =                        376
+             nc1(  3) =                        376
+             nc1(  4) =                        376
+             nc1(  5) =                        376
+             ns =                             1880
+             v%n_s =                             5
+             c%n_s[global] =                 61772
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Effective levels:   1   2   3   4   5 
+                Horizontal support radius:    2500.00 km (   2500.00 km -    2500.00 km)
+                Estimated nc1 from horizontal support radius:     1507
+                   Decimate full grid, at least     1106 points required,    1106 valid points found
+                   Subgrid hash:   -449870826
+                Final nc1:     1106
+                Effective horizontal resolution:  3.43
+             nc1(  1) =                       1106
+             nc1(  2) =                       1106
+             nc1(  3) =                       1106
+             nc1(  4) =                       1106
+             nc1(  5) =                       1106
+             ns =                             5530
+             v%n_s =                             5
+             c%n_s[global] =                 83770
+Member 0: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.7319238947987241e+00
+    + max    = 3.9633756691595203e+00
+    + mean   = -7.7038970200112231e-02
+    + stddev = 9.8715087574090732e-01
+Member 1: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.6866588153823923e+00
+    + max    = 3.7362375205334795e+00
+    + mean   = 1.0307927210278098e-01
+    + stddev = 1.0804673550114681e+00
+Member 2: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.6169560035540393e+00
+    + max    = 2.5260134866839596e+00
+    + mean   = -4.7634753776511213e-01
+    + stddev = 9.2532956465370531e-01
+Member 3: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.0863554957776964e+00
+    + max    = 3.5576360098413629e+00
+    + mean   = 2.9456213777962281e-01
+    + stddev = 9.3727712677332387e-01
+Member 4: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -2.9644025708803419e+00
+    + max    = 3.5542657952124102e+00
+    + mean   = 2.3655382572251532e-01
+    + stddev = 9.4574919961713488e-01
+Member 5: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -2.8652482576260843e+00
+    + max    = 3.4602061189794622e+00
+    + mean   = 1.4051710014632016e-01
+    + stddev = 9.5136581751675364e-01
+Member 6: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.1633462271528563e+00
+    + max    = 3.2440297062027446e+00
+    + mean   = 2.3149142541616756e-02
+    + stddev = 9.6830644161937596e-01
+Member 7: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.3240107608051206e+00
+    + max    = 3.6166152650888908e+00
+    + mean   = 1.4727092886642440e-01
+    + stddev = 9.4014610799031861e-01
+Member 8: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.2127980758523451e+00
+    + max    = 3.4748725300486241e+00
+    + mean   = 9.4355989408071786e-02
+    + stddev = 9.7280540205454846e-01
+Member 9: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.3569039042728956e+00
+    + max    = 3.1260219556766096e+00
+    + mean   = 2.7749704146690073e-03
+    + stddev = 9.7299662547774990e-01
+Member 10: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.2400649746185648e+00
+    + max    = 4.3526265378147464e+00
+    + mean   = 1.8882436592947055e-01
+    + stddev = 1.0433685561665140e+00
+Member 11: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.9486971020096435e+00
+    + max    = 3.5647372880781614e+00
+    + mean   = 2.5402815304624771e-01
+    + stddev = 1.0082615053872359e+00
+Member 12: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.5273024376310245e+00
+    + max    = 3.5767448385785672e+00
+    + mean   = -4.8412179990698800e-02
+    + stddev = 1.0265882638537860e+00
+Member 13: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.5140009446494536e+00
+    + max    = 2.9370981631642650e+00
+    + mean   = -1.5917314555938933e-01
+    + stddev = 9.8066821055064590e-01
+Member 14: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.0079974317088274e+00
+    + max    = 3.2518702151165626e+00
+    + mean   = 5.7323163617281167e-02
+    + stddev = 8.9623011715170720e-01
+Member 15: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.2886240963484403e+00
+    + max    = 3.4894271867254121e+00
+    + mean   = -1.0172878531309554e-01
+    + stddev = 9.3878053666816930e-01
+Member 16: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.7287232850536336e+00
+    + max    = 4.1724058336793393e+00
+    + mean   = 2.0977491312481191e-02
+    + stddev = 1.0941971896434937e+00
+Member 17: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -4.1251007770744081e+00
+    + max    = 2.8180570810884689e+00
+    + mean   = -1.1078669275021109e-01
+    + stddev = 9.5603345978379550e-01
+Member 18: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.6181790218616303e+00
+    + max    = 4.0178796947919952e+00
+    + mean   = 1.8238146407057806e-01
+    + stddev = 9.4475704296803176e-01
+Member 19: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.3816978130797919e+00
+    + max    = 3.7765815043324986e+00
+    + mean   = 1.6513387413621784e-02
+    + stddev = 9.3666447599929581e-01
+Member 20: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.8088916232533423e+00
+    + max    = 3.4338323256497971e+00
+    + mean   = -2.2669008947948019e-01
+    + stddev = 1.0229588861559364e+00
+Member 21: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.7884885121205318e+00
+    + max    = 3.7493020699082127e+00
+    + mean   = 7.9947261599356181e-02
+    + stddev = 9.9165806561225867e-01
+Member 22: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.6516855593361401e+00
+    + max    = 3.4130594410542794e+00
+    + mean   = 9.0483552468715672e-02
+    + stddev = 9.6349371989326538e-01
+Member 23: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.3591878018805947e+00
+    + max    = 3.2150627916877852e+00
+    + mean   = 6.9675162018338163e-02
+    + stddev = 9.0930889601721254e-01
+Member 24: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -3.2342928315853827e+00
+    + max    = 4.2712956600320853e+00
+    + mean   = 3.4687972749675451e-02
+    + stddev = 9.4124280884484601e-01

@@ -1,0 +1,105 @@
+# Generates perturbations including 3 different scales
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 5
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  covariance type: hybrid
+  run components recursively: true
+  components:
+  - covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        calibration:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: randomization_multiscale_1/_MPI_-_OMP__s1
+          drivers:
+            multivariate strategy: univariate
+            compute nicas: true
+          nicas:
+            resolution: 4.0
+            explicit length-scales: true
+            horizontal length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 10.0e6
+            vertical length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 5.0
+    weight: 
+      value: 0.3
+  - covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        calibration:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: randomization_multiscale_1/_MPI_-_OMP__s2
+          drivers:
+            multivariate strategy: univariate
+            compute nicas: true
+          nicas:
+            resolution: 4.0
+            explicit length-scales: true
+            horizontal length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 5.0e6
+            vertical length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 2.5
+    weight:
+      value: 0.3
+  - covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        calibration:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: randomization_multiscale_1/_MPI_-_OMP__s3
+          drivers:
+            multivariate strategy: univariate
+            compute nicas: true
+          nicas:
+            resolution: 4.0
+            explicit length-scales: true
+            horizontal length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 2.5e6
+            vertical length-scale:
+            - groups:
+              - air_horizontal_streamfunction
+              value: 1.25
+    weight: 
+      value: 0.4
+  randomization size: 25
+output states:
+  filepath: testdata/randomization_multiscale_1/_MPI_-_OMP__member
+output perturbations:
+  filepath: testdata/randomization_multiscale_1/_MPI_-_OMP__member_pert
+test:
+  reference filename: testref/randomization_multiscale_1.ref

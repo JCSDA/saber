@@ -1,0 +1,152 @@
+# Reads full ensemble, filter perturbations, writes them and applies B using a `separated` strategy and the localizations from `error_covariance_training_multiscale_1`
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 5
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: &vars
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  covariance type: ensemble
+  adjoint test: true
+  square-root test: true
+  sub-ensembles size: 5
+  ensemble pert:
+    members from template:
+      template:
+        date: 2010-01-01T12:00:00Z
+        filepath: testdata/randomization_multiscale_1/_MPI_-_OMP__member_pert_%mem%
+        state variables:
+        - air_horizontal_streamfunction
+      pattern: "%mem%"
+      nmembers: 25
+      zero padding: 6
+  scales:
+  - filter:
+    - saber block name: BUMP_NICASFilter
+      read:
+        general:
+          testing: true
+          universe length-scale: 10.0e6
+        io:
+          data directory: testdata
+          files prefix: dirac_multiscale_1/_MPI_-_OMP__f1
+        drivers:
+          multivariate strategy: univariate
+          compute nicas: true
+          write local nicas: true
+        nicas:
+          filter mode: true
+          filter resolution: 4.0
+          explicit length-scales: true
+          horizontal length-scale:
+          - groups: *vars
+            value: 10.0e6
+          vertical length-scale:
+          - groups: *vars
+            value: 5.0
+    output:
+      model write:
+        filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb1
+        member pattern: '%mem%'
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l1
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  - filter:
+    - saber block name: BUMP_NICASFilter
+      read:
+        general:
+          testing: true
+          universe length-scale: 5.0e6
+        io:
+          data directory: testdata
+          files prefix: dirac_multiscale_1/_MPI_-_OMP__f2
+        drivers:
+          multivariate strategy: univariate
+          compute nicas: true
+          write local nicas: true
+        nicas:
+          filter mode: true
+          filter resolution: 4.0
+          explicit length-scales: true
+          horizontal length-scale:
+          - groups: *vars
+            value: 5.0e6
+          vertical length-scale:
+          - groups: *vars
+            value: 2.5
+    output:
+      model write:
+        filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb2
+        member pattern: '%mem%'
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l2
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  - output:
+      model write:
+        filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb3
+        member pattern: '%mem%'
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l3
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  recursive perturbations processing: true
+  multiscale strategy: separated
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  mpi pattern: "%MPI%"
+  filepath: testdata/dirac_multiscale_1/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_multiscale_1.ref
+

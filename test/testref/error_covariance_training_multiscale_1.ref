@@ -1,0 +1,56 @@
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Effective levels:   1   3   5 
+                Horizontal support radius:   10000.00 km (  10000.00 km -   10000.00 km)
+                Estimated nc1 from horizontal support radius:       94
+                   Decimate full grid, at least       94 points required,     736 valid points found
+                   Subgrid hash:  -1614970791
+                Final nc1:       94
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                         94
+             nc1(  2) =                         94
+             nc1(  3) =                         94
+             ns =                              282
+             v%n_s =                             7
+             c%n_s[global] =                  8538
+             Effective levels:   1   2   3   4   5 
+                Horizontal support radius:    7500.00 km (   7500.00 km -    7500.00 km)
+                Estimated nc1 from horizontal support radius:      167
+                   Decimate full grid, at least      167 points required,     976 valid points found
+                   Subgrid hash:     75651903
+                Final nc1:      167
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        167
+             nc1(  2) =                        167
+             nc1(  3) =                        167
+             nc1(  4) =                        167
+             nc1(  5) =                        167
+             ns =                              835
+             v%n_s =                             5
+             c%n_s[global] =                 29893
+             Effective levels:   1   2   3   4   5 
+                Horizontal support radius:    3750.00 km (   3750.00 km -    3750.00 km)
+                Estimated nc1 from horizontal support radius:      670
+                   Decimate full grid, at least      670 points required,    1098 valid points found
+                   Subgrid hash:  -1113144737
+                Final nc1:      670
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        670
+             nc1(  2) =                        670
+             nc1(  3) =                        670
+             nc1(  4) =                        670
+             nc1(  5) =                        670
+             ns =                             3350
+             v%n_s =                             5
+             c%n_s[global] =                 51810

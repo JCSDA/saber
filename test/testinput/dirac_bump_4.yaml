@@ -55,7 +55,6 @@ background error:
             pattern: '%mem%'
             nmembers: 25
             zero padding: 6
-        square-root tolerance: 1.0e-11
         localization:
             saber central block:
               saber block name: BUMP_NICAS

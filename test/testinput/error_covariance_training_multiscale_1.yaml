@@ -1,0 +1,59 @@
+# Prepares NICAS localizations for the `separated` multiscale strategy
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction_l1
+    - air_horizontal_streamfunction_l2
+    - air_horizontal_streamfunction_l3
+    levels: 5
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction_l1
+  - air_horizontal_streamfunction_l2
+  - air_horizontal_streamfunction_l3
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        write local nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - air_horizontal_streamfunction_l1
+          value: 15.0e6
+        - groups:
+          - air_horizontal_streamfunction_l2
+          value: 7.5e6
+        - groups:
+          - air_horizontal_streamfunction_l3
+          value: 3.75e6
+        vertical length-scale:
+        - groups:
+          - air_horizontal_streamfunction_l1
+          value: 7.5
+        - groups:
+          - air_horizontal_streamfunction_l2
+          value: 3.75
+        - groups:
+          - air_horizontal_streamfunction_l3
+          value: 1.875
+test:
+  reference filename: testref/error_covariance_training_multiscale_1.ref

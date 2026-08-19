@@ -51,25 +51,18 @@ SaberParametricBlockChain::SaberParametricBlockChain(
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : outerGeometryData;
 
-  SaberCentralBlockParameters saberCentralBlockParams;
-  saberCentralBlockParams.deserialize(conf.getSubConfiguration("saber central block"));
-
+  // Create central block
   oops::Log::info() << "Info     : Creating central block: " << std::endl;
 
   const auto currentOuterVars = initCentralBlock(currentOuterGeom,
                                                  fullConf,
-                                                 saberCentralBlockParams,
+                                                 params.saberCentralBlockParams.value(),
                                                  fset4dXb,
                                                  fset4dFg);
 
-  // Check block doesn't expect calibration, as this could be done with the standard ctor
   if (centralBlock_->doCalibration()) {
-    throw eckit::UserError("The generic constructor of the SABER parametric block chain "
-                           "does not allow covariance calibration.", Here());
-  }
-  if (fullConf.has("output ensemble")) {
-    throw eckit::UserError("The generic constructor of the SABER parametric block chain "
-                           "does not allow ensemble output.", Here());
+    // Calibration, without ensemble
+    centralBlock_->calibrateBlock(fset4dXb);
   }
 
   if (centralBlock_->doRead()) {
@@ -78,7 +71,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(
     centralBlock_->read();
   }
 
-  if (centralBlock_->forceWrite()) {
+  if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
     // Write data
     oops::Log::info() << "Info     : Write data" << std::endl;
     centralBlock_->write();
@@ -262,6 +255,26 @@ size_t SaberParametricBlockChain::ctlVecSize() const {
   } else {
     // No cross-time covariances
     return centralBlock_->ctlVecSize()*size4D_;
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberParametricBlockChain::randomCtlVec(atlas::Field & cv,
+                                             const size_t & offset) const {
+  if (crossTimeCov_) {
+    // Duplicated cross-time covariances
+    if (timeComm_.rank() == 0) {
+      // Central block square-root for rank 0
+      centralBlock_->randomCtlVec(cv, offset);
+    }
+  } else {
+    // No cross-time covariances
+    size_t index = offset;
+    for (size_t jtime = 0; jtime < size4D_; ++jtime) {
+      centralBlock_->randomCtlVec(cv, index);
+      index += centralBlock_->ctlVecSize();
+    }
   }
 }
 

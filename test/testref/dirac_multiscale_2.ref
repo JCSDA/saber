@@ -1,0 +1,65 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8083182640144665e-04
+    + stddev = 1.3447372472028362e-02
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+       Independent levels:  1[5]
+          Subset Sc0 size:             1106
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L48x25 [1200]
+  Fields:
+  - air_horizontal_streamfunction (5 levels):
+    + min    = -2.2026968507307307e-03
+    + max    = 5.8874455315178831e-01
+    + mean   = 3.9317711048840387e-03
+    + stddev = 1.9978432838941233e-02

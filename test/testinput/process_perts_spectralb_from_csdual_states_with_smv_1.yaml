@@ -42,7 +42,7 @@ bands:
       filepath: testdata/process_perts_spectralb_from_csdual_states_with_smv_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
 
-recursive filters: true
+recursive perturbations processing: true
 
 ensemble:
   members:

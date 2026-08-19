@@ -85,6 +85,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   void multiply(oops::FieldSet4D &) const;
   /// @brief Get this B matrix square-root control vector size.
   size_t ctlVecSize() const;
+  /// @brief Generate a random control vector.
+  void randomCtlVec(atlas::Field &, const size_t &) const;
   /// @brief Multiply the control vector by this B matrix square-root.
   void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const;
   /// @brief Multiply the increment by this B matrix square-root adjoint.

@@ -151,7 +151,7 @@ template <typename MODEL> class ProcessPertsParameters :
 
   oops::RequiredParameter<std::vector<BandParameters_>> bands{"bands", this};
 
-  oops::Parameter<bool> recursiveFilters{"recursive filters", false, this};
+  oops::Parameter<bool> recursivePertProcessing{"recursive perturbations processing", false, this};
 
   /// Where to read input ensemble: From states or perturbations
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
@@ -230,7 +230,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     const std::size_t nbands = params.bands.value().size();
     const std::vector<eckit::LocalConfiguration> bandsConfs
       = fullConfigUpdated.getSubConfigurations("bands");
-    const bool recursiveFilters = params.recursiveFilters.value();
+    const bool recursivePertProcessing = params.recursivePertProcessing.value();
 
     // need to create a vectors of saber block chains to use later
     std::map<std::size_t, std::vector<SaberOuterBlockParametersWrapper>> diagBlockConfs;
@@ -278,7 +278,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     }
 
     std::vector<std::unique_ptr<SaberOuterBlockChain>> saberFilterBlocks;
-    ErrorCovarianceParametersBase paramsBase;
+    const ErrorCovarianceParametersBase paramsBase;
     for (const auto & [key, value] : filterCovBlockConfs) {
       saberFilterBlocks.push_back(
         std::make_unique<SaberOuterBlockChain>(geom,
@@ -316,7 +316,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       oops::FieldSet4D fset4dDxSum(fsetSum);
 
       for (std::size_t b = 0; b < nbands; ++b) {
-        //  Copy work perturbation x = xI
+        // Copy work perturbation x = xI
         oops::FieldSet3D fset(fsetI.validTime(), fsetI.commGeom());
         fset.deepCopy(fsetI.fieldSet());
         oops::FieldSet4D fset4dDx(fset);
@@ -335,7 +335,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
             fset4dDx[0] *= -1.0;
           }
 
-          if (recursiveFilters) {
+          if (recursivePertProcessing) {
             // Recursive filters: xI = xI - x'
             fsetI -= fset4dDx[0];
           }

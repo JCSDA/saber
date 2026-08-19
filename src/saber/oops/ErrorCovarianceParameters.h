@@ -39,7 +39,7 @@ class ErrorCovarianceParametersBase : public oops::Parameters {
 
   // Square-root test
   oops::Parameter<bool> sqrtTest{"square-root test", false, this};
-  oops::Parameter<double> sqrtTolerance{"square-root tolerance", 1.0e-12, this};
+  oops::Parameter<double> sqrtTolerance{"square-root tolerance", 1.0e-10, this};
 };
 
 // -------------------------------------------------------------------------------------------------
