@@ -61,6 +61,10 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
   size_t ctlVecSize() const {
     throw eckit::NotImplemented(Here());
   }
+  /// @brief Generate a random control vector.
+  void randomCtlVec(atlas::Field &, const size_t &) const {
+    throw eckit::NotImplemented(Here());
+  }
   /// @brief Multiply the control vector by this B matrix square-root.
   void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const {
     throw eckit::NotImplemented(Here());

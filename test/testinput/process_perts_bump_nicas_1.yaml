@@ -30,12 +30,10 @@ bands:
           filter resolution: 4.0
           explicit length-scales: true
           horizontal length-scale:
-          - groups:
-            - air_horizontal_streamfunction
+          - groups: *vars
             value: 4000.0e3
           vertical length-scale:
-          - groups:
-            - air_horizontal_streamfunction
+          - groups: *vars
             value: 3.0
   output:
     model write:
@@ -45,7 +43,7 @@ bands:
     model write:
       filepath: testdata/process_perts_bump_nicas_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
-recursive filters: true
+recursive perturbations processing: true
 ensemble pert:
   date: *date
   members from template:

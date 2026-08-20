@@ -361,6 +361,7 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
     // Read states
     oops::State<MODEL> xxBase(geom, memConfBase);
     oops::State<MODEL> xxPairs(geom, memConfPairs);
+
     // Compute difference
     oops::Increment<MODEL> dx(geom, vars, fset.validTime());
     dx.diff(xxPairs, xxBase);

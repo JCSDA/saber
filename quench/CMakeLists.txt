@@ -21,7 +21,7 @@ if( BUILD_TESTING AND jedi-model-data_FOUND)
   message( STATUS "Setup QUENCH data links" )
   file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/data )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data )
-  execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                   ${jedi_model_data_tier_1_saber}/landsea.nc
-                   ${CMAKE_CURRENT_BINARY_DIR}/data/landsea.nc )
+  file( CREATE_LINK
+        ${jedi_model_data_tier_1_saber}/landsea.nc
+        ${CMAKE_CURRENT_BINARY_DIR}/data/landsea.nc SYMBOLIC )
 endif()
