@@ -178,7 +178,7 @@ saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_1-1 )
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_2_1-1 )
 
 saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_2-1
                 MPI 2
@@ -186,7 +186,7 @@ saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_2-1 )
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_2_2-1 )
 
 saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_1-2
                 MPI 1
@@ -195,7 +195,7 @@ saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_1-2 )
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_2_1-2 )
 
 # dirac_spectralb_gauss_vader_8
 saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_8_1-1

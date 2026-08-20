@@ -7,7 +7,7 @@ list( APPEND test_files
 
 file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/saber_plot )
 foreach( FILENAME ${test_files} )
-    execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                             ${PROJECT_SOURCE_DIR}/tools/${FILENAME}
-                             ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+    file( CREATE_LINK
+          ${PROJECT_SOURCE_DIR}/tools/${FILENAME}
+          ${CMAKE_BINARY_DIR}/bin/${FILENAME} SYMBOLIC )
 endforeach()

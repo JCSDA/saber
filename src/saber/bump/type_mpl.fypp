@@ -1175,7 +1175,7 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 ! Local variables
 integer :: it,ncall
 integer,allocatable :: order(:)
-real(kind_real) :: elapsed_min,elapsed_max,elapsed_mean,elapsed_median
+real(kind_real) :: elapsed_sum,elapsed_min,elapsed_max,elapsed_mean,elapsed_median
 
 ! Set name
 @:set_name(mpl_print_timers)
@@ -1192,9 +1192,10 @@ if (allocated(mpl%t)) then
          allocate(order(ncall))
 
          ! Compute statistics
+         elapsed_sum = sum(mpl%t(it)%elapsed(1:ncall))
          elapsed_min = minval(mpl%t(it)%elapsed(1:ncall))
          elapsed_max = maxval(mpl%t(it)%elapsed(1:ncall))
-         elapsed_mean = sum(mpl%t(it)%elapsed(1:ncall))/real(ncall,kind_real)
+         elapsed_mean = elapsed_sum/real(ncall,kind_real)
          call qsort(ncall,mpl%t(it)%elapsed(1:ncall),order,.true.)
          if (mod(ncall,2)==0) then
             elapsed_median = half*(mpl%t(it)%elapsed(ncall/2)+mpl%t(it)%elapsed(ncall/2+1))
@@ -1203,8 +1204,8 @@ if (allocated(mpl%t)) then
          end if
 
          ! Print results
-         write(mpl%info,'(a7,a30,a,i5,a,f12.3,a,f12.3,a,f12.3,a,f12.3)') '',mpl%t(it)%name,': ',ncall,' / ', &
- & elapsed_min,' / ',elapsed_max,' / ',elapsed_mean,' / ',elapsed_median
+         write(mpl%info,'(a7,a30,a,i12,a,f12.3,a,f12.3,a,f12.3,a,f12.3,a,f12.3)') '',mpl%t(it)%name,': ',ncall,' / ', &
+ & elapsed_sum,' / ',elapsed_min,' / ',elapsed_max,' / ',elapsed_mean,' / ',elapsed_median
          call mpl%flush
 
          ! Release memory
