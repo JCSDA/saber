@@ -1027,6 +1027,23 @@ void SaberCentralBlock::multiplySqrtAD(const oops::FieldSet3D & fset3d,
 
 // -----------------------------------------------------------------------------
 
+void SaberCentralBlock::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
+  oops::Log::trace() << "SaberCentralBlock::calibrateBlock starting" << std::endl;
+
+  // Create empty ensemble
+  std::vector<util::DateTime> dates;
+  std::vector<int> ensmems;
+  oops::FieldSets fsetEns(dates, fset4dXb.commTime(), ensmems, fset4dXb.commEns());
+
+  // Direct calibration
+  oops::Log::info() << "Info     : Direct calibration (without ensemble)" << std::endl;
+  this->directCalibration(fsetEns);
+
+  oops::Log::trace() << "SaberCentralBlock::calibrateBlock done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void SaberCentralBlock::adjointTest(const double & globalAdjointTolerance) const {
   oops::Log::trace() << "SaberCentralBlock::adjointTest starting" << std::endl;
 

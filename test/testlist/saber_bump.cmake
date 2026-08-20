@@ -357,7 +357,7 @@ saber_add_test( TARGET saber_dirac_bump_9_1-1
                 ARGS testinput/dirac_bump_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-1
-                             saber_error_covariance_training_bump_wind_2_1-1 )
+                             saber_error_covariance_training_bump_wind_1_1-1 )
 
 saber_add_test( TARGET saber_dirac_bump_9_2-1
                 MPI 2
@@ -366,7 +366,7 @@ saber_add_test( TARGET saber_dirac_bump_9_2-1
                 ARGS testinput/dirac_bump_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_2-1
-                             saber_error_covariance_training_bump_wind_2_2-1 )
+                             saber_error_covariance_training_bump_wind_1_2-1 )
 
 saber_add_test( TARGET saber_dirac_bump_9_1-2
                 MPI 1
@@ -376,7 +376,7 @@ saber_add_test( TARGET saber_dirac_bump_9_1-2
                 ARGS testinput/dirac_bump_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-2
-                             saber_error_covariance_training_bump_wind_2_1-2 )
+                             saber_error_covariance_training_bump_wind_1_1-2 )
 
 # dirac_ens_noloc_4d
 saber_add_test( TARGET saber_dirac_ens_noloc_4d_2-1
@@ -520,6 +520,93 @@ saber_add_test( TARGET saber_dirac_localization_mixed_1_1-2
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_O10L2_1-2
                              saber_randomization_bump_nicas_F12L2_1-2 )
+
+# dirac_multiscale_1
+saber_add_test( TARGET saber_dirac_multiscale_1_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_1-1
+                             saber_error_covariance_training_multiscale_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_1_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_2-1
+                             saber_error_covariance_training_multiscale_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_1_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_1-2
+                             saber_error_covariance_training_multiscale_1_1-2 )
+
+# dirac_multiscale_2
+saber_add_test( TARGET saber_dirac_multiscale_2_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_1-1
+                             saber_error_covariance_training_multiscale_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_2_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_2-1
+                             saber_error_covariance_training_multiscale_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_2_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_1-2
+                             saber_error_covariance_training_multiscale_1_1-2 )
+
+# dirac_multiscale_3
+saber_add_test( TARGET saber_dirac_multiscale_3_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_3.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_1-1
+                             saber_error_covariance_training_multiscale_2_1-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_3_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_3.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_2-1
+                             saber_error_covariance_training_multiscale_2_2-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_3_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_3.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_multiscale_1_1-2
+                             saber_error_covariance_training_multiscale_2_1-2 )
 
 # dirac_oops_ens_noloc_4d
 saber_add_test( TARGET saber_dirac_oops_ens_noloc_4d_2-1
@@ -946,7 +1033,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_6_1-1
                 ARGS testinput/error_covariance_training_bump_hdiag_6.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-1
-                             saber_randomization_bump_nicas_L10L2_1-1 )
+                             saber_error_covariance_training_bump_hdiag_5_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_6_2-1
                 MPI 2
@@ -955,7 +1042,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_6_2-1
                 ARGS testinput/error_covariance_training_bump_hdiag_6.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_2-1
-                             saber_randomization_bump_nicas_L10L2_2-1 )
+                             saber_error_covariance_training_bump_hdiag_5_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_6_1-2
                 MPI 1
@@ -965,7 +1052,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_6_1-2
                 ARGS testinput/error_covariance_training_bump_hdiag_6.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-2
-                             saber_randomization_bump_nicas_L10L2_1-2 )
+                             saber_error_covariance_training_bump_hdiag_5_1-2 )
 
 # error_covariance_training_bump_hdiag_7
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_1-1
@@ -975,7 +1062,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_1-1
                 ARGS testinput/error_covariance_training_bump_hdiag_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-1
-                             saber_randomization_bump_nicas_L10L2_1-1 )
+                             saber_error_covariance_training_bump_hdiag_5_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_2-1
                 MPI 2
@@ -984,7 +1071,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_2-1
                 ARGS testinput/error_covariance_training_bump_hdiag_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_2-1
-                             saber_randomization_bump_nicas_L10L2_2-1 )
+                             saber_error_covariance_training_bump_hdiag_5_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_1-2
                 MPI 1
@@ -994,7 +1081,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_7_1-2
                 ARGS testinput/error_covariance_training_bump_hdiag_7.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-2
-                             saber_randomization_bump_nicas_L10L2_1-2 )
+                             saber_error_covariance_training_bump_hdiag_5_1-2 )
 
 # error_covariance_training_bump_hdiag_8
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_1-1
@@ -1004,7 +1091,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_1-1
                 ARGS testinput/error_covariance_training_bump_hdiag_8.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-1
-                             saber_randomization_bump_nicas_L10L2_static_1-1 )
+                             saber_error_covariance_training_bump_hdiag_5_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_2-1
                 MPI 2
@@ -1013,7 +1100,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_2-1
                 ARGS testinput/error_covariance_training_bump_hdiag_8.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_2-1
-                             saber_randomization_bump_nicas_L10L2_static_2-1 )
+                             saber_error_covariance_training_bump_hdiag_5_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_1-2
                 MPI 1
@@ -1023,7 +1110,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_8_1-2
                 ARGS testinput/error_covariance_training_bump_hdiag_8.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-2
-                             saber_randomization_bump_nicas_L10L2_static_1-2 )
+                             saber_error_covariance_training_bump_hdiag_5_1-2 )
 
 # error_covariance_training_bump_hdiag_9
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_1-1
@@ -1033,7 +1120,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_1-1
                 ARGS testinput/error_covariance_training_bump_hdiag_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-1
-                             saber_randomization_bump_nicas_L10L2_static_1-1 )
+                             saber_error_covariance_training_bump_hdiag_5_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_2-1
                 MPI 2
@@ -1042,7 +1129,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_2-1
                 ARGS testinput/error_covariance_training_bump_hdiag_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_2-1
-                             saber_randomization_bump_nicas_L10L2_static_2-1 )
+                             saber_error_covariance_training_bump_hdiag_5_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_1-2
                 MPI 1
@@ -1052,7 +1139,7 @@ saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_9_1-2
                 ARGS testinput/error_covariance_training_bump_hdiag_9.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_randomization_bump_nicas_L12L2_1-2
-                             saber_randomization_bump_nicas_L10L2_static_1-2 )
+                             saber_error_covariance_training_bump_hdiag_5_1-2 )
 
 # error_covariance_training_bump_hdiag_10
 saber_add_test( TARGET saber_error_covariance_training_bump_hdiag_10_1-1
@@ -1902,6 +1989,52 @@ saber_add_test( TARGET saber_error_covariance_training_bump_wind_2_1-2
                 ARGS testinput/error_covariance_training_bump_wind_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
+# error_covariance_training_multiscale_1
+saber_add_test( TARGET saber_error_covariance_training_multiscale_1_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_error_covariance_training_multiscale_1_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_error_covariance_training_multiscale_1_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+# error_covariance_training_multiscale_2
+saber_add_test( TARGET saber_error_covariance_training_multiscale_2_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_error_covariance_training_multiscale_2_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_error_covariance_training_multiscale_2_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_multiscale_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
 # error_covariance_training_stddev_1
 saber_add_test( TARGET saber_error_covariance_training_stddev_1_1-1
                 MPI 1
@@ -2240,4 +2373,27 @@ saber_add_test( TARGET saber_randomization_bump_nicas_unstructured_rectangle_1-2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/randomization_bump_nicas_unstructured_rectangle.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+# randomization_multiscale_1
+saber_add_test( TARGET saber_randomization_multiscale_1_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/randomization_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_randomization_multiscale_1_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/randomization_multiscale_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_randomization_multiscale_1_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/randomization_multiscale_1.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )

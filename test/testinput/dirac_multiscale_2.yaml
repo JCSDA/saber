@@ -1,0 +1,109 @@
+# Reads perturbations pre-computed in `dirac_multiscale_1` and applies B using a `separated` strategy and the localizations from `error_covariance_training_multiscale_1` (same results as `dirac_multiscale_1`)
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 5
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  covariance type: ensemble
+  adjoint test: true
+  square-root test: true
+  scales:
+  - ensemble pert:
+      members from template:
+        template:
+          date: 2010-01-01T12:00:00Z
+          filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb1
+          state variables:
+          - air_horizontal_streamfunction
+        pattern: "%mem%"
+        nmembers: 25
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l1
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  - ensemble pert:
+      members from template:
+        template:
+          date: 2010-01-01T12:00:00Z
+          filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb2
+          state variables:
+          - air_horizontal_streamfunction
+        pattern: "%mem%"
+        nmembers: 25
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l2
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  - ensemble pert:
+      members from template:
+        template:
+          date: 2010-01-01T12:00:00Z
+          filepath: testdata/dirac_multiscale_1/filtered_pert_mb%mem%_wb3
+          state variables:
+          - air_horizontal_streamfunction
+        pattern: "%mem%"
+        nmembers: 25
+    localization:
+      saber central block:
+        saber block name: BUMP_NICAS
+        read:
+          general:
+            testing: true
+          io:
+            data directory: testdata
+            files prefix: error_covariance_training_multiscale_1/_MPI_-_OMP_
+            alias:
+            - in code: air_horizontal_streamfunction
+              in file: air_horizontal_streamfunction_l3
+          drivers:
+            multivariate strategy: univariate
+            read local nicas: true
+  multiscale strategy: separated
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  mpi pattern: "%MPI%"
+  filepath: testdata/dirac_multiscale_2/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_multiscale_2.ref
+
