@@ -535,7 +535,7 @@ if (conf%get('model',section)) then
                          if (nam%group_index(iv)==0) then
                             nam%group_index(iv) = iconf
                          else
-                            call mpl%abort('${subr}$','variable '//trim(nam%variables(iv))//'is present it distinct groups')
+                            call mpl%abort('${subr}$','variable '//trim(nam%variables(iv))//' is present in distinct groups')
                          end if
                       end if
                   end do

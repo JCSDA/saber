@@ -2552,7 +2552,8 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc
+integer :: jc3,jc4,ic1a,ir,irtmp,jc0a,jc0u,jc0,il0,iproc,nsel
+integer,allocatable :: sel(:)
 real(kind_real) :: a,d
 logical :: done,proc_to_done(mpl%nproc),valid
 logical,allocatable :: c3a_free(:,:,:)
@@ -2680,6 +2681,9 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
    deallocate(c3a_free)
 end if
 
+! Allocation
+if (allocated(geom%bnda_c0u%hor)) allocate(sel(geom%bnda_c0u%nmax))
+
 ! Check sampling mask
 write(mpl%info,'(a7,a)') '','Check sampling mask: '
 call mpl%flush(newl=.false.)
@@ -2689,6 +2693,11 @@ do ic1a=1,samp%nc1a
       ! Check lon/lat/mask
       valid = mpl%msv%isnot(samp%lon_c1a(ic1a)).and.mpl%msv%isnot(samp%lat_c1a(ic1a)).and.samp%smask_c1a(ic1a,il0)
 
+      if (valid.and.allocated(geom%bnda_c0u%hor)) then
+         ! Select boundary arcs
+         call geom%bnda_c0u%select(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a),(real(nam%nc3,kind_real)-half)*nam%dc,il0,nsel,sel)
+      end if
+
       if (valid) then
          do jc4=1,nam%nc4
             do jc3=1,nam%nc3
@@ -2696,9 +2705,11 @@ do ic1a=1,samp%nc1a
                valid = mpl%msv%isnot(samp%lon_c3a(ic1a,jc3,jc4)).and.mpl%msv%isnot(samp%lat_c3a(ic1a,jc3,jc4)).and. &
  & samp%smask_c3a(ic1a,jc3,jc4,il0)
 
-               ! Check mask boundaries
-               call geom%bnda_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
- & samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),il0,valid)
+               if (valid.and.allocated(geom%bnda_c0u%hor)) then
+                  ! Check mask boundaries
+                  call geom%bnda_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
+ & samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),il0,nsel,sel,valid)
+               end if
 
                ! Copy validity
                samp%smask_c3a(ic1a,jc3,jc4,il0) = valid
@@ -2714,6 +2725,9 @@ do ic1a=1,samp%nc1a
    call mpl%prog_print(ic1a)
 end do
 call mpl%prog_final
+
+! Release memory
+if (allocated(geom%bnda_c0u%hor)) deallocate(sel)
 
 ! Probe out
 @:probe_out()

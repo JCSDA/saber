@@ -912,7 +912,6 @@ integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),
 #{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
 #{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
 ${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
-logical,allocatable :: valid(:)
 character(len=3) :: lop
 
 ! Set name
@@ -943,7 +942,6 @@ if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort('${subr}$','wrong l
 ! Allocation
 allocate(sbuf(com%nhalo*nl))
 allocate(rbuf(com%nexcl*nl))
-allocate(valid(nl))
 
 ! Prepare buffers to send
 do ihalo=1,com%nhalo
@@ -1044,7 +1042,6 @@ end do
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-#{if rank > 1}# deallocate(valid) #{endif}#
 
 ! Probe out
 @:probe_out()
