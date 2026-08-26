@@ -14,9 +14,9 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierAromeCovarianceReadParameters : public BifourierCovarianceReadParameters {
+class BifourierAromeCovarianceReadParameters : public BifourierCovarianceImplReadParameters {
   OOPS_CONCRETE_PARAMETERS(BifourierAromeCovarianceReadParameters,
-    BifourierCovarianceReadParameters)
+    BifourierCovarianceImplReadParameters)
 
  public:
   // Input file format ("netcdf", "arome legacy binary" or "arome legacy netcdf")
@@ -25,9 +25,9 @@ class BifourierAromeCovarianceReadParameters : public BifourierCovarianceReadPar
 
 // -----------------------------------------------------------------------------
 
-class BifourierAromeCovarianceWriteParameters : public BifourierCovarianceWriteParameters {
+class BifourierAromeCovarianceWriteParameters : public BifourierCovarianceImplWriteParameters {
   OOPS_CONCRETE_PARAMETERS(BifourierAromeCovarianceWriteParameters,
-    BifourierCovarianceWriteParameters)
+    BifourierCovarianceImplWriteParameters)
 
  public:
   // Output file format ("netcdf", "arome legacy binary" or "arome legacy netcdf")
@@ -36,8 +36,8 @@ class BifourierAromeCovarianceWriteParameters : public BifourierCovarianceWriteP
 
 // -----------------------------------------------------------------------------
 
-class BifourierAromeCovarianceParameters : public BifourierCovarianceParameters {
-  OOPS_CONCRETE_PARAMETERS(BifourierAromeCovarianceParameters, BifourierCovarianceParameters)
+class BifourierAromeCovarianceParameters : public BifourierCovarianceImplParameters {
+  OOPS_CONCRETE_PARAMETERS(BifourierAromeCovarianceParameters, BifourierCovarianceImplParameters)
 
  public:
   // Read parameters

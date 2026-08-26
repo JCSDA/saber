@@ -1,6 +1,6 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
     + min    = 0.0000000000000000e+00
@@ -9,20 +9,20 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_temperature (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
   - log_of_air_pressure_at_surface (1 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -32,63 +32,63 @@ Input Dirac increment:
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
+- xspace: LocalConfiguration[root={type => linear , start => 5.1745971254055749e+05 , end => 6.9995971254055749e+05 , N => 74 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.9923080099392682e+04 , end => 1.0757691990060732e+05 , N => 52 , endpoint => true}]
+Outer grid size: 3848
 Adjoint test for block BifourierSpectralVorDivToGridWind passed
 Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
 Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
 Regression norms: 
-- air_horizontal_divergence from balanced_air_pressure: 3.4400355027686819e-02
-- air_temperature_and_log_of_air_pressure_at_surface from balanced_air_pressure: 3.8183205559846687e+02
-- air_temperature_and_log_of_air_pressure_at_surface from air_horizontal_divergence: 3.7073084658074188e+06
-- water_vapor_mixing_ratio_wrt_moist_air from balanced_air_pressure: 2.6216732643124058e-01
-- water_vapor_mixing_ratio_wrt_moist_air from air_horizontal_divergence: 2.2517891437646776e+03
-- water_vapor_mixing_ratio_wrt_moist_air from air_temperature_and_log_of_air_pressure_at_surface: 7.9725818390904211e+00
+- air_horizontal_divergence from balanced_air_pressure: 3.1847255575449089e-02
+- air_temperature_and_log_of_air_pressure_at_surface from balanced_air_pressure: 4.2447621689115397e+02
+- air_temperature_and_log_of_air_pressure_at_surface from air_horizontal_divergence: 4.2555929216369828e+06
+- water_vapor_mixing_ratio_wrt_moist_air from balanced_air_pressure: 2.7565506902701736e-01
+- water_vapor_mixing_ratio_wrt_moist_air from air_horizontal_divergence: 1.6875750186449700e+03
+- water_vapor_mixing_ratio_wrt_moist_air from air_temperature_and_log_of_air_pressure_at_surface: 7.9130259301296988e+00
 Adjoint test for block BifourierAromeBalance passed
 Inner inverse test for block BifourierAromeBalance passed: U Uinv (U x) == (U x)
 Outer inverse test for block BifourierAromeBalance passed: Uinv U (Uinv x) == (Uinv x)
 Covariance norms: 
 - air_upward_absolute_vorticity: 
-  + correlation square-root: 1.9240493817614090e-01
-  + standard-deviation:      6.5109589057317507e-05
+  + correlation square-root: 1.9218428691272108e-01
+  + standard-deviation:      6.5143420989835165e-05
 - air_horizontal_divergence: 
-  + correlation square-root: 1.8269157202140698e-01
-  + standard-deviation:      5.6685458805479642e-05
+  + correlation square-root: 1.8259396896072619e-01
+  + standard-deviation:      5.6666023834226092e-05
 - water_vapor_mixing_ratio_wrt_moist_air: 
-  + correlation square-root: 3.2739063589221895e-01
-  + standard-deviation:      5.0366861901284280e-04
+  + correlation square-root: 3.3463173529544205e-01
+  + standard-deviation:      5.0448098900994845e-04
 - air_temperature_and_log_of_air_pressure_at_surface: 
-  + correlation square-root: 4.5354764274897963e-01
-  + standard-deviation:      8.3806376972365648e-01
+  + correlation square-root: 4.4875712973080273e-01
+  + standard-deviation:      8.4643790964130639e-01
 Adjoint test for block BifourierCovariance passed
 Square-root test for block BifourierCovariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -4.4933091255010195e-04
-    + max    = 4.4933093217888227e-04
-    + mean   = 9.9858436309724449e-11
-    + stddev = 1.3585174124949292e-04
+    + min    = -5.6278520337330821e-04
+    + max    = 5.6278468239195347e-04
+    + mean   = 7.3157341439182453e-11
+    + stddev = 1.7735531051199483e-04
   - geographical_y_wind (10 levels):
-    + min    = -4.6265111802071827e-04
-    + max    = 4.6265097842578792e-04
-    + mean   = 1.4291595401934523e-10
-    + stddev = 1.0606404552589565e-04
+    + min    = -5.1162699089322896e-04
+    + max    = 5.1163042808617426e-04
+    + mean   = 3.1055969898865364e-10
+    + stddev = 1.3049257705688498e-04
   - air_temperature (10 levels):
-    + min    = -3.6692417325713492e-03
-    + max    = 8.2267393326148450e-02
-    + mean   = 1.5255536192051029e-04
-    + stddev = 2.9116616197031558e-03
+    + min    = -4.3635444337764145e-03
+    + max    = 8.5303931229345709e-02
+    + mean   = 1.5856224813298064e-04
+    + stddev = 3.3438743539079352e-03
   - log_of_air_pressure_at_surface (1 levels):
-    + min    = -6.2928251254259260e-06
-    + max    = 2.2322740421242702e-06
-    + mean   = 7.3194516715445710e-08
-    + stddev = 9.1410743066936145e-07
+    + min    = -6.8858343028656299e-06
+    + max    = 2.4887642823134810e-06
+    + mean   = 9.2274858954480491e-08
+    + stddev = 1.2369153230668247e-06
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.4592611051903784e-07
-    + max    = 6.4485196510781985e-06
-    + mean   ~ 0
-    + stddev = 3.3197803319094663e-07
+    + min    = -9.3521441859738582e-07
+    + max    = 6.5952060461327090e-06
+    + mean close to zero
+    + stddev = 3.4507888920950228e-07

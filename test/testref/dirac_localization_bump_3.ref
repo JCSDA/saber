@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927613e-02
@@ -212,22 +212,22 @@ Localization(hybrid1_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 1.9108751157234476e-02
     + stddev = 9.0153947600919382e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 1.9108751157234476e-02
     + stddev = 9.0153947600919382e-02
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 4.3319773225737634e-01
     + mean   = 7.6039091407766159e-03
     + stddev = 4.1585048486078281e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 8.6639546451475236e-01
     + mean   = 1.1423257214589796e-02
     + stddev = 6.5894523136080435e-02
@@ -291,22 +291,22 @@ Localization(hybrid2_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 1.9108751157234476e-02
     + stddev = 9.0153947600919382e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 1.9108751157234476e-02
     + stddev = 9.0153947600919382e-02
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 4.3319773225737634e-01
     + mean   = 7.6039091407766159e-03
     + stddev = 4.1585048486078281e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 8.6639546451475236e-01
     + mean   = 1.1423257214589796e-02
     + stddev = 6.5894523136080435e-02

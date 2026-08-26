@@ -3,32 +3,32 @@ Input Dirac increment:
   Geometry: F15 [1800]
   Fields:
   - var1 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02
   - var2 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02
   - var3 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02
   - var4 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02
   - var5 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02
   - var6 (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.7777777777777778e-04
     + stddev = 1.6666666666665841e-02

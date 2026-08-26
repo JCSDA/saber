@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: CS-LFR-12 [864]
   Fields:
   - mu (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 5.7870370370370367e-04
     + stddev = 2.4056261216234470e-02
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 5.7870370370370367e-04
     + stddev = 2.4056261216234470e-02
@@ -89,12 +89,12 @@ Covariance(SABER2_SABER) * Increment:
   Geometry: CS-LFR-12 [864]
   Fields:
   - mu (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.5588009977860640e-02
     + mean   = 9.0208391075582411e-06
     + stddev = 3.7498923986867608e-04
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 5.2629426201432068e+01
     + mean   = 3.0456843866569484e-02
     + stddev = 1.2660672243621405e+00

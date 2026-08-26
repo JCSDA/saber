@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - virtual_temperature (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927634e-02
   - water_vapor_mixing_ratio_wrt_moist_air (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927634e-02
@@ -19,12 +19,12 @@ Covariance(SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - virtual_temperature (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927634e-02
   - water_vapor_mixing_ratio_wrt_moist_air (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927634e-02

@@ -1,19 +1,19 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
   - geographical_y_wind (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -23,9 +23,9 @@ Input Dirac increment:
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
+- xspace: LocalConfiguration[root={type => linear , start => 5.1745971254055749e+05 , end => 6.9995971254055749e+05 , N => 74 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.9923080099392682e+04 , end => 1.0757691990060732e+05 , N => 52 , endpoint => true}]
+Outer grid size: 3848
 Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
 Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block BifourierGridToSpectral passed: U Uinv (U x) == (U x)
@@ -37,15 +37,15 @@ Outer inverse test for block BifourierGridToSpectral passed: Uinv U (Uinv x) == 
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -2.1348106301150806e+03
-    + max    = 2.0898006483377430e+03
-    + mean   = -4.1557379994899284e-05
-    + stddev = 1.1920809568604234e+02
+    + min    = -2.1689828613090490e+03
+    + max    = 2.1096447196320146e+03
+    + mean   = -6.4489396314381918e-05
+    + stddev = 1.2012100841225705e+02
   - geographical_y_wind (10 levels):
-    + min    = -2.1452821986739773e+03
-    + max    = 2.1452819181788741e+03
-    + mean   = 1.1561889218461781e-05
-    + stddev = 1.3665546894420132e+02
+    + min    = -2.1825752544653369e+03
+    + max    = 2.1567928102466262e+03
+    + mean   = 8.3092493032261034e-06
+    + stddev = 1.3738249329614780e+02

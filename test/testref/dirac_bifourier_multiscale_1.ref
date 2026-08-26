@@ -1,0 +1,100 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3848]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - geographical_y_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_temperature (10 levels):
+    + min close to zero
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907635e-03
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+- Regional grid size: 74x52
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+- Regional grid size: 74x52
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Covariance norms: 
+- allVars: 
+  + correlation square-root: 7.1742357350224339e-01
+  + standard-deviation:      3.3166247903553998e+00
+Adjoint test for block BifourierCovariance passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BifourierCovariance passed
+Square-root test for the multivariate central block passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Covariance norms: 
+- allVars: 
+  + correlation square-root: 2.8651694494963192e-01
+  + standard-deviation:      3.3166247903553998e+00
+Adjoint test for block BifourierCovariance passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BifourierCovariance passed
+Square-root test for the multivariate central block passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3848]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = -1.9255061903391594e-03
+    + max    = 4.4145441988940718e-05
+    + mean   = -5.8979568250847589e-06
+    + stddev = 4.3351671036121477e-05
+  - geographical_y_wind (10 levels):
+    + min    = -2.2310655733741285e-03
+    + max    = 1.3109191607258629e-04
+    + mean   = -8.5118319070512074e-07
+    + stddev = 2.3798468310767517e-05
+  - air_temperature (10 levels):
+    + min    = -6.0077692822352541e-04
+    + max    = 5.4865221839354036e-02
+    + mean   = 9.0052792652732877e-05
+    + stddev = 8.3787262222365707e-04
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = -4.7630804030684175e-07
+    + max    = 2.1524956239562206e-06
+    + mean   = 1.7572011779328029e-08
+    + stddev = 2.8330150679752981e-07
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -1.1239858605796161e-06
+    + max    = 3.0304718620134304e-06
+    + mean   = -2.1138098887018202e-09
+    + stddev = 5.0823207007568452e-08

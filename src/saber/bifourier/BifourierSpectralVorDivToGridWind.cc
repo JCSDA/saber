@@ -95,18 +95,12 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
       params_.transform.value());
 
     // Create inner GeometryData
-    innerGeometryData_.reset(new oops::GeometryData(trans_->spFspace(),
+    innerGeometryData_ = std::make_unique<oops::GeometryData>(trans_->spFspace(),
       outerGeometryData.fieldSet(), outerGeometryData.levelsAreTopDown(),
-      outerGeometryData.comm()));
+      outerGeometryData.comm(), false);
   } else {
     // Retrieve spectral transform
-    trans_ = transStore_.retrieveTransform(outerGeometryData);
-
-    // Set inner GeometryData
-    // TODO(Benjamin): avoid this
-    innerGeometryData_.reset(new oops::GeometryData(trans_->geometryData().functionSpace(),
-      trans_->geometryData().fieldSet(), trans_->geometryData().levelsAreTopDown(),
-      trans_->geometryData().comm()));
+    trans_ = transStore_.retrieveTransform(outerGeometryData, outerVars);
   }
 
   // Prepare biperiodization if needed
@@ -123,12 +117,12 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
     // Get js for (jk, jl) = (0, 0)
     jsZero_ = -1;
     for (size_t js = 0; js < trans_->ns(); ++js) {
-      if ((trans_->jk(js) == 0) && (trans_->jl(js) == 0)) {
+      if ((trans_->k(js) == 0) && (trans_->l(js) == 0)) {
         jsZero_ = js;
       }
     }
 
-    if (biperParams != boost::none) {
+    if (biperParams) {
       // Check biperiodization parameters (should not change the grid size)
       ASSERT(biperParams->innerExtNx.value() == biperParams->outerExtNx.value());
       ASSERT(biperParams->innerExtNy.value() == biperParams->outerExtNy.value());
@@ -173,7 +167,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
         *std::pow(std::tan((0.25*M_PI)-(pole*0.5*latRad)), sina);
     }
 
-    if (biperParams != boost::none) {
+    if (biperParams) {
       // Add biperiodization variable
       biperVars.push_back("map_factor");
       biperVars["map_factor"].setLevels(1);
@@ -226,7 +220,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
       dyDlatView(jnode, 0) *= dlatNorm;
     }
 
-    if (biperParams != boost::none) {
+    if (biperParams) {
       // Add biperiodization variables
       biperVars.push_back("dxDlon");
       biperVars["dxDlon"].setLevels(1);
@@ -239,7 +233,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
     }
   }
 
-  if (biperParams != boost::none) {
+  if (biperParams) {
     // Setup biperiodization implementation
     BiperiodizationImpl biper(outerGeometryData, biperVars, *biperParams);
     ASSERT(biper.sameFs());
@@ -252,6 +246,16 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
   }
 
   oops::Log::trace() << classname() << "::BifourierSpectralVorDivToGridWind done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+const oops::GeometryData & BifourierSpectralVorDivToGridWind::innerGeometryData() const {
+  if (innerGeometryData_) {
+    return *innerGeometryData_;
+  } else {
+    return trans_->geometryData();
+  }
 }
 
 // -----------------------------------------------------------------------------

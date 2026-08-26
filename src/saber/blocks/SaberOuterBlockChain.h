@@ -391,7 +391,6 @@ void SaberOuterBlockChain::calibrateBlock(
       this->leftInverseMultiplyExceptLast(fset);
 
       // Use FieldSet in the central block
-      oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
       outerBlocks_.back().first->iterativeCalibrationUpdate(fset);
     }
 

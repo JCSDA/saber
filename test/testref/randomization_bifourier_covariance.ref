@@ -1,7 +1,7 @@
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -11,9 +11,9 @@
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
+- xspace: LocalConfiguration[root={type => linear , start => 5.1745971254055749e+05 , end => 6.9995971254055749e+05 , N => 74 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.9923080099392682e+04 , end => 1.0757691990060732e+05 , N => 52 , endpoint => true}]
+Outer grid size: 3848
 Adjoint test for block BifourierSpectralVorDivToGridWind passed
 Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
 Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
@@ -21,601 +21,601 @@ Adjoint test for block BifourierAromeCovariance passed
 Square-root test for block BifourierAromeCovariance passed
 Member 0: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.8109288195261342e-01
-    + max    = 1.8083983001288981e-01
-    + mean   = -1.4594110186751631e-08
-    + stddev = 4.0791635891860994e-02
+    + min    = -1.7460546665866161e-01
+    + max    = 1.8434514285189665e-01
+    + mean   = 1.2576329525901153e-08
+    + stddev = 4.3769028091034765e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8106246909943779e-01
-    + max    = 1.6960725419971465e-01
-    + mean   = -5.2494503532844245e-08
-    + stddev = 4.3326291720511306e-02
+    + min    = -1.9305232714587442e-01
+    + max    = 1.9457032070614491e-01
+    + mean   = 9.4139271219546768e-08
+    + stddev = 4.3850509515682555e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1090526825343627e+00
-    + max    = 1.1861165593914902e+00
-    + mean   = -2.2562856783251598e-02
-    + stddev = 2.6259248620844317e-01
+    + min    = -1.0180524580359531e+00
+    + max    = 1.2144244462922453e+00
+    + mean   = 2.0760993765188598e-02
+    + stddev = 2.5663000659884883e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.2137045935629068e-04
-    + max    = 6.8630854249814195e-04
-    + mean   = -3.9819372116929572e-06
-    + stddev = 1.6239531704796188e-04
+    + min    = -6.1722956744958207e-04
+    + max    = 6.1653526862306171e-04
+    + mean   = -2.1842681143869079e-06
+    + stddev = 1.6315368899260212e-04
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6935940874619579e-01
-    + max    = 1.6049118997076992e-01
-    + mean   = 2.2302257910169839e-08
-    + stddev = 4.1456793247777048e-02
+    + min    = -1.6416742225647665e-01
+    + max    = 1.7629795098102313e-01
+    + mean   = -7.1212361477965765e-08
+    + stddev = 4.1953560306310235e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8133677364882378e-01
-    + max    = 1.4958736080051768e-01
-    + mean   = 3.4519901044424303e-08
-    + stddev = 4.0462161680901831e-02
+    + min    = -1.5305050032601303e-01
+    + max    = 1.8011485388350690e-01
+    + mean   = 3.2439797016597772e-08
+    + stddev = 4.1883746443450567e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0403614371846013e+00
-    + max    = 1.0316022658084856e+00
-    + mean   = -7.8965979475276726e-03
-    + stddev = 2.6250793074864737e-01
+    + min    = -1.0792319843359179e+00
+    + max    = 1.0426031081525766e+00
+    + mean   = -7.3509473303472782e-03
+    + stddev = 2.5648388472478240e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.4828409062014057e-04
-    + max    = 6.7789092542018992e-04
-    + mean   = -3.4580674572824656e-06
-    + stddev = 1.6293220850624297e-04
+    + min    = -7.1506276925434233e-04
+    + max    = 6.5687062056895792e-04
+    + mean   = -8.8674110855030845e-06
+    + stddev = 1.6015976828166625e-04
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.5135018360274952e-01
-    + max    = 1.8174006246824140e-01
-    + mean   = 9.9455392070414265e-08
-    + stddev = 4.2641988416392107e-02
+    + min    = -1.7692181935941673e-01
+    + max    = 1.7541107212843904e-01
+    + mean   = 9.3369739705603897e-08
+    + stddev = 4.5232507191925300e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6390248786509118e-01
-    + max    = 1.6754182671329393e-01
-    + mean   = 1.6352332715752594e-08
-    + stddev = 4.1025830992410917e-02
+    + min    = -1.8807860129008611e-01
+    + max    = 1.6606609755746540e-01
+    + mean   = 1.8855095023051505e-08
+    + stddev = 4.1055568878314443e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0973163313563628e+00
-    + max    = 1.1087881731981857e+00
-    + mean   = -5.2889357727308362e-05
-    + stddev = 2.5984889636202546e-01
+    + min    = -1.1662392543209519e+00
+    + max    = 1.1213321200829269e+00
+    + mean   = -8.4391920350404218e-03
+    + stddev = 2.6013440965758489e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.1969216262633619e-04
-    + max    = 9.2795778262038330e-04
-    + mean   = 9.5545353567162503e-07
-    + stddev = 1.5872948484169035e-04
+    + min    = -6.1171126550324745e-04
+    + max    = 7.3374859011536683e-04
+    + mean   = 1.4078855298877672e-06
+    + stddev = 1.6544862539791881e-04
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.8531526523592060e-01
-    + max    = 1.7181809767696915e-01
-    + mean   = -3.2169571515048093e-08
-    + stddev = 4.0919264299554448e-02
+    + min    = -1.6453206573348905e-01
+    + max    = 1.7136967266470385e-01
+    + mean   = -3.8496873236521734e-08
+    + stddev = 4.2835854492569929e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.5901860570093401e-01
-    + max    = 1.6392126129972570e-01
-    + mean   = -1.9420806641818116e-08
-    + stddev = 4.1183570233831762e-02
+    + min    = -1.7595974098450001e-01
+    + max    = 1.6223824355070010e-01
+    + mean   = 4.7777661152818839e-08
+    + stddev = 4.0965291185490457e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.2862657473972965e+00
-    + max    = 1.0783316485070238e+00
-    + mean   = -5.6519291533635779e-03
-    + stddev = 2.5955424828589668e-01
+    + min    = -1.1226874306683516e+00
+    + max    = 1.0293698142651437e+00
+    + mean   = 1.0993591160960584e-02
+    + stddev = 2.6792382630845979e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.6499301544359225e-04
-    + max    = 6.2517638257504604e-04
-    + mean   = -1.8770158338021403e-06
-    + stddev = 1.5601227031241375e-04
+    + min    = -6.0851996394567466e-04
+    + max    = 6.4881282091386761e-04
+    + mean   = 4.8355401360697731e-06
+    + stddev = 1.5639018330342809e-04
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7992619780846150e-01
-    + max    = 1.6806400155720455e-01
-    + mean   = -4.1950015370524263e-08
-    + stddev = 4.3766456245365772e-02
+    + min    = -1.6281733641922672e-01
+    + max    = 1.9329843157207735e-01
+    + mean   = 2.2156853632561463e-08
+    + stddev = 4.2713713564551482e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6867013473244205e-01
-    + max    = 1.6714205578550165e-01
-    + mean   = -4.8439295301061517e-09
-    + stddev = 4.0122819639491700e-02
+    + min    = -1.7027325837417542e-01
+    + max    = 1.6487051446752812e-01
+    + mean   = -2.7262014954162472e-08
+    + stddev = 4.3023355323013525e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1201277990974123e+00
-    + max    = 1.1572100530372775e+00
-    + mean   = -1.3724212539741321e-02
-    + stddev = 2.6156763328406796e-01
+    + min    = -1.0718722913714012e+00
+    + max    = 1.0723266813468895e+00
+    + mean   = -1.2920706832209604e-02
+    + stddev = 2.6973666908895361e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.5050365314054774e-04
-    + max    = 6.1679199241421721e-04
-    + mean   = -1.0160770748349481e-05
-    + stddev = 1.5858007014625921e-04
+    + min    = -7.7529411931704403e-04
+    + max    = 7.2638159849809192e-04
+    + mean   = -3.0423807935555973e-06
+    + stddev = 1.6166257495884179e-04
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -2.0103792919939470e-01
-    + max    = 1.6241739704874458e-01
-    + mean   = 7.2324839298024605e-10
-    + stddev = 4.3015573241130332e-02
+    + min    = -1.8485140763967897e-01
+    + max    = 1.6901917867992072e-01
+    + mean   = -5.6362658060412286e-08
+    + stddev = 4.3135750313027216e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.5374705953538487e-01
-    + max    = 1.7065359742216343e-01
-    + mean   = -4.3998912474321253e-08
-    + stddev = 3.9889058167407176e-02
+    + min    = -1.8202967564884268e-01
+    + max    = 1.9602280806263339e-01
+    + mean   = 6.1542632979312639e-09
+    + stddev = 4.4233057395839416e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0826270090489429e+00
-    + max    = 1.0593351138947937e+00
-    + mean   = 5.9996627677274938e-03
-    + stddev = 2.4998623231692310e-01
+    + min    = -1.2734955445751850e+00
+    + max    = 1.0113870124683886e+00
+    + mean   = 2.4128327763158000e-03
+    + stddev = 2.5171368103825392e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.2445151407278898e-04
-    + max    = 6.0520692565115691e-04
-    + mean   = -4.9778526726749511e-06
-    + stddev = 1.6032788171664974e-04
+    + min    = -6.2255257518169986e-04
+    + max    = 6.3256953762583332e-04
+    + mean   = 3.5475871906297432e-06
+    + stddev = 1.5624530716650364e-04
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.5642739552982809e-01
-    + max    = 1.4971314164397340e-01
-    + mean   = -1.9846184032030349e-08
-    + stddev = 4.1283022406872615e-02
+    + min    = -1.9380588548331423e-01
+    + max    = 1.9731507710124480e-01
+    + mean   = 7.8329889584427821e-08
+    + stddev = 4.4045732328462005e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.4846696335339726e-01
-    + max    = 1.7190076448998690e-01
-    + mean   = -3.0124002261018476e-08
-    + stddev = 4.1035032583642710e-02
+    + min    = -1.5302379401749397e-01
+    + max    = 1.8340823127318645e-01
+    + mean   = 3.4021244917388446e-08
+    + stddev = 4.1218511521122894e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.2087427736003615e+00
-    + max    = 1.0666712580820539e+00
-    + mean   = -1.6198384837335218e-02
-    + stddev = 2.6324757002523991e-01
+    + min    = -1.1899997651631393e+00
+    + max    = 1.0828490783279703e+00
+    + mean   = 1.0436317049856408e-02
+    + stddev = 2.6765014578572993e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.5174394456271037e-04
-    + max    = 6.5110385724593926e-04
-    + mean   = -7.1502395026878230e-06
-    + stddev = 1.6029427315311976e-04
+    + min    = -6.7784900757824414e-04
+    + max    = 7.9911168626027043e-04
+    + mean   = 6.7134689261077056e-06
+    + stddev = 1.6030460486937139e-04
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7085563906410436e-01
-    + max    = 1.8586775391080196e-01
-    + mean   = 6.8086739522269028e-09
-    + stddev = 4.3069421654864964e-02
+    + min    = -1.4975033413894506e-01
+    + max    = 1.7284487998047035e-01
+    + mean   = -1.9432086142445593e-08
+    + stddev = 4.1456097804660447e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8556100713916998e-01
-    + max    = 1.9081133091462674e-01
-    + mean   = 5.8726868637498802e-09
-    + stddev = 4.2933104489008431e-02
+    + min    = -1.6590258427840582e-01
+    + max    = 1.4744013142228191e-01
+    + mean   = 7.9851353844201132e-08
+    + stddev = 4.0465616887799413e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1313760412001019e+00
-    + max    = 1.1369748177571766e+00
-    + mean   = -2.7670588344767149e-03
-    + stddev = 2.6374427780612741e-01
+    + min    = -1.0515313577602303e+00
+    + max    = 1.0666793687862142e+00
+    + mean   = 2.4931117925207592e-03
+    + stddev = 2.4765424718598944e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.0591539859878017e-04
-    + max    = 6.5551247228626622e-04
-    + mean   = -3.4061208408269185e-06
-    + stddev = 1.6296792401231423e-04
+    + min    = -6.3606270039897553e-04
+    + max    = 7.0534562631884002e-04
+    + mean   = -7.8853124671251450e-06
+    + stddev = 1.6371180877204739e-04
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6757020573507214e-01
-    + max    = 1.5692220548247424e-01
-    + mean   = 2.4852299614214509e-08
-    + stddev = 4.2334485106268430e-02
+    + min    = -1.6438159504621133e-01
+    + max    = 1.6347485243720825e-01
+    + mean   = -3.6360712620466414e-09
+    + stddev = 4.3155887802835538e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6892294705901070e-01
-    + max    = 1.7430694776764738e-01
-    + mean   = 2.7094601781320704e-08
-    + stddev = 4.2189266107490908e-02
+    + min    = -1.7290545377792796e-01
+    + max    = 1.6154586783158925e-01
+    + mean   = -4.2414065058860150e-08
+    + stddev = 4.4150502458372369e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1780613384474439e+00
-    + max    = 1.1845975436831864e+00
-    + mean   = -3.9885750406572331e-03
-    + stddev = 2.5980541935591933e-01
+    + min    = -1.0738328385590890e+00
+    + max    = 1.0935936111665172e+00
+    + mean   = 2.5971902257643762e-04
+    + stddev = 2.5787780622099882e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.1797906598123078e-04
-    + max    = 7.5604325892053396e-04
-    + mean   = 1.7225221398760031e-06
-    + stddev = 1.6437704410266504e-04
+    + min    = -6.2768697423761085e-04
+    + max    = 7.5405896666542159e-04
+    + mean   = 8.7137064269103083e-06
+    + stddev = 1.6357549017911410e-04
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7251537797482322e-01
-    + max    = 2.2493601517556483e-01
-    + mean   = 4.7105669796812075e-08
-    + stddev = 4.4065132528592413e-02
+    + min    = -1.7580860221639197e-01
+    + max    = 2.1245156461331555e-01
+    + mean   = -3.2743488311840114e-09
+    + stddev = 4.2387220449692710e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6010577134917742e-01
-    + max    = 1.4529924201272612e-01
-    + mean   = 1.4230318163455757e-08
-    + stddev = 4.0895155477544055e-02
+    + min    = -1.6730303937059060e-01
+    + max    = 1.6534921057693902e-01
+    + mean   = -6.9034494388758781e-08
+    + stddev = 4.1393104255626034e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0048332186247806e+00
-    + max    = 1.4060890613968677e+00
-    + mean   = 1.2250139057460150e-02
-    + stddev = 2.6560946600106933e-01
+    + min    = -1.0531238519381858e+00
+    + max    = 9.9190309253834497e-01
+    + mean   = -2.0720246455730937e-03
+    + stddev = 2.6274158900670158e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -5.9680791262077581e-04
-    + max    = 6.8750465957504716e-04
-    + mean   = -9.8198457512191995e-06
-    + stddev = 1.6128967067672589e-04
+    + min    = -5.9951445259640566e-04
+    + max    = 8.0992214173145559e-04
+    + mean   = 6.0395669581523392e-06
+    + stddev = 1.6508152750923099e-04
 Member 10: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.8013339295820524e-01
-    + max    = 1.7431667434524320e-01
-    + mean   = 4.0691464003601848e-08
-    + stddev = 3.9628499883816691e-02
+    + min    = -1.9116472020516473e-01
+    + max    = 1.8824323946831767e-01
+    + mean   = 9.5373206368321090e-08
+    + stddev = 4.3220748308180887e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.9048666220847912e-01
-    + max    = 1.5922617459978636e-01
-    + mean   = 2.7567945856757370e-08
-    + stddev = 4.1316474772179215e-02
+    + min    = -1.8778465785051379e-01
+    + max    = 1.7434351972020673e-01
+    + mean   = -3.2532461274311542e-08
+    + stddev = 4.4309974542760068e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0814607698810323e+00
-    + max    = 1.0386322396314926e+00
-    + mean   = -1.5544780090872769e-03
-    + stddev = 2.5737658533265539e-01
+    + min    = -1.1157871243318596e+00
+    + max    = 1.1206682192860886e+00
+    + mean   = -5.6835429631105314e-04
+    + stddev = 2.6132119292783418e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.5289926243468680e-04
-    + max    = 6.9175451449481301e-04
-    + mean   = 2.3482756192581022e-06
-    + stddev = 1.5952426768490327e-04
+    + min    = -7.3472736481332225e-04
+    + max    = 7.3914133319058441e-04
+    + mean   = -6.7294188499755418e-06
+    + stddev = 1.5826165178236545e-04
 Member 11: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.5599354615460778e-01
-    + max    = 1.7048758945239420e-01
-    + mean   = 8.6102093073132010e-08
-    + stddev = 4.1558178707230747e-02
+    + min    = -1.8566091405293544e-01
+    + max    = 1.6200255434132751e-01
+    + mean   = -7.9132514925327387e-08
+    + stddev = 4.7518061572516992e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6330084068554349e-01
-    + max    = 1.7104015830298536e-01
-    + mean   = 5.3282592660331272e-08
-    + stddev = 4.4390204777802332e-02
+    + min    = -1.5784959212135224e-01
+    + max    = 1.7566965189381559e-01
+    + mean   = 3.9078713944263720e-08
+    + stddev = 4.1981452964906227e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0826848790488888e+00
-    + max    = 1.2045923170297568e+00
-    + mean   = 8.8994498740845966e-03
-    + stddev = 2.5098933395046091e-01
+    + min    = -1.1246277619185001e+00
+    + max    = 1.1361172947324309e+00
+    + mean   = 1.8032349968641708e-02
+    + stddev = 2.6687233143161537e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.1405988749615801e-04
-    + max    = 7.1838888189628108e-04
-    + mean   = -5.2984745650163174e-06
-    + stddev = 1.6163280402853357e-04
+    + min    = -7.5322056293381434e-04
+    + max    = 7.0135241984615342e-04
+    + mean   = -2.8367491524291775e-06
+    + stddev = 1.5796842843900826e-04
 Member 12: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7991174676150518e-01
-    + max    = 1.9684828712621730e-01
-    + mean   = 1.4984575653828988e-07
-    + stddev = 4.4069516877739523e-02
+    + min    = -1.7281463594741214e-01
+    + max    = 1.6719326218712974e-01
+    + mean   = 5.5736162864094496e-08
+    + stddev = 4.1814379872646967e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6830934434963910e-01
-    + max    = 1.6081382186325105e-01
-    + mean   = -2.1170452538691582e-08
-    + stddev = 4.0306998450311882e-02
+    + min    = -1.9720537814119402e-01
+    + max    = 1.9585804521284228e-01
+    + mean   = -6.9424153303463635e-08
+    + stddev = 4.1987602752302310e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0901791668754666e+00
-    + max    = 1.1145235564391753e+00
-    + mean   = 1.7913770555205665e-02
-    + stddev = 2.6673837699233099e-01
+    + min    = -1.1421213281944111e+00
+    + max    = 1.3069063175300775e+00
+    + mean   = 1.0349704703121991e-02
+    + stddev = 2.6749348526805944e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.2735318367578294e-04
-    + max    = 6.2925344499546363e-04
-    + mean   = 2.7170147555572416e-06
-    + stddev = 1.6170831114225187e-04
+    + min    = -6.5523029610107522e-04
+    + max    = 6.9790045116390007e-04
+    + mean   = -2.6717855862132232e-06
+    + stddev = 1.6007761260856314e-04
 Member 13: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6199594062092612e-01
-    + max    = 1.5842744026585134e-01
-    + mean   = -1.3058717115470103e-07
-    + stddev = 4.1290813873641155e-02
+    + min    = -1.6925009723271128e-01
+    + max    = 1.7615679269805720e-01
+    + mean   = -1.7356371858184989e-08
+    + stddev = 4.1148246395921760e-02
   - geographical_y_wind (10 levels):
-    + min    = -2.0393280875968678e-01
-    + max    = 1.6932279878855028e-01
-    + mean   = 4.5283692811441461e-08
-    + stddev = 4.6213367636232738e-02
+    + min    = -1.7828094383487073e-01
+    + max    = 1.5160488687380927e-01
+    + mean   = -3.0537265169775385e-08
+    + stddev = 4.1474570670898596e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0526391289188506e+00
-    + max    = 1.1108553964530801e+00
-    + mean   = 1.3803907073372590e-02
-    + stddev = 2.5203924786292947e-01
+    + min    = -1.0503152663796382e+00
+    + max    = 1.2666022847229463e+00
+    + mean   = 2.2536521437085694e-02
+    + stddev = 2.6371030269531665e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.9290446125873872e-04
-    + max    = 6.7370819854016128e-04
-    + mean   = 4.6486765633031707e-06
-    + stddev = 1.5733250133477777e-04
+    + min    = -6.3728260893459510e-04
+    + max    = 6.2831384690461146e-04
+    + mean   = 4.2923202783250382e-07
+    + stddev = 1.6204451036274913e-04
 Member 14: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.5359295733190267e-01
-    + max    = 1.5727859974150657e-01
-    + mean   = -9.0363976073924516e-08
-    + stddev = 4.2149559201343702e-02
+    + min    = -1.9770069792976960e-01
+    + max    = 1.8274003017805299e-01
+    + mean   = -3.2407652892124855e-08
+    + stddev = 4.5747700655385720e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6505824179386619e-01
-    + max    = 1.4330496474390667e-01
-    + mean   = 4.1068941202734907e-08
-    + stddev = 3.9052146429100695e-02
+    + min    = -1.8033978294700528e-01
+    + max    = 1.6025980891944147e-01
+    + mean   = -1.3364625124808536e-09
+    + stddev = 4.2787732741963937e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0268302457960574e+00
-    + max    = 1.2389671192256821e+00
-    + mean   = 1.5919605078868783e-02
-    + stddev = 2.5861575418555471e-01
+    + min    = -1.0659092959158201e+00
+    + max    = 1.2653104072678187e+00
+    + mean   = 1.6922209687739654e-02
+    + stddev = 2.5648464888047873e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.3046225491574604e-04
-    + max    = 6.4838074727731256e-04
-    + mean   = -4.1216819257519919e-06
-    + stddev = 1.5890025033133337e-04
+    + min    = -6.4251602064136458e-04
+    + max    = 6.7952342223514032e-04
+    + mean   = 3.6966975506843517e-06
+    + stddev = 1.5624620928181767e-04
 Member 15: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7205650300563774e-01
-    + max    = 1.7515381612639516e-01
-    + mean   = 5.8642927321917741e-08
-    + stddev = 4.4353638320003975e-02
+    + min    = -1.5653226628980008e-01
+    + max    = 1.5430702698806023e-01
+    + mean   = 1.7601695656410578e-08
+    + stddev = 4.2204952356876289e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8568403579992004e-01
-    + max    = 1.6502795595374140e-01
-    + mean   = 4.3588132927048287e-08
-    + stddev = 4.3122077371634919e-02
+    + min    = -2.1006448780284401e-01
+    + max    = 2.0512177298333834e-01
+    + mean   = 3.4521808326088654e-08
+    + stddev = 4.5620957731433910e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1232338514017124e+00
-    + max    = 1.0345608452828901e+00
-    + mean   = -4.5830963556902455e-03
-    + stddev = 2.5833739503057684e-01
+    + min    = -1.1403703745163856e+00
+    + max    = 1.3047147844411775e+00
+    + mean   = 6.7570239864425119e-03
+    + stddev = 2.5720554693914532e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.7193812127187749e-04
-    + max    = 7.9173616934585952e-04
-    + mean   = 5.3139076862394640e-06
-    + stddev = 1.6363271042611684e-04
+    + min    = -6.7379003332547678e-04
+    + max    = 7.5005195155487890e-04
+    + mean   = 8.6952488790510119e-06
+    + stddev = 1.6384709120614079e-04
 Member 16: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.4317337868588767e-01
-    + max    = 1.7138923898879713e-01
-    + mean   = -2.1447382098167038e-08
-    + stddev = 4.2235083888161579e-02
+    + min    = -1.7797055979549861e-01
+    + max    = 1.5668217475746779e-01
+    + mean   = 1.3624408114892670e-08
+    + stddev = 4.1408123879154164e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.7051473260223629e-01
-    + max    = 1.7686129505006992e-01
-    + mean   = 7.8691481679077376e-08
-    + stddev = 4.4470745138391644e-02
+    + min    = -1.8082372633341140e-01
+    + max    = 1.9318775552988299e-01
+    + mean   = -1.2280946324744065e-07
+    + stddev = 4.2393249845464206e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.4232316177830906e+00
-    + max    = 1.1626880163003088e+00
-    + mean   = 9.8965374008610756e-03
-    + stddev = 2.5641872615388689e-01
+    + min    = -1.2202560130350444e+00
+    + max    = 1.0649188799718119e+00
+    + mean   = -3.3606306164088709e-03
+    + stddev = 2.5889825659018545e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.7642316083538364e-04
-    + max    = 7.0053287954959182e-04
-    + mean   = 2.3894005240041913e-06
-    + stddev = 1.6246049340683678e-04
+    + min    = -7.1491918867986563e-04
+    + max    = 6.9727386077859011e-04
+    + mean   = 4.2150352585923455e-06
+    + stddev = 1.6066203517657357e-04
 Member 17: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.5637276521920315e-01
-    + max    = 1.8809767239499872e-01
-    + mean   = 1.8167393758418732e-07
-    + stddev = 4.4566017105721605e-02
+    + min    = -1.7078173327259685e-01
+    + max    = 2.0089321740203195e-01
+    + mean   = 5.7828082172204094e-08
+    + stddev = 4.5146217240285079e-02
   - geographical_y_wind (10 levels):
-    + min    = -2.0068119934855924e-01
-    + max    = 1.9182740374772145e-01
-    + mean   = -2.4541894615215685e-08
-    + stddev = 4.5081170618287876e-02
+    + min    = -1.8491624252961758e-01
+    + max    = 1.9309896264119247e-01
+    + mean   = -6.4866780539775363e-08
+    + stddev = 4.3037331145817342e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1917602251546855e+00
-    + max    = 1.0742991282296623e+00
-    + mean   = -1.7129366219071056e-02
-    + stddev = 2.5089972012282946e-01
+    + min    = -1.2384700307058618e+00
+    + max    = 1.0344718739561871e+00
+    + mean   = -1.2574966623142277e-02
+    + stddev = 2.5872469900435119e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.3135253571582461e-04
-    + max    = 6.5547582858691694e-04
-    + mean   = -9.9103843541436117e-06
-    + stddev = 1.6368298204098110e-04
+    + min    = -7.5314168471392513e-04
+    + max    = 8.3764265342572302e-04
+    + mean   = -3.5089288557921475e-06
+    + stddev = 1.6636710402436833e-04
 Member 18: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6625833543380525e-01
-    + max    = 1.6621493019080871e-01
-    + mean   = 1.4897291031213612e-08
-    + stddev = 4.1038868417407344e-02
+    + min    = -1.6037003037521283e-01
+    + max    = 1.5658415967636660e-01
+    + mean   = 9.3504785441183791e-09
+    + stddev = 4.2453117287260603e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8114590246029355e-01
-    + max    = 1.6812739007676719e-01
-    + mean   = 1.4988869849122998e-08
-    + stddev = 4.2569557360069732e-02
+    + min    = -2.2917787725236038e-01
+    + max    = 1.7013127361866487e-01
+    + mean   = 5.1676699837337921e-08
+    + stddev = 4.3688700909642386e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.0428556531718254e+00
-    + max    = 1.0711684508194694e+00
-    + mean   = -6.5646197919822149e-03
-    + stddev = 2.5956394685439804e-01
+    + min    = -1.1143610872887817e+00
+    + max    = 1.1921140758352042e+00
+    + mean   = 6.3429281858277389e-03
+    + stddev = 2.5258474903624500e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.6845616044118777e-04
-    + max    = 7.0748068141615757e-04
-    + mean   = -2.8317799501950700e-06
-    + stddev = 1.6346002193023533e-04
+    + min    = -6.4050527461947894e-04
+    + max    = 7.5711997845427008e-04
+    + mean   = -5.9740819076583621e-08
+    + stddev = 1.6239340504188926e-04
 Member 19: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -2.1637516017086286e-01
-    + max    = 1.6376648891851389e-01
-    + mean   = 5.5637246389693663e-08
-    + stddev = 4.1230011731577518e-02
+    + min    = -1.8647574775130335e-01
+    + max    = 1.7344648336734697e-01
+    + mean   = -9.3943407544226719e-08
+    + stddev = 4.3730566777489280e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6145211720069910e-01
-    + max    = 1.6062406609407021e-01
-    + mean   = -8.9799276816907576e-08
-    + stddev = 4.2454152650471741e-02
+    + min    = -1.6625209869664778e-01
+    + max    = 1.7613374620438210e-01
+    + mean   = 5.4413003863025985e-08
+    + stddev = 4.2389066974937335e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1253179165826674e+00
-    + max    = 1.1387119330295845e+00
-    + mean   = 4.3371980004277731e-04
-    + stddev = 2.6741172872224878e-01
+    + min    = -1.0838478721593741e+00
+    + max    = 1.1452691794198819e+00
+    + mean   = -7.8718041535257239e-04
+    + stddev = 2.6468303629846285e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.0186416349993647e-04
-    + max    = 7.2169660594307368e-04
-    + mean   = -1.0882711776272887e-05
-    + stddev = 1.5906239076899018e-04
+    + min    = -7.0909303171079723e-04
+    + max    = 7.2296191158411878e-04
+    + mean   = -1.0868041073628273e-06
+    + stddev = 1.6436395955910806e-04
 Member 20: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.9001331971511698e-01
-    + max    = 1.9294050569905052e-01
-    + mean   = -6.3009532906542492e-09
-    + stddev = 4.5688692298868579e-02
+    + min    = -1.9259809525962016e-01
+    + max    = 1.8825130756564099e-01
+    + mean   = 1.1243864202217955e-08
+    + stddev = 4.3438070346653361e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.7680914176418580e-01
-    + max    = 1.5748247810500687e-01
-    + mean   = 9.8373804865738259e-09
-    + stddev = 4.1634942348774066e-02
+    + min    = -1.7192217099137508e-01
+    + max    = 1.5380196838166943e-01
+    + mean   = 9.8195048354348199e-09
+    + stddev = 4.0798073067798681e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.2260511516892865e+00
-    + max    = 9.6390305424282152e-01
-    + mean   = -5.0572401700209211e-03
-    + stddev = 2.6249014705025248e-01
+    + min    = -1.0781987235389323e+00
+    + max    = 1.1202714306119965e+00
+    + mean   = 9.2406185738812836e-03
+    + stddev = 2.6484600745691239e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.6924218790871855e-04
-    + max    = 6.8372680795749730e-04
-    + mean   = 5.8846957422012345e-06
-    + stddev = 1.6385205316837089e-04
+    + min    = -7.6579706775474488e-04
+    + max    = 6.8766314138284199e-04
+    + mean   = -3.3459334429999813e-06
+    + stddev = 1.6357652869577032e-04
 Member 21: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6001941297520786e-01
-    + max    = 1.8674653645867884e-01
-    + mean   = -6.2477003420744297e-09
-    + stddev = 4.4494183016277201e-02
+    + min    = -1.8661052084989260e-01
+    + max    = 1.9173554927121270e-01
+    + mean   = -3.4496646634286495e-08
+    + stddev = 4.5543135237058337e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.7628980949528708e-01
-    + max    = 1.8060742585526016e-01
-    + mean   = 2.0133016200715747e-08
-    + stddev = 4.2293844585848145e-02
+    + min    = -1.8783650960562001e-01
+    + max    = 1.6761088628918658e-01
+    + mean   = 3.6062359898117207e-08
+    + stddev = 4.4567835874274014e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1296555107998705e+00
-    + max    = 1.0702235127879014e+00
-    + mean   = -5.7528099116363361e-03
-    + stddev = 2.4873566226871677e-01
+    + min    = -9.9455612021120399e-01
+    + max    = 1.0932258180708652e+00
+    + mean   = 1.5919504161157224e-02
+    + stddev = 2.5392340819282322e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.4604917885568297e-04
-    + max    = 6.2621383676930177e-04
-    + mean   = 4.5750089574706927e-07
-    + stddev = 1.6036892905966753e-04
+    + min    = -7.1793350601516903e-04
+    + max    = 6.5224211809537195e-04
+    + mean   = -9.9366490438087809e-06
+    + stddev = 1.6020625432345499e-04
 Member 22: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6611079518080013e-01
-    + max    = 1.6519439648220596e-01
-    + mean   = 6.3489957013911860e-09
-    + stddev = 4.5113247092363799e-02
+    + min    = -1.7227302063520725e-01
+    + max    = 1.6441099111846613e-01
+    + mean   = -8.9844345791723815e-08
+    + stddev = 4.1676004128866885e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.5460898044660187e-01
-    + max    = 1.6961526215115089e-01
-    + mean   = 3.0447811526616065e-08
-    + stddev = 4.1010432430819282e-02
+    + min    = -1.5721609435619591e-01
+    + max    = 1.4442398231462206e-01
+    + mean   = 7.5657136112916802e-08
+    + stddev = 4.2702133676917560e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1059758870702119e+00
-    + max    = 1.1963206145694971e+00
-    + mean   = 2.9169717696604525e-03
-    + stddev = 2.6627930881171230e-01
+    + min    = -1.0153394648488321e+00
+    + max    = 1.0264953723399755e+00
+    + mean   = 1.5225377964697084e-02
+    + stddev = 2.7007212296850253e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -7.8911199879089190e-04
-    + max    = 6.2509630941989965e-04
-    + mean   = -9.4643497452641772e-07
-    + stddev = 1.5602963467395664e-04
+    + min    = -6.5942757259049029e-04
+    + max    = 7.0483121081943954e-04
+    + mean   = -2.2526470125926902e-06
+    + stddev = 1.5918628642738332e-04
 Member 23: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.7609433125306409e-01
-    + max    = 1.5664913449025633e-01
-    + mean   = 5.9895732793386569e-08
-    + stddev = 4.2175159069296399e-02
+    + min    = -1.6536439511280809e-01
+    + max    = 1.6183255790194934e-01
+    + mean   = 5.4508351034280333e-08
+    + stddev = 4.1202048773951082e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.6713222412033246e-01
-    + max    = 1.6480180707051131e-01
-    + mean   = 7.3294767903202452e-08
-    + stddev = 4.0439410074063591e-02
+    + min    = -1.7267315143371528e-01
+    + max    = 1.8972656835127147e-01
+    + mean   = 1.1499332278066991e-07
+    + stddev = 4.4762730636146088e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -1.1465837692174290e+00
-    + max    = 1.1313921142952250e+00
-    + mean   = -1.1747616247127078e-02
-    + stddev = 2.6057082171055684e-01
+    + min    = -1.1616334394237928e+00
+    + max    = 9.7838277130481111e-01
+    + mean   = 7.3614847694740441e-03
+    + stddev = 2.5901517134985991e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.7245605784053562e-04
-    + max    = 7.4283783214804772e-04
-    + mean   = 8.0713655029419023e-06
-    + stddev = 1.5859174261441305e-04
+    + min    = -7.1299978841117345e-04
+    + max    = 6.8229757327572366e-04
+    + mean   = -1.2571135374991785e-05
+    + stddev = 1.7095251742328845e-04
 Member 24: 
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -1.6923852601056733e-01
-    + max    = 1.7289288103629458e-01
-    + mean   = 3.3450851733819280e-08
-    + stddev = 4.0741324127956703e-02
+    + min    = -1.8284469201230108e-01
+    + max    = 1.7779362014781189e-01
+    + mean   = 3.6963309172774532e-08
+    + stddev = 4.3607141337195114e-02
   - geographical_y_wind (10 levels):
-    + min    = -1.8740960491132602e-01
-    + max    = 1.7408411928327963e-01
-    + mean   = 3.7351770855617562e-08
-    + stddev = 4.2851062451600350e-02
+    + min    = -1.7462899730958292e-01
+    + max    = 1.6067023222995208e-01
+    + mean   = -9.5091595598206711e-08
+    + stddev = 4.4110448943240420e-02
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -9.5247036080838376e-01
-    + max    = 1.1131103556335833e+00
-    + mean   = 2.4084552705575801e-02
-    + stddev = 2.5132685703388358e-01
+    + min    = -1.0577746304947566e+00
+    + max    = 1.1643716466259812e+00
+    + mean   = 8.9278332751925125e-03
+    + stddev = 2.6768160124451890e-01
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -6.8053266648248809e-04
-    + max    = 6.8927958940581528e-04
-    + mean   = 4.6749961480204465e-07
-    + stddev = 1.6714414182351629e-04
+    + min    = -7.2146939606962856e-04
+    + max    = 6.6663296727951181e-04
+    + mean   = -6.8881204480855146e-06
+    + stddev = 1.6146938639788032e-04

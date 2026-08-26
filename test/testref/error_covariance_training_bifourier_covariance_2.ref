@@ -1,6 +1,6 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
     + min    = 0.0000000000000000e+00
@@ -9,17 +9,17 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.4418235538300004e-05
-    + stddev = 4.9414811077572096e-03
+    + mean   = 2.3625023625023624e-05
+    + stddev = 4.8605579540861466e-03
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -29,30 +29,30 @@ Input Dirac increment:
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
+- xspace: LocalConfiguration[root={type => linear , start => 5.1745971254055749e+05 , end => 6.9995971254055749e+05 , N => 74 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.9923080099392682e+04 , end => 1.0757691990060732e+05 , N => 52 , endpoint => true}]
+Outer grid size: 3848
 Adjoint test for block BifourierSpectralVorDivToGridWind passed
 Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
 Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
 Covariance norms: 
 - air_upward_absolute_vorticity: 
-  + correlation square-root: 1.9201688803646683e-01
-  + standard-deviation:      6.4964665308500996e-05
+  + correlation square-root: 1.9226658528927468e-01
+  + standard-deviation:      6.5001312963133500e-05
 - air_horizontal_divergence: 
-  + correlation square-root: 1.8212288554754891e-01
-  + standard-deviation:      5.6816088944661464e-05
+  + correlation square-root: 1.8189348315197634e-01
+  + standard-deviation:      5.6762970499231553e-05
 - air_temperature_and_log_of_air_pressure_at_surface: 
-  + correlation square-root: 4.7570652940409819e-01
-  + standard-deviation:      8.5743232176877704e-01
+  + correlation square-root: 4.7763273418045959e-01
+  + standard-deviation:      8.6271727935686238e-01
 - water_vapor_mixing_ratio_wrt_moist_air: 
-  + correlation square-root: 3.1293144290357017e-01
-  + standard-deviation:      5.0827697900926027e-04
+  + correlation square-root: 3.1743496900682738e-01
+  + standard-deviation:      5.1098221934781020e-04
 Adjoint test for block BifourierCovariance passed
 Square-root test for block BifourierCovariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
     + min    = 0.0000000000000000e+00
@@ -61,10 +61,10 @@ Covariance(SABER) * Increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -3.8896112641256262e-03
-    + max    = 7.7694397284785777e-02
-    + mean   = 1.7218475492059918e-04
-    + stddev = 2.3491871574915814e-03
+    + min    = -4.1522959912028848e-03
+    + max    = 7.9469806358967665e-02
+    + mean   = 1.0496016668786438e-04
+    + stddev = 2.3940064332153401e-03
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00

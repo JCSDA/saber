@@ -38,7 +38,7 @@ void BifourierAromeCovariance::read() {
     || params_.read.value()->inputFileFormat.value() == "arome legacy netcdf") {
     for (const auto & var : centralVars()) {
       // Create covariance field
-      createField3D("cov", trans_->nw(), var, data_);
+      createField3D("cov", covar_->trans()->nw(), var, covar_->data());
     }
 
     // Get number of levels
@@ -50,17 +50,17 @@ void BifourierAromeCovariance::read() {
     std::vector<double> tPsuCovGlb;
     std::vector<double> quCovGlb;
 
-    if (comm_.rank() == 0) {
+    if (covar_->comm().rank() == 0) {
       // Allocate global vectors
-      vorCovGlb.resize(trans_->nwGlb()*nz*nz);
-      divuCovGlb.resize(trans_->nwGlb()*nz*nz);
-      tPsuCovGlb.resize(trans_->nwGlb()*(nz+1)*(nz+1));
-      quCovGlb.resize(trans_->nwGlb()*nz*nz);
+      vorCovGlb.resize(covar_->trans()->nwGlb()*nz*nz);
+      divuCovGlb.resize(covar_->trans()->nwGlb()*nz*nz);
+      tPsuCovGlb.resize(covar_->trans()->nwGlb()*(nz+1)*(nz+1));
+      quCovGlb.resize(covar_->trans()->nwGlb()*nz*nz);
 
       if (params_.read.value()->inputFileFormat.value() == "arome legacy binary") {
         // Read Fortran unformatted file (from readjbdat96.F90)
         bifourier_arome_legacy_read_covariance_f90(params_.read.value()->toConfiguration(),
-          trans_->nwGlb(), nz, vorCovGlb.data(), divuCovGlb.data(), tPsuCovGlb.data(),
+          covar_->trans()->nwGlb(), nz, vorCovGlb.data(), divuCovGlb.data(), tPsuCovGlb.data(),
            quCovGlb.data());
       } else if (params_.read.value()->inputFileFormat.value() == "arome legacy netcdf") {
         // NetCDF file path
@@ -79,7 +79,7 @@ void BifourierAromeCovariance::read() {
         ASSERT(nzFromFile == nz);
         if ((retval = nc_inq_dimid(ncId, "NSMAXP1", &dimId))) ERR(retval, "NSMAXP1");
         if ((retval = nc_inq_dimlen(ncId, dimId, &nwGlbFromFile))) ERR(retval, "NSMAXP1");
-        ASSERT(nwGlbFromFile == trans_->nwGlb());
+        ASSERT(nwGlbFromFile == covar_->trans()->nwGlb());
 
         // Get variables
         if ((retval = nc_inq_varid(ncId, "VOR_VERTCOV", &varId))) ERR(retval, "VOR_VERTCOV");
@@ -101,20 +101,20 @@ void BifourierAromeCovariance::read() {
     // Scatter data
     for (const auto & var : centralVars()) {
       // Get covariance field
-      auto covField = getField("cov", var, data_);
+      auto covField = getField("cov", var, covar_->data());
 
       // Scatter global vector
       if (var.name() == "air_upward_absolute_vorticity") {
-        trans_->scatterCov(vorCovGlb, covField, true);
+        covar_->trans()->scatterCov(vorCovGlb, covField, true);
       }
       if (var.name() == "air_horizontal_divergence") {
-        trans_->scatterCov(divuCovGlb, covField, true);
+        covar_->trans()->scatterCov(divuCovGlb, covField, true);
       }
       if (var.name() == "air_temperature_and_log_of_air_pressure_at_surface") {
-        trans_->scatterCov(tPsuCovGlb, covField, true);
+        covar_->trans()->scatterCov(tPsuCovGlb, covField, true);
       }
       if (var.name() == "water_vapor_mixing_ratio_wrt_moist_air") {
-        trans_->scatterCov(quCovGlb, covField, true);
+        covar_->trans()->scatterCov(quCovGlb, covField, true);
       }
     }
 
@@ -124,9 +124,9 @@ void BifourierAromeCovariance::read() {
       const size_t nz = var.getLevels();
 
       // Get covariance view
-      auto covView = getView3D("cov", var, data_);
+      auto covView = getView3D("cov", var, covar_->data());
 
-      for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+      for (size_t jw = 0; jw < covar_->trans()->nw(); ++jw) {
         // Get AROME weight
         const double zWeight = 1.0/aromeWeight(jw);
 
@@ -140,7 +140,7 @@ void BifourierAromeCovariance::read() {
     }
 
     // Compute square-root
-    computeSquareRoot();
+    covar_->computeSquareRoot();
 
     // Print norms
     print(oops::Log::test());
@@ -157,7 +157,7 @@ void BifourierAromeCovariance::read() {
 void BifourierAromeCovariance::write() const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
-  if (params_.write.value() != boost::none) {
+  if (params_.write.value()) {
     // Write data
     if (params_.write.value()->outputFileFormat.value() == "arome legacy binary"
       || params_.write.value()->outputFileFormat.value() == "arome legacy netcdf") {
@@ -165,7 +165,7 @@ void BifourierAromeCovariance::write() const {
       atlas::FieldSet aromeCovData;
 
       // Compute covariance from correlation square-root and standard-deviation if it is missing
-      computeCovariance(aromeCovData);
+      covar_->computeCovariance(aromeCovData);
 
       // Define global vectors
       std::vector<double> vorCovGlb;
@@ -182,12 +182,12 @@ void BifourierAromeCovariance::write() const {
         const auto covView = getView3D("cov", var, aromeCovData);
 
         // Create AROME covariance field
-        createField3D("aromeCov", trans_->nw(), var, aromeCovData);
+        createField3D("aromeCov", covar_->trans()->nw(), var, aromeCovData);
 
         // Get AROME covariance view
         auto aromeCovView = getView3D("aromeCov", var, aromeCovData);
 
-        for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+        for (size_t jw = 0; jw < covar_->trans()->nw(); ++jw) {
           // Get AROME weight
           const double zWeight = aromeWeight(jw);
 
@@ -207,27 +207,27 @@ void BifourierAromeCovariance::write() const {
 
         // Gather covariance vector
         if (var.name() == "air_upward_absolute_vorticity") {
-          trans_->gatherCov(aromeCovField, vorCovGlb, true);
+          covar_->trans()->gatherCov(aromeCovField, vorCovGlb, true);
         }
         if (var.name() == "air_horizontal_divergence") {
-          trans_->gatherCov(aromeCovField, divuCovGlb, true);
+          covar_->trans()->gatherCov(aromeCovField, divuCovGlb, true);
         }
         if (var.name() == "air_temperature_and_log_of_air_pressure_at_surface") {
-          trans_->gatherCov(aromeCovField, tPsuCovGlb, true);
+          covar_->trans()->gatherCov(aromeCovField, tPsuCovGlb, true);
         }
         if (var.name() == "water_vapor_mixing_ratio_wrt_moist_air") {
-          trans_->gatherCov(aromeCovField, quCovGlb, true);
+          covar_->trans()->gatherCov(aromeCovField, quCovGlb, true);
         }
       }
 
-      if (comm_.rank() == 0) {
+      if (covar_->comm().rank() == 0) {
         // Get number of levels
         const size_t nz = centralVars()["air_upward_absolute_vorticity"].getLevels();
 
         if (params_.write.value()->outputFileFormat.value() == "arome legacy binary") {
           // Write Fortran unformatted file (from ewgsacov.F90)
           bifourier_arome_legacy_write_covariance_f90(params_.write.value()->toConfiguration(),
-            trans_->nwGlb(), nz, vorCovGlb.data(), divuCovGlb.data(), tPsuCovGlb.data(),
+            covar_->trans()->nwGlb(), nz, vorCovGlb.data(), divuCovGlb.data(), tPsuCovGlb.data(),
              quCovGlb.data());
         } else if (params_.write.value()->outputFileFormat.value() == "arome legacy netcdf") {
           // NetCDF file path
@@ -244,7 +244,7 @@ void BifourierAromeCovariance::write() const {
           // Create dimensions
           if ((retval = nc_def_dim(ncId, "NFLEV", nz, &nzId))) ERR(retval, "NFLEV");
           if ((retval = nc_def_dim(ncId, "NFLEVP1", nz+1, &nzP1Id))) ERR(retval, "NFLEVP1");
-          if ((retval = nc_def_dim(ncId, "NSMAXP1", trans_->nwGlb(), &nwGlbId)))
+          if ((retval = nc_def_dim(ncId, "NSMAXP1", covar_->trans()->nwGlb(), &nwGlbId)))
             ERR(retval, "NSMAXP1");
 
           // Dimensions arrays
@@ -297,21 +297,21 @@ double BifourierAromeCovariance::aromeWeight(const size_t & jw) const {
   oops::Log::trace() << classname() << "::aromeWeight starting" << std::endl;
 
   // Get global total wavenumber
-  const size_t jwGlb = jw + trans_->nwStart();
+  const size_t jwGlb = jw + covar_->trans()->nwStart();
 
   // Constant coefficient
-  const double zmovern = static_cast<double>(trans_->ellips().size())
-    / static_cast<double>(trans_->nwGlb()-1);
+  const double zmovern = static_cast<double>(covar_->trans()->ellips().size())
+    / static_cast<double>(covar_->trans()->nwGlb()-1);
 
   // Compute weight
   double zWeight;
-  if (jwGlb != 0 && jwGlb != trans_->nwGlb()-1) {
+  if (jwGlb != 0 && jwGlb != covar_->trans()->nwGlb()-1) {
     zWeight = 2.0*M_PI*static_cast<double>(jwGlb)*zmovern;
   } else if (jwGlb == 0) {
 //    zWeight = M_PI*zmovern/4.0;
     zWeight = M_PI*zmovern/2.0;
-  } else if (jwGlb == trans_->nwGlb()-1) {
-    zWeight = M_PI*(static_cast<double>(trans_->nwGlb()-1)-0.25)*zmovern;
+  } else if (jwGlb == covar_->trans()->nwGlb()-1) {
+    zWeight = M_PI*(static_cast<double>(covar_->trans()->nwGlb()-1)-0.25)*zmovern;
   }
 
   // REDNMC factor

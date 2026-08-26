@@ -25,13 +25,15 @@ BifourierSpectralToGrid::BifourierSpectralToGrid(const oops::GeometryData & oute
                                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
-    trans_(transStore_.setupTransform(outerGeometryData, innerVars_, params.transform.value()))
+    params_(params),
+    trans_(transStore_.setupTransform(outerGeometryData, innerVars_, params_.transform.value()))
 {
   oops::Log::trace() << classname() << "::BifourierSpectralToGrid starting" << std::endl;
 
   // Create inner GeometryData
-  innerGeometryData_.reset(new oops::GeometryData(trans_->spFspace(), outerGeometryData.fieldSet(),
-    outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()));
+  innerGeometryData_ = std::make_unique<oops::GeometryData>(trans_->spFspace(),
+    outerGeometryData.fieldSet(), outerGeometryData.levelsAreTopDown(), outerGeometryData.comm(),
+    false);
 
   oops::Log::trace() << classname() << "::BifourierSpectralToGrid done" << std::endl;
 }
@@ -59,8 +61,10 @@ void BifourierSpectralToGrid::multiply(oops::FieldSet3D & fset) const {
 void BifourierSpectralToGrid::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
-  // Inverse spectral transform, adjoint
+  // Temporary fieldset
   atlas::FieldSet fsetTmp;
+
+  // Inverse spectral transform, adjoint
   trans_->sp2gpAdj(fset.fieldSet(), fsetTmp, innerVars_);
 
   // Remove outer variables
@@ -74,8 +78,8 @@ void BifourierSpectralToGrid::multiplyAD(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BifourierSpectralToGrid::leftInverseMultiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+void BifourierSpectralToGrid::inverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
 
   // Direct spectral transform
   atlas::FieldSet fsetTmp;
@@ -87,7 +91,7 @@ void BifourierSpectralToGrid::leftInverseMultiply(oops::FieldSet3D & fset) const
   // Copy FieldSet
   trans_->copyFieldSet(fsetTmp, fset.fieldSet(), innerVars_);
 
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

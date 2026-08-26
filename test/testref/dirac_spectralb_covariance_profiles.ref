@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: F12 [1152]
   Fields:
   - mu (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 8.6805555555555551e-04
     + stddev = 2.9456385245587170e-02
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 8.6805555555555551e-04
     + stddev = 2.9456385245587170e-02

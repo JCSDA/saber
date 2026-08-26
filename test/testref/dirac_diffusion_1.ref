@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.1574074074074075e-04
     + stddev = 1.0758287072797260e-02
@@ -16,7 +16,7 @@ Covariance(SABER) * Increment:
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 9.6945329449308459e-01
     + mean   = 1.4762270081597707e-02
     + stddev = 7.5537877501026710e-02

@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927613e-02
@@ -23,7 +23,7 @@ Covariance(SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 5.1776539498569267e+00
     + mean   = 3.3974107282525767e-03
     + stddev = 1.3262962367594333e-01

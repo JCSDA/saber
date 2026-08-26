@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L72x46 [3312]
   Fields:
   - air_horizontal_streamfunction (72 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 4.3813529617946025e-06
     + stddev = 2.0931681637571804e-03

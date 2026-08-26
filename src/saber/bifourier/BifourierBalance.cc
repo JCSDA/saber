@@ -41,8 +41,7 @@ BifourierBalance::BifourierBalance(const oops::GeometryData & outerGeometryData,
     comm_(outerGeometryData.comm()),
     innerVars_(outerVars),
     params_(params),
-    Lf_(params_.calibration.value() != boost::none ?
-      params_.calibration.value()->filteringScale.value() : 0),
+    Lf_(params_.calibration.value() ? params_.calibration.value()->filteringScale.value() : 0),
     trans_(transStore_.retrieveTransform(outerGeometryData))
 {
   oops::Log::trace() << classname() << "::BifourierBalance starting" << std::endl;
@@ -75,6 +74,15 @@ BifourierBalance::BifourierBalance(const oops::GeometryData & outerGeometryData,
 
   // Check that all variables are present (but maybe in a different order)
   ASSERT(balVars_ <= innerVars_);
+
+  // Extra variable for auto-covariance + balance variables
+  if (params_.extraVar.value()) {
+    ASSERT(!balVars_.has(*params_.extraVar.value()));
+    balVarsExt_.push_back(innerVars_[*params_.extraVar.value()]);
+  }
+  for (const auto & balVar : balVars_) {
+    balVarsExt_.push_back(balVar);
+  }
 
   oops::Log::trace() << classname() << "::BifourierBalance done" << std::endl;
 }
@@ -309,49 +317,47 @@ void BifourierBalance::directCalibration(const oops::FieldSets & fsetEns) {
   if (params_.calibration.value()->fullRecursiveInverse.value()) {
     // Using the full recursive inverse formula
 
-    // Estimate xx-covariance for all lower triangular blocks (including diagonal)
-    for (const auto & outputVar : balVars_) {
+    // Estimate xx-covariance
+    for (const auto & outputVar : balVarsExt_) {
       // Get number of output levels
       const size_t nzI = outputVar.getLevels();
 
-      for (const auto & inputVar : balVars_) {
-        if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-          // Get number of input levels
-          const size_t nzJ = inputVar.getLevels();
+      for (const auto & inputVar : xxCovVars(outputVar)) {
+        // Get number of input levels
+        const size_t nzJ = inputVar.getLevels();
 
-          // Create xx-covariance field
-          createField3D("xxCov", trans_->nw(), outputVar, inputVar, data_);
+        // Create xx-covariance field
+        createField3D("xxCov", trans_->nw(), outputVar, inputVar, data_);
 
-          // Get xx-covariance view
-          auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
+        // Get xx-covariance view
+        auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
 
-          // Loop over ensemble members
-          for (size_t je = 0; je < ne; ++je) {
-            // Get member views
-            const auto outputView = getView2D(outputVar, fsetEns[je]);
-            const auto inputView = getView2D(inputVar, fsetEns[je]);
+        // Loop over ensemble members
+        for (size_t je = 0; je < ne; ++je) {
+          // Get member views
+          const auto outputView = getView2D(outputVar, fsetEns[je]);
+          const auto inputView = getView2D(inputVar, fsetEns[je]);
 
-            // Update xx-covariance
-            for (size_t js = 0; js < trans_->ns(); ++js) {
-              for (size_t jw = 0; jw < trans_->nw(); ++jw) {
-                if (trans_->includeWavenumber(js, jw)) {
-                  const double factor = trans_->spNorm(js);
-                  for (size_t jzI = 0; jzI < nzI; ++jzI) {
-                    for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                      xxCovView(jw, jzI, jzJ) += factor*inputView(js, jzJ)*outputView(js, jzI);
-                    }
+          // Update xx-covariance
+          for (size_t js = 0; js < trans_->ns(); ++js) {
+            for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+              if (trans_->includeWavenumber(js, jw)) {
+                const double factor = trans_->spNorm(js);
+                for (size_t jzI = 0; jzI < nzI; ++jzI) {
+                  for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
+                    xxCovView(jw, jzI, jzJ) += factor*inputView(js, jzJ)*outputView(js, jzI);
                   }
                 }
               }
             }
           }
-
-          // Get xx-covariance field
-          auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
-
-          // Reduce and normalize xx-covariance
-          trans_->reduceNormalizeCov(ne-1, xxCovField);
         }
+
+        // Get xx-covariance field
+        auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
+
+        // Reduce and normalize xx-covariance
+        trans_->reduceNormalizeCov(ne-1, xxCovField);
       }
     }
 
@@ -513,18 +519,16 @@ void BifourierBalance::iterativeCalibrationInit() {
   // Initialize iterative counters with zeroes
   iterativeN_ = 0;
 
-  for (const auto & outputVar : balVars_) {
+  for (const auto & outputVar : balVarsExt_) {
     // Create perturbation field
     createField2D("pert", trans_->ns(), outputVar, data_);
 
     // Create mean field
     createField2D("mean", trans_->ns(), outputVar, data_);
 
-    for (const auto & inputVar : balVars_) {
-      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-        // Create xx-covariance field
-        createField3D("xxCov", trans_->nw(), outputVar, inputVar, data_);
-      }
+    for (const auto & inputVar : xxCovVars(outputVar)) {
+      // Create xx-covariance field
+      createField3D("xxCov", trans_->nw(), outputVar, inputVar, data_);
     }
   }
 
@@ -543,7 +547,7 @@ void BifourierBalance::iterativeCalibrationUpdate(const oops::FieldSet3D & fset)
   const size_t ie = (params_.calibration.value()->subEnsSize.value() > 0) ?
     ((iterativeN_-1)%params_.calibration.value()->subEnsSize.value())+1 : iterativeN_;
 
-  for (const auto & outputVar : balVars_) {
+  for (const auto & outputVar : balVarsExt_) {
     // Get number of output levels
     const size_t nzI = outputVar.getLevels();
 
@@ -568,29 +572,27 @@ void BifourierBalance::iterativeCalibrationUpdate(const oops::FieldSet3D & fset)
       }
     }
 
-    for (const auto & inputVar : balVars_) {
+    for (const auto & inputVar : xxCovVars(outputVar)) {
       // Get number of input levels
       const size_t nzJ = inputVar.getLevels();
 
-      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-        // Get input perturbation view
-        const auto inputPertView = getView2D("pert", inputVar, data_);
+      // Get input perturbation view
+      const auto inputPertView = getView2D("pert", inputVar, data_);
 
-        if (ie > 1) {
-          // Get xx-covariance view
-          auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
+      if (ie > 1) {
+        // Get xx-covariance view
+        auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
 
-          // Update xx-covariance (cov = cov + (ie-1)/ie * inputPert * outputPert)
-          for (size_t js = 0; js < trans_->ns(); ++js) {
-            for (size_t jw = 0; jw < trans_->nw(); ++jw) {
-              if (trans_->includeWavenumber(js, jw)) {
-                const double factor = static_cast<double>(ie-1)/static_cast<double>(ie)
-                  *trans_->spNorm(js);
-                for (size_t jzI = 0; jzI < nzI; ++jzI) {
-                  for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                    xxCovView(jw, jzI, jzJ) += factor*inputPertView(js, jzJ)
-                      *outputPertView(js, jzI);
-                  }
+        // Update xx-covariance (cov = cov + (ie-1)/ie * inputPert * outputPert)
+        for (size_t js = 0; js < trans_->ns(); ++js) {
+          for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+            if (trans_->includeWavenumber(js, jw)) {
+              const double factor = static_cast<double>(ie-1)/static_cast<double>(ie)
+                *trans_->spNorm(js);
+              for (size_t jzI = 0; jzI < nzI; ++jzI) {
+                for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
+                  xxCovView(jw, jzI, jzJ) += factor*inputPertView(js, jzJ)
+                    *outputPertView(js, jzI);
                 }
               }
             }
@@ -626,15 +628,13 @@ void BifourierBalance::iterativeCalibrationFinal() {
     nSubEns = iterativeN_/params_.calibration.value()->subEnsSize.value();
   }
 
-  for (const auto & outputVar : balVars_) {
-    for (const auto & inputVar : balVars_) {
-      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-        // Get xx-covariance field
-        auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
+  for (const auto & outputVar : balVarsExt_) {
+    for (const auto & inputVar : xxCovVars(outputVar)) {
+      // Get xx-covariance field
+      auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
 
-        // Reduce and normalize xx-covariance
-        trans_->reduceNormalizeCov(iterativeN_-nSubEns, xxCovField);
-      }
+      // Reduce and normalize xx-covariance
+      trans_->reduceNormalizeCov(iterativeN_-nSubEns, xxCovField);
     }
   }
 
@@ -652,12 +652,25 @@ void BifourierBalance::iterativeCalibrationFinal() {
 void BifourierBalance::write() const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
-  if (params_.write.value() != boost::none) {
+  if (params_.write.value()) {
     // Number of covariance blocks
-    const size_t nCov = balVars_.size()*(balVars_.size()+1)/2;
+    size_t nCov = 0;
+    if (params_.write.value()->writeCovariance.value()) {
+      // Full covariances
+      for (const auto & outputVar : balVarsExt_) {
+        nCov += xxCovVars(outputVar).size();
+      }
+
+      // Unbalanced auto-covariances
+      for (const auto & row : params_.rows.value()) {
+        if (row.inputVars.value().size() > 0) {
+          ++nCov;
+        }
+      }
+    }
 
     // NetCDF IDs
-    int retval, ncId, nwGlbId, d3DId[3], nzIId[balVars_.size()], nzJId[balVars_.size()],
+    int retval, ncId, nwGlbId, d3DId[3], nzIId[balVarsExt_.size()], nzJId[balVarsExt_.size()],
       regId[nCmp_], covId[nCov];
 
     // NetCDF file path
@@ -676,7 +689,7 @@ void BifourierBalance::write() const {
       if ((retval = nc_def_dim(ncId, "nwGlb", trans_->nwGlb(), &nwGlbId))) ERR(retval, "nwGlb");
 
       // Create vertical dimensions
-      for (const auto & var : balVars_) {
+      for (const auto & var : balVarsExt_) {
         // Get number of levels
         const size_t nz = var.getLevels();
 
@@ -714,21 +727,41 @@ void BifourierBalance::write() const {
       }
 
       if (params_.write.value()->writeCovariance.value()) {
-        for (const auto & outputVar : balVars_) {
-          for (const auto & inputVar : balVars_) {
-            if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-              // Dimensions array, vertical part
-              const size_t jvarI = balVars_.find(outputVar.name());
-              const size_t jvarJ = balVars_.find(inputVar.name());
-              d3DId[1] = nzIId[jvarI];
-              d3DId[2] = nzJId[jvarJ];
+        // Full covariances
+        for (const auto & outputVar : balVarsExt_) {
+          for (const auto & inputVar : xxCovVars(outputVar)) {
+            // Dimensions array, vertical part
+            const size_t jvarI = balVarsExt_.find(outputVar.name());
+            const size_t jvarJ = balVarsExt_.find(inputVar.name());
+            d3DId[1] = nzIId[jvarI];
+            d3DId[2] = nzJId[jvarJ];
 
-              // Define variable
-              const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
-              if ((retval = nc_def_var(ncId, xxCovFieldName.c_str(), NC_DOUBLE, 3, d3DId,
-                &covId[jCov]))) ERR(retval, xxCovFieldName);
-              ++jCov;
-            }
+            // Define variable
+            const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
+            if ((retval = nc_def_var(ncId, xxCovFieldName.c_str(), NC_DOUBLE, 3, d3DId,
+              &covId[jCov]))) ERR(retval, xxCovFieldName);
+            ++jCov;
+          }
+        }
+
+        // Unbalanced auto-covariances
+        for (const auto & row : params_.rows.value()) {
+          if (row.inputVars.value().size() > 0) {
+            // Get variables
+            const oops::Variable outputVar = balVars_[row.outputVar.value()];
+            const oops::Variable inputVar = outputVar;
+
+            // Dimensions array, vertical part
+            const size_t jvarI = balVars_.find(outputVar.name());
+            const size_t jvarJ = jvarI;
+            d3DId[1] = nzIId[jvarI];
+            d3DId[2] = nzJId[jvarJ];
+
+            // Define variable
+            const std::string vvCovFieldName = fieldName("vvCov", outputVar, inputVar);
+            if ((retval = nc_def_var(ncId, vvCovFieldName.c_str(), NC_DOUBLE, 3, d3DId,
+              &covId[jCov]))) ERR(retval, vvCovFieldName);
+            ++jCov;
           }
         }
       }
@@ -769,25 +802,50 @@ void BifourierBalance::write() const {
     }
 
     if (params_.write.value()->writeCovariance.value()) {
-      for (const auto & outputVar : balVars_) {
-        for (const auto & inputVar : balVars_) {
-          if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-            // Get covariance field
-            const auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
+      // Full covariances
+      for (const auto & outputVar : balVarsExt_) {
+        for (const auto & inputVar : xxCovVars(outputVar)) {
+          // Get covariance field
+          const auto xxCovField = getField("xxCov", outputVar, inputVar, data_);
 
-            // Define global covariance vector
-            std::vector<double> covVecGlb;
+          // Define global covariance vector
+          std::vector<double> covVecGlb;
 
-            // Gather covarianc vector
-            trans_->gatherCov(xxCovField, covVecGlb);
+          // Gather covarianc vector
+          trans_->gatherCov(xxCovField, covVecGlb);
 
-            if (comm_.rank() == 0) {
-              // Write data
-              const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
-              if ((retval = nc_put_var_double(ncId, covId[jCov], covVecGlb.data())))
-                ERR(retval, xxCovFieldName);
-              ++jCov;
-            }
+          if (comm_.rank() == 0) {
+            // Write data
+            const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
+            if ((retval = nc_put_var_double(ncId, covId[jCov], covVecGlb.data())))
+              ERR(retval, xxCovFieldName);
+            ++jCov;
+          }
+        }
+      }
+
+      // Unbalanced auto-covariances
+      for (const auto & row : params_.rows.value()) {
+        if (row.inputVars.value().size() > 0) {
+          // Get variables
+          const oops::Variable outputVar = balVars_[row.outputVar.value()];
+          const oops::Variable inputVar = outputVar;
+
+          // Get covariance field
+          const auto vvCovField = getField("vvCov", outputVar, inputVar, data_);
+
+          // Define global covariance vector
+          std::vector<double> covVecGlb;
+
+          // Gather covarianc vector
+          trans_->gatherCov(vvCovField, covVecGlb);
+
+          if (comm_.rank() == 0) {
+            // Write data
+            const std::string vvCovFieldName = fieldName("vvCov", outputVar, inputVar);
+            if ((retval = nc_put_var_double(ncId, covId[jCov], covVecGlb.data())))
+              ERR(retval, vvCovFieldName);
+            ++jCov;
           }
         }
       }
@@ -807,12 +865,10 @@ void BifourierBalance::write() const {
 void BifourierBalance::readCovariance() {
   oops::Log::trace() << classname() << "::readCovariance starting" << std::endl;
 
-  for (const auto & outputVar : balVars_) {
-    for (const auto & inputVar : balVars_) {
-      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-        // Create old xx-covariance field
-        createField3D("xxOldCov", trans_->nw(), outputVar, inputVar, data_);
-      }
+  for (const auto & outputVar : balVarsExt_) {
+    for (const auto & inputVar : xxCovVars(outputVar)) {
+      // Create old xx-covariance field
+      createField3D("xxOldCov", trans_->nw(), outputVar, inputVar, data_);
     }
   }
 
@@ -828,49 +884,48 @@ void BifourierBalance::readCovariance() {
     if ((retval = nc_open(ncFilePath.c_str(), NC_NOWRITE, &ncId))) ERR(retval, ncFilePath);
   }
 
-  for (const auto & outputVar : balVars_) {
+  // Full covariances
+  for (const auto & outputVar : balVarsExt_) {
     // Get number of output levels
     const size_t nzI = outputVar.getLevels();
 
-    for (const auto & inputVar : balVars_) {
-      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-        // Get number of input levels
-        const size_t nzJ = inputVar.getLevels();
+    for (const auto & inputVar : xxCovVars(outputVar)) {
+      // Get number of input levels
+      const size_t nzJ = inputVar.getLevels();
 
-        // Define global covariance vector
-        std::vector<double> covVecGlb;
+      // Define global covariance vector
+      std::vector<double> covVecGlb;
 
-        if (comm_.rank() == 0) {
-          // Check dimensions
-          const std::string nzIName = "nzI_" + outputVar.name();
-          const std::string nzJName = "nzJ_" + inputVar.name();
-          if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwGlbId))) ERR(retval, "nwGlb");
-          if ((retval = nc_inq_dimid(ncId, nzIName.c_str(), &nzIId))) ERR(retval, nzIName);
-          if ((retval = nc_inq_dimid(ncId, nzJName.c_str(), &nzJId))) ERR(retval, nzJName);
-          if ((retval = nc_inq_dimlen(ncId, nwGlbId, &nwGlbFromFile))) ERR(retval, "nwGlb");
-          if ((retval = nc_inq_dimlen(ncId, nzIId, &nzIFromFile))) ERR(retval, nzIName);
-          if ((retval = nc_inq_dimlen(ncId, nzJId, &nzJFromFile))) ERR(retval, nzJName);
-          ASSERT(nwGlbFromFile == trans_->nwGlb());
-          ASSERT(nzIFromFile == nzI);
-          ASSERT(nzJFromFile == nzJ);
+      if (comm_.rank() == 0) {
+        // Check dimensions
+        const std::string nzIName = "nzI_" + outputVar.name();
+        const std::string nzJName = "nzJ_" + inputVar.name();
+        if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwGlbId))) ERR(retval, "nwGlb");
+        if ((retval = nc_inq_dimid(ncId, nzIName.c_str(), &nzIId))) ERR(retval, nzIName);
+        if ((retval = nc_inq_dimid(ncId, nzJName.c_str(), &nzJId))) ERR(retval, nzJName);
+        if ((retval = nc_inq_dimlen(ncId, nwGlbId, &nwGlbFromFile))) ERR(retval, "nwGlb");
+        if ((retval = nc_inq_dimlen(ncId, nzIId, &nzIFromFile))) ERR(retval, nzIName);
+        if ((retval = nc_inq_dimlen(ncId, nzJId, &nzJFromFile))) ERR(retval, nzJName);
+        ASSERT(nwGlbFromFile == trans_->nwGlb());
+        ASSERT(nzIFromFile == nzI);
+        ASSERT(nzJFromFile == nzJ);
 
-          // Allocate global covariance vector
-          covVecGlb.resize(trans_->nwGlb()*nzI*nzJ);
+        // Allocate global covariance vector
+        covVecGlb.resize(trans_->nwGlb()*nzI*nzJ);
 
-          // Read data
-          const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
-          if ((retval = nc_inq_varid(ncId, xxCovFieldName.c_str(), &varId)))
-            ERR(retval, xxCovFieldName);
-          if ((retval = nc_get_var_double(ncId, varId, covVecGlb.data())))
-            ERR(retval, xxCovFieldName);
-        }
-
-        // Get old xx-covariance field
-        auto xxOldCovField = getField("xxOldCov", outputVar, inputVar, data_);
-
-        // Scatter covariance vector
-        trans_->scatterCov(covVecGlb, xxOldCovField);
+        // Read data
+        const std::string xxCovFieldName = fieldName("xxCov", outputVar, inputVar);
+        if ((retval = nc_inq_varid(ncId, xxCovFieldName.c_str(), &varId)))
+          ERR(retval, xxCovFieldName);
+        if ((retval = nc_get_var_double(ncId, varId, covVecGlb.data())))
+          ERR(retval, xxCovFieldName);
       }
+
+      // Get old xx-covariance field
+      auto xxOldCovField = getField("xxOldCov", outputVar, inputVar, data_);
+
+      // Scatter covariance vector
+      trans_->scatterCov(covVecGlb, xxOldCovField);
     }
   }
 
@@ -1062,10 +1117,10 @@ void BifourierBalance::computeRegressionsFromCovariances() {
     << std::endl;
 
   // Combine xx-covariance with an old xx-covariance
-  if (params_.calibration.value() != boost::none) {
-    if (params_.calibration.value()->oldCovInputFile.value() != boost::none) {
+  if (params_.calibration.value()) {
+    if (params_.calibration.value()->oldCovInputFile.value()) {
       // Check parameters consistency
-      ASSERT(params_.calibration.value()->halfLife.value() != boost::none);
+      ASSERT(params_.calibration.value()->halfLife.value());
 
       // Read old xx-covariance
       readCovariance();
@@ -1074,34 +1129,33 @@ void BifourierBalance::computeRegressionsFromCovariances() {
       const double halfLife = *params_.calibration.value()->halfLife.value();
       const double alphaInf = 1.0-std::exp(-std::log(2.0)/halfLife);
       double updateFactor = alphaInf;
-      if (params_.calibration.value()->cycleIndex.value() != boost::none) {
+      if (params_.calibration.value()->cycleIndex.value()) {
         const size_t cycleIndex = *params_.calibration.value()->cycleIndex.value();
         ASSERT(cycleIndex > 0);
         updateFactor /= 1.0-std::pow(1.0-alphaInf, static_cast<double>(cycleIndex+1));
       }
 
-      for (const auto & outputVar : balVars_) {
+      // Full covariances
+      for (const auto & outputVar : balVarsExt_) {
         // Get number of output levels
         const size_t nzI = outputVar.getLevels();
 
-        for (const auto & inputVar : balVars_) {
-          if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
-            // Get number of input levels
-            const size_t nzJ = inputVar.getLevels();
+        for (const auto & inputVar : xxCovVars(outputVar)) {
+          // Get number of input levels
+          const size_t nzJ = inputVar.getLevels();
 
-            // Get old xx-covariance view
-            const auto xxOldCovView = getView3D("xxOldCov", outputVar, inputVar, data_);
+          // Get old xx-covariance view
+          const auto xxOldCovView = getView3D("xxOldCov", outputVar, inputVar, data_);
 
-            // Get xx-covariance view
-            auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
+          // Get xx-covariance view
+          auto xxCovView = getView3D("xxCov", outputVar, inputVar, data_);
 
-            // Combine xx-covariances
-            for (size_t jw = 0; jw < trans_->nw(); ++jw) {
-              for (size_t jzI = 0; jzI < nzI; ++jzI) {
-                for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                  xxCovView(jw, jzI, jzJ) = updateFactor*xxCovView(jw, jzI, jzJ)
-                    + (1.0-updateFactor)*xxOldCovView(jw, jzI, jzJ);
-                }
+          // Combine xx-covariances
+          for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+            for (size_t jzI = 0; jzI < nzI; ++jzI) {
+              for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
+                xxCovView(jw, jzI, jzJ) = updateFactor*xxCovView(jw, jzI, jzJ)
+                  + (1.0-updateFactor)*xxOldCovView(jw, jzI, jzJ);
               }
             }
           }
@@ -1230,121 +1284,146 @@ void BifourierBalance::computeRegressionsFromCovariances() {
       }
     }
 
+    // vv-covariance variables
+    std::vector<std::string> vvCovVars;
     if (outputVar.name() != balVars_.variables().back()) {
-      // vv-covariance variables
-      std::vector<std::string> vvCovVars = row.inputVars.value();
-      vvCovVars.push_back(outputVar.name());
+      vvCovVars = row.inputVars.value();
+    }
+    vvCovVars.push_back(outputVar.name());
 
-      for (const auto & inputVarName : vvCovVars) {
-        // Get input variable
-        const oops::Variable inputVar = balVars_[inputVarName];
+    for (const auto & inputVarName : vvCovVars) {
+      // Get input variable
+      const oops::Variable inputVar = balVars_[inputVarName];
 
-        // Get number of input levels
-        const size_t nzJ = inputVar.getLevels();
+      // Get number of input levels
+      const size_t nzJ = inputVar.getLevels();
 
-        // Create vv-covariance field
-        createField3D("vvCov", trans_->nw(), outputVar, inputVar, data_);
+      // Create vv-covariance field
+      createField3D("vvCov", trans_->nw(), outputVar, inputVar, data_);
 
-        // Get vv-covariance view
-        auto vvCovView = getView3D("vvCov", outputVar, inputVar, data_);
+      // Get vv-covariance view
+      auto vvCovView = getView3D("vvCov", outputVar, inputVar, data_);
 
-        // Compute vv-covariance
-        for (size_t jw = 0; jw < trans_->nw(); ++jw) {
-          // Using documentation indices
-          const size_t jvarI = balVars_.find(outputVar.name());
-          const size_t jvarJ = balVars_.find(inputVarName);
-          for (size_t jvarK = 0; jvarK <= jvarI; ++jvarK) {
+      // Compute vv-covariance
+      for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+        // Using documentation indices
+        const size_t jvarI = balVars_.find(outputVar.name());
+        const size_t jvarJ = balVars_.find(inputVarName);
+        for (size_t jvarK = 0; jvarK <= jvarI; ++jvarK) {
+          // Get number of levels
+          const size_t nzK = balVars_[jvarK].getLevels();
+
+          // Create temporary matrix field
+          atlas::Field tmpField("tmp", make_datatype<double>(), make_shape(nzK, nzJ));
+
+          // Get temporary matrix view
+          auto tmpView = make_view<double, 2>(tmpField);
+
+          // Initialize temporary matrix
+          tmpView.assign(0.0);
+
+          for (size_t jvarL = 0; jvarL <= jvarJ; ++jvarL) {
+            // First product
+
             // Get number of levels
-            const size_t nzK = balVars_[jvarK].getLevels();
+            const size_t nzL = balVars_[jvarL].getLevels();
 
-            // Create temporary matrix field
-            atlas::Field tmpField("tmp", make_datatype<double>(), make_shape(nzK, nzJ));
+            // Check whether the xx-covariance ajoint should be used
+            const bool useAdjoint = jvarK < jvarL;
 
-            // Get temporary matrix view
-            auto tmpView = make_view<double, 2>(tmpField);
+            // Get xx-covariance view
+            const auto xxCovView = useAdjoint ?
+              getView3D("xxCov", balVars_[jvarL], balVars_[jvarK], data_) :
+              getView3D("xxCov", balVars_[jvarK], balVars_[jvarL], data_);
 
-            // Initialize temporary matrix
-            tmpView.assign(0.0);
-
-            for (size_t jvarL = 0; jvarL <= jvarJ; ++jvarL) {
-              // First product
-
-              // Get number of levels
-              const size_t nzL = balVars_[jvarL].getLevels();
-
-              // Check whether the xx-covariance ajoint should be used
-              const bool useAdjoint = jvarK < jvarL;
-
-              // Get xx-covariance view
-              const auto xxCovView = useAdjoint ?
-                getView3D("xxCov", balVars_[jvarL], balVars_[jvarK], data_) :
-                getView3D("xxCov", balVars_[jvarK], balVars_[jvarL], data_);
-
-              // Update temporary matrix
-              if (jvarL == jvarJ) {
-                // Identity A matrix
-                for (size_t jzK = 0; jzK < nzK; ++jzK) {
-                  for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                    if (useAdjoint) {
-                      tmpView(jzK, jzJ) += xxCovView(jw, jzJ, jzK);
-                    } else {
-                      tmpView(jzK, jzJ) += xxCovView(jw, jzK, jzJ);
-                    }
-                  }
-                }
-              } else {
-                // Get A matrix view
-                const auto aView = getView3D("a", balVars_[jvarJ], balVars_[jvarL], data_);
-
-                // Matrix multiplication
-                for (size_t jzK = 0; jzK < nzK; ++jzK) {
-                  for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                    for (size_t jzL = 0; jzL < nzL; ++jzL) {
-                      if (useAdjoint) {
-                        tmpView(jzK, jzJ) += xxCovView(jw, jzL, jzK)*aView(jw, jzJ, jzL);
-                      } else {
-                        tmpView(jzK, jzJ) += xxCovView(jw, jzK, jzL)*aView(jw, jzJ, jzL);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            // Second product
-            if (jvarK == jvarI) {
+            // Update temporary matrix
+            if (jvarL == jvarJ) {
               // Identity A matrix
-              for (size_t jzI = 0; jzI < nzI; ++jzI) {
+              for (size_t jzK = 0; jzK < nzK; ++jzK) {
                 for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                  vvCovView(jw, jzI, jzJ) += tmpView(jzI, jzJ);
+                  if (useAdjoint) {
+                    tmpView(jzK, jzJ) += xxCovView(jw, jzJ, jzK);
+                  } else {
+                    tmpView(jzK, jzJ) += xxCovView(jw, jzK, jzJ);
+                  }
                 }
               }
             } else {
               // Get A matrix view
-              const auto aView = getView3D("a", balVars_[jvarI], balVars_[jvarK], data_);
+              const auto aView = getView3D("a", balVars_[jvarJ], balVars_[jvarL], data_);
 
               // Matrix multiplication
-              for (size_t jzI = 0; jzI < nzI; ++jzI) {
+              for (size_t jzK = 0; jzK < nzK; ++jzK) {
                 for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
-                  for (size_t jzK = 0; jzK < nzK; ++jzK) {
-                    vvCovView(jw, jzI, jzJ) += aView(jw, jzI, jzK)*tmpView(jzK, jzJ);
+                  for (size_t jzL = 0; jzL < nzL; ++jzL) {
+                    if (useAdjoint) {
+                      tmpView(jzK, jzJ) += xxCovView(jw, jzL, jzK)*aView(jw, jzJ, jzL);
+                    } else {
+                      tmpView(jzK, jzJ) += xxCovView(jw, jzK, jzL)*aView(jw, jzJ, jzL);
+                    }
                   }
                 }
               }
             }
           }
+
+          // Second product
+          if (jvarK == jvarI) {
+            // Identity A matrix
+            for (size_t jzI = 0; jzI < nzI; ++jzI) {
+              for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
+                vvCovView(jw, jzI, jzJ) += tmpView(jzI, jzJ);
+              }
+            }
+          } else {
+            // Get A matrix view
+            const auto aView = getView3D("a", balVars_[jvarI], balVars_[jvarK], data_);
+
+            // Matrix multiplication
+            for (size_t jzI = 0; jzI < nzI; ++jzI) {
+              for (size_t jzJ = 0; jzJ < nzJ; ++jzJ) {
+                for (size_t jzK = 0; jzK < nzK; ++jzK) {
+                  vvCovView(jw, jzI, jzJ) += aView(jw, jzI, jzK)*tmpView(jzK, jzJ);
+                }
+              }
+            }
+          }
         }
-
-        // Get vv-covariance field
-        auto vvCovField = getField("vvCov", outputVar, inputVar, data_);
-
-        // Filter vv-covariance
-        trans_->filterCov(Lf_, vvCovField);
       }
+
+      // Get vv-covariance field
+      auto vvCovField = getField("vvCov", outputVar, inputVar, data_);
+
+      // Filter vv-covariance
+      trans_->filterCov(Lf_, vvCovField);
     }
   }
 
   oops::Log::trace() << classname() << "::computeRegressionsFromCovariances done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::Variables BifourierBalance::xxCovVars(const oops::Variable & outputVar) const {
+  oops::Log::trace() << classname() << "::xxCovVars starting" << std::endl;
+
+  // Initialize input variables
+  oops::Variables inputVars;
+
+  if (balVars_.has(outputVar.name())) {
+    // Normal variable: compute xx-covariances for all lower triangular blocks (including diagonal)
+    for (const auto & inputVar : balVars_) {
+      if (balVars_.find(inputVar.name()) <= balVars_.find(outputVar.name())) {
+        inputVars.push_back(inputVar);
+      }
+    }
+  } else {
+    // Extra variable: compute xx-covariance with itself only
+    inputVars.push_back(outputVar);
+  }
+
+  oops::Log::trace() << classname() << "::xxCovVars done" << std::endl;
+  return inputVars;
 }
 
 // -----------------------------------------------------------------------------

@@ -377,7 +377,30 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
   auto cvView = atlas::array::make_view<double, 1>(cv);
 
   // Initialize control vector
-  cvView.assign(0.0);
+  for (const auto & scaleData : scaleDataVec_) {
+    if (strategy_ == "crossed") {
+      // Restart index (save control vector)
+      index = offset;
+    }
+
+    // Set control vector components to zero
+    if (scaleData.localization()) {
+      for (unsigned int ie = 0; ie < scaleData.ensemble()->ens_size(); ++ie) {
+        for (size_t jcv = 0; jcv < scaleData.localization()->ctlVecSize(); ++jcv) {
+          cvView(index+jcv) = 0.0;
+        }
+        index += scaleData.localization()->ctlVecSize();
+      }
+    } else {
+      for (unsigned int ie = 0; ie < scaleData.ensemble()->ens_size(); ++ie) {
+        cvView(index) = 0.0;
+        ++index;
+      }
+    }
+  }
+
+  // Re-initialization
+  index = offset;
 
   for (const auto & scaleData : scaleDataVec_) {
     if (strategy_ == "crossed") {
@@ -398,9 +421,6 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
       // Create scale control vector
       atlas::Field cvScale("genericCtlVec", atlas::array::make_datatype<double>(),
         atlas::array::make_shape(scaleData.localization()->ctlVecSize()));
-
-      // Get scale control vector view
-      auto cvScaleView = atlas::array::make_view<double, 1>(cvScale);
 
       for (unsigned int ie = 0; ie < scaleData.ensemble()->ens_size(); ++ie) {
         // Copy initial fieldset
@@ -424,6 +444,11 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
 
         // Apply localization square-root adjoint
         scaleData.localization()->multiplySqrtAD(fset4dTmp, cvScale, 0);
+
+        // Get scale control vector view
+        auto cvScaleView = atlas::array::make_view<double, 1>(cvScale);
+
+        // Add component
         for (size_t jcv = 0; jcv < scaleData.localization()->ctlVecSize(); ++jcv) {
           cvView(index+jcv) += cvScaleView(jcv);
         }

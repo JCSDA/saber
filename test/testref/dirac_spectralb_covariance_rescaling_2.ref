@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: CS-LFR-12 [864]
   Fields:
   - mu (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 5.7870370370370367e-04
     + stddev = 2.4056261216234470e-02
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 5.7870370370370367e-04
     + stddev = 2.4056261216234470e-02

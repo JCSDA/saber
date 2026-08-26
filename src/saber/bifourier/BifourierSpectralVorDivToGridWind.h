@@ -79,8 +79,7 @@ class BifourierSpectralVorDivToGridWind : public SaberOuterBlockBase {
                                     const oops::FieldSet3D &);
   virtual ~BifourierSpectralVorDivToGridWind() = default;
 
-  const oops::GeometryData & innerGeometryData() const override
-    {return *innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData() const override;
   const oops::Variables & innerVars() const override
     {return innerVars_;}
 

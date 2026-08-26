@@ -297,7 +297,6 @@ void SaberCentralBlock::calibrateBlock(const oops::Geometry<MODEL> & geom,
       if (outerBlockChain) outerBlockChain->leftInverseMultiply(fset);
 
       // Use FieldSet in the central block
-      oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
       this->iterativeCalibrationUpdate(fset);
     }
 

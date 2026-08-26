@@ -42,16 +42,15 @@ BifourierAromeBalance::BifourierAromeBalance(const oops::GeometryData & outerGeo
   oops::Log::trace() << classname() << "::BifourierAromeBalance starting" << std::endl;
 
   // Check balanced air pressure source
-  ASSERT((params_.explicitPb.value() != boost::none) || params_.pbFromTrans.value()
+  ASSERT((params_.explicitPb.value()) || params_.pbFromTrans.value()
     || params_.read.value());
 
-  if ((params_.explicitPb.value() != boost::none) || params_.pbFromTrans.value()) {
+  if ((params_.explicitPb.value()) || params_.pbFromTrans.value()) {
     // Get change of variable parameters from configuration or from spectral transform
     const auto & explicitPb = params_.explicitPb.value();
-    const size_t M = (explicitPb != boost::none) ? explicitPb->M.value() : trans_->M();
-    const size_t N = (explicitPb != boost::none) ? explicitPb->N.value() : trans_->N();
-    const double meanLat = (explicitPb != boost::none) ? explicitPb->meanLat.value()
-      : trans_->meanLat();
+    const size_t M = (explicitPb) ? explicitPb->M.value() : trans_->M();
+    const size_t N = (explicitPb) ? explicitPb->N.value() : trans_->N();
+    const double meanLat = (explicitPb) ? explicitPb->meanLat.value() : trans_->meanLat();
 
     // Allocate fact1
     fact1_.resize(trans_->ns());
@@ -63,7 +62,7 @@ BifourierAromeBalance::BifourierAromeBalance(const oops::GeometryData & outerGeo
     const double zly = 2.0*static_cast<double>(nwGlb)*trans_->dy();
     const double zfact1 = zcc*(zly/(2.0*M_PI))*(zly/(2.0*M_PI));
     for (size_t js = 0; js < trans_->ns(); ++js) {
-      const double kstar = trans_->rkstar(trans_->jk(js), trans_->jl(js), M, N, nwGlb);
+      const double kstar = trans_->rkstar(trans_->k(js), trans_->l(js), M, N, nwGlb);
       if (kstar > 0.0) {
         fact1_[js] = zfact1/(kstar*kstar);
       } else {
@@ -281,9 +280,9 @@ void BifourierAromeBalance::read() {
 
     // Copy fact1
     for (size_t js = 0; js < trans_->ns(); ++js) {
-      const size_t jk = trans_->jk(js);
-      const size_t jl = trans_->jl(js);
-      const size_t jq = trans_->jq(js);
+      const size_t jk = trans_->k(js);
+      const size_t jl = trans_->l(js);
+      const size_t jq = trans_->q(js);
       jIAL = IALIndexView(jk, jl, jq);
       fact1FromFile[js] = fact1IAL[jIAL];
     }
@@ -336,7 +335,7 @@ void BifourierAromeBalance::read() {
   }
 
   // Copy fact1 from file if it has not been defined in the constructor
-  if (!((params_.explicitPb.value() != boost::none) || params_.pbFromTrans.value())) {
+  if (!((params_.explicitPb.value()) || params_.pbFromTrans.value())) {
     // Allocate fact1
     fact1_.resize(trans_->ns());
 
@@ -394,7 +393,7 @@ void BifourierAromeBalance::iterativeCalibrationUpdate(const oops::FieldSet3D & 
 void BifourierAromeBalance::write() const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
-  if (params_.write.value() != boost::none) {
+  if (params_.write.value()) {
     // Write data
     if (params_.write.value()->outputFileFormat.value() == "arome legacy binary"
       || params_.write.value()->outputFileFormat.value() == "arome legacy netcdf") {
@@ -457,9 +456,9 @@ void BifourierAromeBalance::write() const {
 
       // Copy fact1
       for (size_t js = 0; js < trans_->ns(); ++js) {
-        const size_t jk = trans_->jk(js);
-        const size_t jl = trans_->jl(js);
-        const size_t jq = trans_->jq(js);
+        const size_t jk = trans_->k(js);
+        const size_t jl = trans_->l(js);
+        const size_t jq = trans_->q(js);
         jIAL = IALIndexView(jk, jl, jq);
         fact1IAL[jIAL] = fact1_[js];
       }

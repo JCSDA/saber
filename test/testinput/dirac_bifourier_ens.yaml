@@ -3,8 +3,8 @@ geometry:
   function space: StructuredColumns
   grid:
     type : regional
-    nx : 73
-    ny : 51
+    nx : 74
+    ny : 52
     dx : 2.5e3
     dy : 2.5e3
     lonlat(centre) : [9.9, 56.3]
@@ -16,8 +16,6 @@ geometry:
   partitioner: checkerboard
   groups:
   - variables:
-    - air_upward_absolute_vorticity
-    - air_horizontal_divergence
     - geographical_x_wind
     - geographical_y_wind
     - air_temperature
@@ -28,7 +26,7 @@ geometry:
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
-  state variables:
+  state variables: &vars
   - geographical_x_wind
   - geographical_y_wind
   - air_temperature
@@ -45,12 +43,7 @@ background error:
       template:
         date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bifourier/_MPI_-_OMP__member_%mem%
-        state variables:
-        - geographical_x_wind
-        - geographical_y_wind
-        - air_temperature
-        - log_of_air_pressure_at_surface
-        - water_vapor_mixing_ratio_wrt_moist_air
+        state variables: *vars
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
@@ -59,21 +52,15 @@ background error:
       multivariate strategy: duplicated
       groups:
       - group name: allVars
-        variables: 
-        - geographical_x_wind
-        - geographical_y_wind
-        - air_temperature
-        - log_of_air_pressure_at_surface
-        - water_vapor_mixing_ratio_wrt_moist_air
+        variables: *vars
         variables on extra levels:
         - log_of_air_pressure_at_surface
         group central block:
           saber block name: BifourierCovariance
-          calibration:
-            profiles:
-            - variable: allVars
-              horizontal length-scales: [30.0e3, 28.0e3, 26.0e3, 24.0e3, 22.0e3, 20.0e3, 18.0e3, 16.0e3, 14.0e3, 12.0e3, 30.0e3]
-              vertical length-scale: 4.0
+          profiles:
+          - variable: allVars
+            horizontal length-scales: [30.0e3, 28.0e3, 26.0e3, 24.0e3, 22.0e3, 20.0e3, 18.0e3, 16.0e3, 14.0e3, 12.0e3, 30.0e3]
+            vertical length-scale: 4.0
         group outer blocks:
         - saber block name: BifourierSpectralToGrid
 dirac:

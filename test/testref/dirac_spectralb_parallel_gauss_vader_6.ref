@@ -19,7 +19,7 @@ Input Dirac increment:
     + max    = 0.0000000000000000e+00
 
   - dry_air_density_levels_minus_one (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.2400793650793651e-05
     + stddev = 3.5214760613682494e-03

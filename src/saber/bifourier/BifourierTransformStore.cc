@@ -51,15 +51,21 @@ std::shared_ptr<BifourierTransformBase> BifourierTransformStore::setupTransform(
   // Check function space type
   ASSERT(gdata.functionSpace().type() == "StructuredColumns");
 
+  // Number of levels for all variables
+  size_t nvz = 0;
+  for (const auto & var : vars) {
+    nvz += var.getLevels();
+  }
+
   // Get grid UID
   const atlas::functionspace::StructuredColumns fs(gdata.functionSpace());
   const std::string gridUid = fs.grid().uid();
 
   // Compare with existing grid UIDs
   for (auto it = transforms().begin(); it != transforms().end(); ++it) {
-    if ((*it)->gridUid() == gridUid) {
+    if (((*it)->gridUid() == gridUid) && ((*it)->nvz() == nvz)) {
       oops::Log::info() << "Info     : Retrieved Bifourier transform with grid UID: " << gridUid
-        << std::endl;
+        << " for " << nvz << "levels" << std::endl;
       oops::Log::trace() << classname() << "::setupTransform done" << std::endl;
       return (*it);
     }
@@ -97,7 +103,7 @@ std::shared_ptr<BifourierTransformBase> BifourierTransformStore::retrieveTransfo
   for (auto it = transforms().begin(); it != transforms().end(); ++it) {
     if ((*it)->specUid() == specUid) {
       oops::Log::info() << "Info     : Retrieved Bifourier transform with spectral UID: " << specUid
-        << std::endl;
+        << " for any number of levels" << std::endl;
 
       oops::Log::trace() << classname() << "::setupTransform done" << std::endl;
       return (*it);
@@ -105,7 +111,44 @@ std::shared_ptr<BifourierTransformBase> BifourierTransformStore::retrieveTransfo
   }
 
   // Cannot find existing spectral space
-  throw eckit::Exception("cannot find existing spectral space", Here());
+  throw eckit::Exception("cannot find existing spectral space with UID: " + specUid, Here());
+
+  oops::Log::trace() << classname() << "::retrieveTransform done" << std::endl;
+  return *(std::prev(transforms().end()));
+}
+
+// -----------------------------------------------------------------------------
+
+std::shared_ptr<BifourierTransformBase> BifourierTransformStore::retrieveTransform(
+  const oops::GeometryData & gdata,
+  const oops::Variables & vars) const {
+  oops::Log::trace() << classname() << "::retrieveTransform starting" << std::endl;
+
+  // Check function space type
+  ASSERT(gdata.functionSpace().type() == "PointCloud");
+
+  // Generate spectral UID
+  const std::string specUid = generateSpectralUid(gdata.functionSpace(), gdata.comm());
+
+  // Number of levels for all variables
+  size_t nvz = 0;
+  for (const auto & var : vars) {
+    nvz += var.getLevels();
+  }
+
+  // Compare with existing spectral UIDs and number of levels
+  for (auto it = transforms().begin(); it != transforms().end(); ++it) {
+    if (((*it)->specUid() == specUid) && ((*it)->nvz() == nvz)) {
+      oops::Log::info() << "Info     : Retrieved Bifourier transform with spectral UID: " << specUid
+        << " for " << nvz << " levels" << std::endl;
+
+      oops::Log::trace() << classname() << "::setupTransform done" << std::endl;
+      return (*it);
+    }
+  }
+
+  // Cannot find existing spectral space
+  throw eckit::Exception("cannot find existing spectral space with UID: " + specUid, Here());
 
   oops::Log::trace() << classname() << "::retrieveTransform done" << std::endl;
   return *(std::prev(transforms().end()));

@@ -1,34 +1,34 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - air_upward_absolute_vorticity (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
   - air_horizontal_divergence (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
   - air_temperature (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - log_of_air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-04
-    + stddev = 1.6389038743052555e-02
+    + mean   = 2.5987525987525989e-04
+    + stddev = 1.6120647005479008e-02
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
-- Regional grid size: 73x51
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -48,30 +48,30 @@ Adjoint test for block BifourierID passed
 Square-root test for block BifourierID passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - air_upward_absolute_vorticity (10 levels):
-    + min    = -1.4508261826054790e+04
-    + max    = 1.4038995439242774e+04
-    + mean   = 9.9999999999907468e-02
-    + stddev = 2.3489559471196440e+03
+    + min    = -1.4577846100206862e+04
+    + max    = 1.4038995439242764e+04
+    + mean   = 1.0000000000010645e-01
+    + stddev = 2.3489549223218855e+03
   - air_horizontal_divergence (10 levels):
-    + min    = -2.0201757991444223e+05
-    + max    = 1.0053003032753203e+05
-    + mean   = 1.0000000002853121e-01
-    + stddev = 4.6333332574651715e+04
+    + min    = -2.0198741691555391e+05
+    + max    = 1.0059646186690438e+05
+    + mean   = 1.0000000006259839e-01
+    + stddev = 4.6333312360438773e+04
   - air_temperature (10 levels):
     + min    = -1.2357841483690619e+10
-    + max    = 1.1035868802069090e+10
-    + mean   ~ 0
-    + stddev = 3.0235128985460033e+09
+    + max    = 1.1035868802069082e+10
+    + mean close to zero
+    + stddev = 3.0235115794538870e+09
   - log_of_air_pressure_at_surface (1 levels):
-    + min    = -1.1649819520862186e+07
+    + min    = -1.1661392898991572e+07
     + max    = 2.6881556074599214e+07
-    + mean   = 9.9999999341645240e-01
-    + stddev = 8.9234801080148462e+06
+    + mean   = 9.9999999489079539e-01
+    + stddev = 8.9234411676512714e+06
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -8.0192165069745528e+06
-    + max    = 3.7689297459882582e+06
-    + mean   = 1.0000000104940768e-01
-    + stddev = 1.3386463103391572e+06
+    + min    = -8.0192165069745472e+06
+    + max    = 3.7726494687394989e+06
+    + mean   = 9.9999998437566004e-02
+    + stddev = 1.3386457263172367e+06

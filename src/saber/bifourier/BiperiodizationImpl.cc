@@ -156,7 +156,7 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   }
 
   // Prepare mixing mask components
-  const size_t nmix = params_.nmix.value() != boost::none ? *params_.nmix.value() :
+  const size_t nmix = params_.nmix.value() ? *params_.nmix.value() :
     std::max(outerExtNx, outerExtNy);
   const double Lmix = params_.Lmix.value();
   std::vector<double> mixingX(outerExtNx);

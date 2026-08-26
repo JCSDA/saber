@@ -1,19 +1,19 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 2.6860059092130003e-05
-    + stddev = 5.1826691088793144e-03
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907644e-03
   - geographical_y_wind (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -34,15 +34,15 @@ Outer inverse test for block BifourierGridToSpectral passed: Uinv U (Uinv x) == 
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -2.1348080526467038e+03
-    + max    = 2.0898000182443848e+03
-    + mean   ~ 0
-    + stddev = 1.1920753947004273e+02
+    + min    = -2.1689794389779322e+03
+    + max    = 2.1096443954369538e+03
+    + mean close to zero
+    + stddev = 1.2012041701661208e+02
   - geographical_y_wind (10 levels):
-    + min    = -2.1452818669226399e+03
-    + max    = 2.1452818669226390e+03
-    + mean   ~ 0
-    + stddev = 1.3665494414081243e+02
+    + min    = -2.1825745936084577e+03
+    + max    = 2.1567926003335415e+03
+    + mean close to zero
+    + stddev = 1.3738193872717906e+02

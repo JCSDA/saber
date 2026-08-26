@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: structured [3763]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.3917087430241828e-04
     + stddev = 1.5463506268000035e-02
@@ -11,7 +11,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.3917087430241827e-03
     + stddev = 4.8853072639868877e-02
@@ -33,7 +33,7 @@ Covariance(SABER) * Increment:
   Geometry: structured [3763]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000002e+00
     + mean   = 1.2934250502251787e-02
     + stddev = 7.6388620993744494e-02
@@ -41,7 +41,7 @@ Covariance(SABER) * Increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000002e+00
     + mean   = 7.7570263813595206e-02
     + stddev = 1.9725319244128525e-01

@@ -1,57 +1,48 @@
 Input Dirac increment:
 IncrementCoupled: quench
-
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
   - air_temperature (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 3.7037037037037035e-04
     + stddev = 1.9245008972986654e-02
-
-
 IncrementCoupled: quench2
-
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.2500000000000000e-04
     + stddev = 1.1180339887497977e-02
   - air_horizontal_velocity_potential (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.2500000000000000e-04
     + stddev = 1.1180339887497228e-02
-
 Covariance(SABER coupled) * Increment:
 IncrementCoupled: quench
-
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
   - air_temperature (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 4.0000000000000000e+00
     + mean   = 1.4814814814814814e-03
     + stddev = 7.6980035891949739e-02
-
-
 IncrementCoupled: quench2
-
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 3.8124013112978044e+00
     + mean   = 2.7171863362235389e-03
     + stddev = 6.2610810357832364e-02
   - air_horizontal_velocity_potential (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 3.8065697952602293e+00
     + mean   = 2.1344080405865759e-02
     + stddev = 1.9294872194770990e-01

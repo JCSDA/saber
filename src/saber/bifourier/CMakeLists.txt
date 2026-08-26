@@ -11,6 +11,10 @@ BiperiodizationImpl.cc
 
 if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI ) )
     list(APPEND bifourier_src_files_list
+    # Bi-Fourier analytical filter
+    BifourierAnalyticalFilter.cc
+    BifourierAnalyticalFilter.h
+
     # Bi-Fourier AROME balance block
     BifourierAromeBalance.cc
     BifourierAromeBalance.h
@@ -31,6 +35,10 @@ if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANS
     # Bi-Fourier covariance block
     BifourierCovariance.cc
     BifourierCovariance.h
+    BifourierCovarianceImpl.cc
+    BifourierCovarianceImpl.h
+    BifourierCovarianceSqrt.cc
+    BifourierCovarianceSqrt.h
 
     # Bi-Fourier grid to spectral block
     BifourierGridToSpectral.cc
@@ -39,6 +47,10 @@ if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANS
     # Bi-Fourier identity block (in spectral space)
     BifourierID.cc
     BifourierID.h
+
+    # Bi-Fourier spectral converter block
+    BifourierSpectralConverter.cc
+    BifourierSpectralConverter.h
 
     # Bi-Fourier spectral to grid block
     BifourierSpectralToGrid.cc

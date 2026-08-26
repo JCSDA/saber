@@ -44,6 +44,9 @@ class BifourierTransformParameters : public oops::Parameters {
   // Sub-ellipses half-width for calibration (AROME default is 1.5)
   oops::Parameter<double> dwGlb{"sub-ellipses half-width", -1.0, this};
 
+  // No wavenumber on last task for tests
+  oops::Parameter<bool> noWavenumberOnLastTask{"no wavenumber on last task", false, this};
+
   // Skip tests
   oops::Parameter<bool> skipTests{"skip tests", false, this};
 
@@ -108,6 +111,25 @@ class BifourierTransformBase : public util::Printable,
 
   // Non-virtual methods
 
+  // Spectral element
+  enum Quad {
+    ReRe = 0,
+    ReIm = 1,
+    ImRe = 2,
+    ImIm = 3
+  };
+  struct spElem {
+    size_t jk;
+    size_t jl;
+    Quad jq;
+    double kstar;
+    size_t jwGlb;
+    size_t jsXDerivativeOffset;
+    size_t jsYDerivativeOffset;
+    size_t jt;
+    size_t js;
+  };
+
   // Accessors
 
   // Geometry data
@@ -148,6 +170,18 @@ class BifourierTransformBase : public util::Printable,
   const std::vector<size_t> & nsPerTask() const
     {return nsPerTask_;}
 
+  // Return jk from the global js
+  size_t sGlbToK(const size_t & jsGlb) const
+    {return spVec_[jsGlb].jk;}
+
+  // Return jl from the global js
+  size_t sGlbToL(const size_t & jsGlb) const
+    {return spVec_[jsGlb].jl;}
+
+  // Return jq from the global js
+  size_t sGlbToQ(const size_t & jsGlb) const
+    {return spVec_[jsGlb].jq;}
+
   // Communication vectors
   const std::vector<int> & sCounts() const
     {return sCounts_;}
@@ -173,15 +207,15 @@ class BifourierTransformBase : public util::Printable,
     {return N_;}
 
   // Return jk for this wavenumber
-  const size_t & jk(const size_t & js) const
+  const size_t & k(const size_t & js) const
     {return jkVec_[js];}
 
   // Return jl for this wavenumber
-  const size_t & jl(const size_t & js) const
+  const size_t & l(const size_t & js) const
     {return jlVec_[js];}
 
   // Return jq for this wavenumber
-  const size_t & jq(const size_t & js) const
+  const size_t & q(const size_t & js) const
     {return jqVec_[js];}
 
   // Return kstar for this wavenumber
@@ -216,14 +250,6 @@ class BifourierTransformBase : public util::Printable,
   const size_t & nwRoot() const
     {return nwRoot_;}
 
-  // Vector of minimum global nw
-  const std::vector<size_t> & nwStartPerTask() const
-    {return nwStartPerTask_;}
-
-  // Vector of maximum global nw
-  const std::vector<size_t> & nwEndPerTask() const
-    {return nwEndPerTask_;}
-
   // Vector of nw
   const std::vector<size_t> & nwPerTask() const
     {return nwPerTask_;}
@@ -236,15 +262,17 @@ class BifourierTransformBase : public util::Printable,
   const size_t & nwStart() const
     {return nwStartPerTask_[myrank_];}
 
-  // Ending global nw
-  const size_t & nwEnd() const
-    {return nwEndPerTask_[myrank_];}
-
   // Total number of levels (sum of all levels of all active variables)
   const size_t & nvz() const
     {return nvz_;}
 
   // Public methods
+
+  // Return task from global js
+  size_t sGlbToTask(const size_t &) const;
+
+  // Return local js from global js
+  size_t sGlbToS(const size_t &) const;
 
   // Run tests
   void test(const oops::Variables &) const;
@@ -322,7 +350,7 @@ class BifourierTransformBase : public util::Printable,
 
 
   // Integer kstar value
-  double ikstar(const size_t &,
+  size_t ikstar(const size_t &,
                 const size_t &,
                 const size_t &,
                 const size_t &,
@@ -402,22 +430,6 @@ class BifourierTransformBase : public util::Printable,
   std::vector<size_t> ellips_;
 
   // Mapping and normalization
-  enum Quad {
-    ReRe = 0,
-    ReIm = 1,
-    ImRe = 2,
-    ImIm = 3
-  };
-  struct spElem {
-    size_t jk;
-    size_t jl;
-    Quad jq;
-    double kstar;
-    size_t jwGlb;
-    size_t jsXDerivativeOffset;
-    size_t jsYDerivativeOffset;
-    size_t jt;
-  };
   double jwGlbTol_;
   std::vector<spElem> spVec_;
   std::vector<size_t> spNormKL_;
@@ -466,7 +478,6 @@ class BifourierTransformBase : public util::Printable,
   size_t nw_;
   size_t nwRoot_;
   std::vector<size_t> nwStartPerTask_;
-  std::vector<size_t> nwEndPerTask_;
   std::vector<size_t> nwPerTask_;
   std::vector<size_t> nwRootPerTask_;
   std::vector<int> wCounts_;
