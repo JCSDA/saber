@@ -112,6 +112,10 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
   /// @brief Multiply the increment by this hybrid B matrix.
   void multiply(oops::FieldSet4D &) const override;
 
+  /// @brief Diagonal variance: weighted sum of component variances, propagated
+  ///        through any common outer blocks.
+  oops::FieldSet3D variance() const override;
+
   /// @brief Control vector size
   size_t ctlVecSize() const override
     {throw eckit::NotImplemented("ctlVecSize not implemented yet", Here());}
@@ -618,6 +622,49 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
   fset4d.deepCopy(fset4dSum);
 
   oops::Log::trace() << "SaberHybridBlockChain::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+oops::FieldSet3D SaberHybridBlockChain<MODEL>::variance() const {
+  oops::Log::trace() << "SaberHybridBlockChain::variance starting" << std::endl;
+
+  if (parallelHybrid_) {
+    throw eckit::NotImplemented("SaberHybridBlockChain::variance not implemented "
+                                "for parallel-hybrid execution", Here());
+  }
+
+  ASSERT(!hybridBlockChain_.empty());
+
+  // Apply component jj's weight to its variance in place. Component weights are
+  // stored as square roots; squaring them gives the weight applied to the
+  // variance.
+  const auto applyWeight = [this](const size_t jj, oops::FieldSet3D & var) {
+    var *= hybridScalarWeightSqrt_[jj] * hybridScalarWeightSqrt_[jj];
+    if (!hybridFieldWeightSqrt_[jj].empty()) {
+      var *= hybridFieldWeightSqrt_[jj];
+      var *= hybridFieldWeightSqrt_[jj];
+    }
+  };
+
+  // Seed the accumulator with the first (weighted) component; FieldSet3D is not
+  // assignable, so component 0 is handled outside the loop rather than inside.
+  oops::FieldSet3D variance = hybridBlockChain_[0]->variance();
+  applyWeight(0, variance);
+
+  for (size_t jj = 1; jj < hybridBlockChain_.size(); ++jj) {
+    oops::FieldSet3D varianceCmp = hybridBlockChain_[jj]->variance();
+    applyWeight(jj, varianceCmp);
+    variance += varianceCmp;
+  }
+
+  if (outerBlockChain_) {
+    outerBlockChain_->applyBackgroundVariance(variance);
+  }
+
+  oops::Log::trace() << "SaberHybridBlockChain::variance done" << std::endl;
+  return variance;
 }
 
 // -----------------------------------------------------------------------------

@@ -244,8 +244,9 @@ void randomize(const oops::GeometryData & geom,
         std::vector<size_t>{levels}, std::vector<std::string>{var});
       fset[var] = rand[var];
 
-      // apply diffusion square root
+      // apply diffusion square root, then normalization.
       group.diffusion->multiplySqrtTL(rand);
+      applyNormSqrt(geom.functionSpace(), group, rand[var]);
     }
   }
 }

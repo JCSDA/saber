@@ -58,6 +58,9 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void multiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {this->doMultiply(dxi, dxo);}
 
+  /// Diagonal variance of this covariance, on its outer function space.
+  oops::FieldSet3D variance() const {return blockChain_->variance();}
+
  private:
   ErrorCovariance(const ErrorCovariance&);
   ErrorCovariance& operator=(const ErrorCovariance&);

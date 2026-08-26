@@ -120,6 +120,18 @@ class SaberOuterBlockChain {
     }
   }
 
+  /// @brief Propagate a variance fieldset through all outer blocks, in the
+  ///        same forward direction as applyOuterBlocks (innermost-first).
+  void applyBackgroundVariance(oops::FieldSet3D & variance) const {
+    for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
+      if (it->second) {
+        throw eckit::NotImplemented("variance not implemented for "
+                                    "right-inverse-mode outer blocks", Here());
+      }
+      it->first.get()->variance(variance);
+    }
+  }
+
   /// @brief Adjoint multiplication by all outer blocks, 4D.
   void applyOuterBlocksAD(oops::FieldSet4D & fset4d) const {
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {

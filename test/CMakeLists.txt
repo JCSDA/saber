@@ -145,6 +145,9 @@ if( ENABLE_QUENCH )
   # --- Coupled tests ---
   include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_coupled.cmake)
 
+  # --- Variance accessor tests ---
+  include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_variance.cmake )
+
   # --- Fast LAM tests ---
   if( SABER_TEST_FASTLAM )
     include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_fastlam.cmake )

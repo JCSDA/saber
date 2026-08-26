@@ -73,7 +73,10 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
   void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const {
     throw eckit::NotImplemented(Here());
   }
-
+  /// @brief Return the error variances.
+  oops::FieldSet3D variance() const override {
+    throw eckit::NotImplemented(Here());
+  }
   /// @brief Accessor to outer function space
   const atlas::FunctionSpace & outerFunctionSpace() const {return outerFunctionSpace_;}
   /// @brief Accessor to outer variables

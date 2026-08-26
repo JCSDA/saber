@@ -130,6 +130,9 @@ class SaberCentralBlock : public util::Printable {
   // Block multiplication
   void multiply(oops::FieldSet3D &) const;
 
+  // Diagonal variance fieldset
+  oops::FieldSet3D variance() const;
+
   // Setup / calibration methods
 
   // Read block data

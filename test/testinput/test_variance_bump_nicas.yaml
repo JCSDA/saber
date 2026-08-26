@@ -1,0 +1,48 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: &levels 2
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: test_variance_bump_nicas/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups: *vars
+          value: 4.0e6
+        vertical length-scale:
+        - groups: *vars
+          value: 3.0
+      grids:
+      - model:
+          variables: *vars
+expected per-point variance:
+- variable: air_horizontal_streamfunction
+  value: 1.0
+- variable: air_horizontal_velocity_potential
+  value: 1.0
+tolerance: 1.0e-12
+monte carlo:
+  samples: 100
+  tolerance: 0.3

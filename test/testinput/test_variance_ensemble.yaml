@@ -1,0 +1,30 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 2
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  covariance type: ensemble
+  ensemble:
+    members from template:
+      template:
+        date: 2010-01-01T12:00:00Z
+        filepath: testdata/randomization_bump_nicas_L10L2/1-1_member_%mem%
+        state variables:
+        - air_horizontal_streamfunction
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+monte carlo:
+  samples: 100
+  tolerance: 0.3

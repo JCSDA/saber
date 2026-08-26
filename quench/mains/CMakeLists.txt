@@ -36,7 +36,14 @@ ecbuild_add_executable( TARGET  saber_quench_subcomm_error_covariance_toolbox.x
                         LIBS    quench
                                 vader
                                 ${gsibec_LIBRARIES}
-                                saber )			
+                                saber )
+
+ecbuild_add_executable( TARGET  saber_quench_test_variance.x
+                        SOURCES quenchTestVariance.cc
+                        LIBS    quench
+                                vader
+                                ${gsibec_LIBRARIES}
+                                saber )
 
 # Add RPATH for Torch libraries if found
 if( Torch_FOUND AND DEFINED Torch_ROOT )

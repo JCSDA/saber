@@ -55,6 +55,18 @@ NICAS::~NICAS() {
 
 // -----------------------------------------------------------------------------
 
+oops::FieldSet3D NICAS::variance() const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+  // NICAS is a normalized correlation operator with unit variance on the
+  // diagonal.
+  oops::FieldSet3D variance(validTime_, geometryData().comm());
+  variance.init(geometryData().functionSpace(), activeVars_, 1.0);
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+  return variance;
+}
+
+// -----------------------------------------------------------------------------
+
 std::vector<std::pair<std::string, eckit::LocalConfiguration>> NICAS::getReadConfs() const {
   oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
   std::vector<eckit::LocalConfiguration> inputModelFilesConf

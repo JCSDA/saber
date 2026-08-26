@@ -70,6 +70,23 @@ class Interpolation : public SaberOuterBlockBase {
   void rightInverseMultiply(oops::FieldSet3D & fset) const override
     {inverseMultiply(fset);}
 
+  /// @brief Approximate outer-frame variance obtained by interpolating the inner
+  ///        variance vector.
+  ///
+  /// WARNING: this is only an approximation. With this block acting as the
+  /// interpolation matrix T on an inner covariance C, the exact outer-frame
+  /// variance is diag(T C T^t), which depends on the full inner covariance
+  /// (including its off-diagonal correlations), not just its diagonal. This
+  /// method instead interpolates the inner variance vector diag(C) directly,
+  /// i.e. it returns T diag(C). The two agree only in the limit where the inner
+  /// field is effectively constant across each interpolation stencil (stencil
+  /// small relative to the correlation length); otherwise the result can be a
+  /// significant over- or under-estimate. Extreme example: an identity inner
+  /// covariance (zero correlation length) on a periodic domain of size 1 with
+  /// output points at {0, 0.5} halfway between input points at {0.25, 0.75}
+  /// gives an interpolated variance of 1 where the true variance is 0.5.
+  void variance(oops::FieldSet3D & fset) const override;
+
   oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
                                          const oops::Variables & innerVars) const override;
 

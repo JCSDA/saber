@@ -1,0 +1,42 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 10
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: &levels 10
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    read:
+      groups:
+      - variables: *vars
+        horizontal:
+          filepath: testdata/error_covariance_training_diffusion_2/1-1_hz
+        vertical:
+          levels: *levels
+          filepath: testdata/error_covariance_training_diffusion_2/1-1_vt
+  saber outer blocks:
+  - saber block name: StdDev
+    standard deviations:
+    - variable: air_horizontal_streamfunction
+      stddev: 1.5
+    - variable: air_horizontal_velocity_potential
+      stddev: 2.5
+expected per-point variance:
+- variable: air_horizontal_streamfunction
+  value: 2.25
+- variable: air_horizontal_velocity_potential
+  value: 6.25
+tolerance: 1.0e-12
+monte carlo:
+  samples: 100
+  tolerance: 0.3

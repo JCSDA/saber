@@ -530,6 +530,23 @@ void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
 
 // -----------------------------------------------------------------------------
 
+oops::FieldSet3D SaberCentralBlock::variance() const {
+  oops::Log::trace() << "SaberCentralBlock::variance starting" << std::endl;
+
+  if (strategy_ == "single") {
+    // Single mode: a single underlying central block carries the variance.
+    return groupCentralBlocks_[0]->variance();
+  } else {
+    // Multivariate strategies are not yet supported because the variance
+    // composition across groups depends on the strategy. Add coverage as
+    // needed.
+    throw eckit::NotImplemented("SaberCentralBlock::variance not implemented "
+                                "for multivariate strategy '" + strategy_ + "'", Here());
+  }
+}
+
+// -----------------------------------------------------------------------------
+
 void SaberCentralBlock::randomize(oops::FieldSet3D & fset3d) const {
   oops::Log::trace() << "SaberCentralBlock::randomize starting" << std::endl;
 

@@ -1,0 +1,34 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 10
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 2
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: StdDev
+    standard deviations:
+    - variable: air_horizontal_streamfunction
+      stddev: 2.0
+    - variable: air_horizontal_velocity_potential
+      stddev: 3.0
+expected per-point variance:
+- variable: air_horizontal_streamfunction
+  value: 4.0
+- variable: air_horizontal_velocity_potential
+  value: 9.0
+tolerance: 1.0e-12
+monte carlo:
+  samples: 100
+  tolerance: 0.3
