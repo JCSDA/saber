@@ -69,7 +69,7 @@ type hor_type
    real(kind_real),allocatable :: lon_c1a(:)            !< Longitudes on subset Sc1, halo A
    real(kind_real),allocatable :: lat_c1a(:)            !< Latitudes on subset Sc1, halo A
    integer,allocatable :: order_c1a(:)                  !< Subset Sc1 order for halo A
-   real(kind_real),allocatable :: lon_c1u(:)            !< Longitudes on subset Sc1, universe
+   real(kind_real),allocatable :: lon_c1u(:)            !< Longitudes on subsemplt Sc1, universe
    real(kind_real),allocatable :: lat_c1u(:)            !< Latitudes on subset Sc1, universe
 
    ! Mesh
@@ -3870,8 +3870,8 @@ do isb=1,nicas_cmp%nsb
    jl0_sel = 0
    if (nam%mask_check) then
       ! Allocation
-      if (.not.allocated(sel_il0)) allocate(sel_il0(max(geom%bnda_c0u%nmax,1)))
-      if (.not.allocated(sel_jl0)) allocate(sel_jl0(max(geom%bnda_c0u%nmax,1)))
+      if (.not.allocated(sel_il0)) allocate(sel_il0(geom%bnda_c0u%nmax))
+      if (.not.allocated(sel_jl0)) allocate(sel_jl0(geom%bnda_c0u%nmax))
 
       ! Select boundary arcs
       call geom%bnda_c0u%select(mpl,nicas_cmp%hor(il1s)%lon_c1u(ic1u),nicas_cmp%hor(il1s)%lat_c1u(ic1u), &
@@ -4226,7 +4226,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,nlr_max,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
-integer :: iss,nss,nss_max,istamp
+integer :: iss,nss,nss_max,istamp,nbad,nbad_tot
 integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:),c_ind_sa(:,:),c_ind_sb(:,:)
 integer,allocatable :: ss_to_su(:),stamp(:)
 real(kind_real) :: S_add,norm_sum
@@ -4416,9 +4416,10 @@ do il0=1,nicas_cmp%nl0
       write(mpl%info,'(a13,a,i3,a)') '','Level ',il0,': '
       call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
+      nbad_tot = 0
 
       !$omp parallel private(ic0a,nlr,isb_add,S_add,ih,ic1b,jv,il1,il1s,ilr,ic,isb,jsu), &
-      !$omp&         private(nlr_max,nss,nss_max,iss,norm_sum,istamp), &
+      !$omp&         private(nlr_max,nss,nss_max,iss,norm_sum,istamp,nbad), &
       !$omp&         private(isb_list,S_list_interp,S_list_convol,stamp,ss_to_su)
 
       ! Allocation
@@ -4431,6 +4432,7 @@ do il0=1,nicas_cmp%nl0
       stamp = 0
       nlr_max = 0
       nss_max = 0
+      nbad = 0
 
       !$omp do schedule(static)
       do ic0a=1,geom%nc0a
@@ -4518,7 +4520,7 @@ do il0=1,nicas_cmp%nl0
             if (nss>0) then
                nicas_cmp%norm(ic0a,il0) = one/sqrt(norm_sum)
             else
-               call mpl%warning('${subr}$','grid point without valid normalization factor')
+               nbad = nbad+1
                nicas_cmp%norm(ic0a,il0) = one
             end if
 
@@ -4535,8 +4537,12 @@ do il0=1,nicas_cmp%nl0
       deallocate(S_list_convol)
       deallocate(stamp)
 
+      !$omp atomic
+      nbad_tot = nbad_tot+nbad
+
       !$omp end parallel
       if (nicas_cmp%verbosity) call mpl%prog_final
+      if (nbad_tot>0) call mpl%warning('${subr}$','grid points without valid normalization factor')
    end if
 end do
 

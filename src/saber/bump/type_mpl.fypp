@@ -921,11 +921,12 @@ real(kind_real) :: prog
 if (mpl%nprog>0) then
    ! Update progression array
    if (present(i)) then
+      !$omp critical (mpl_prog_print_done)
       if (.not.mpl%done(i)) then
          mpl%done(i) = .true.
-         !$omp atomic
          mpl%ndone = mpl%ndone+1
       end if
+      !$omp end critical (mpl_prog_print_done)
    end if
 
    ! Print message
