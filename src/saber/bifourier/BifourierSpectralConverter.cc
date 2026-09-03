@@ -148,7 +148,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
 
   // Inner geometry data
   innerGpGeometryData_ = std::make_unique<oops::GeometryData>(innerGpFs,
-    fields, outerGeometryData.levelsAreTopDown(), comm_, false);
+    fields, outerGeometryData.levelsAreTopDown(), comm_);
 
   // Create inner spectral transform
   innerTrans_ = transStore_.setupTransform(*innerGpGeometryData_, innerVars_,
@@ -156,7 +156,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
 
   // Create inner spectral GeometryData
   innerGeometryData_ = std::make_unique<oops::GeometryData>(innerTrans_->spFspace(),
-    fields, outerGeometryData.levelsAreTopDown(), comm_, false);
+    fields, outerGeometryData.levelsAreTopDown(), comm_);
 
   // Check domain size
   ASSERT(oops::is_close_relative(static_cast<double>(innerTrans_->nx())*innerTrans_->dx(),

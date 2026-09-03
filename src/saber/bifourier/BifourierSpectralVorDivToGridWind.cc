@@ -97,7 +97,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
     // Create inner GeometryData
     innerGeometryData_ = std::make_unique<oops::GeometryData>(trans_->spFspace(),
       outerGeometryData.fieldSet(), outerGeometryData.levelsAreTopDown(),
-      outerGeometryData.comm(), false);
+      outerGeometryData.comm());
   } else {
     // Retrieve spectral transform
     trans_ = transStore_.retrieveTransform(outerGeometryData, outerVars);
