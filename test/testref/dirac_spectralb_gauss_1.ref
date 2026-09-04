@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: F12 [1152]
   Fields:
   - eastward_wind (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.2400793650793651e-05
     + stddev = 3.5214760613667857e-03
@@ -94,4 +94,3 @@ Covariance(SABER3_SABER) * Increment:
     + max    = 8.6322222774967539e-02
     + mean   = -1.9725966503962610e-04
     + stddev = 5.0634938036211215e-03
-

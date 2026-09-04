@@ -12,45 +12,45 @@
              Level   4 ~>  0.400E+01 vert. coord.
              Level   5 ~>  0.500E+01 vert. coord.
              Effective levels:   1   3   5 
-                Horizontal support radius:   10000.00 km (  10000.00 km -   10000.00 km)
-                Estimated nc1 from horizontal support radius:       94
-                   Decimate full grid, at least       94 points required,     736 valid points found
-                   Subgrid hash:  -1614970791
-                Final nc1:       94
-                Effective horizontal resolution:  3.99
-             nc1(  1) =                         94
-             nc1(  2) =                         94
-             nc1(  3) =                         94
-             ns =                              282
+                   Requested distance between points (min/max/avg):  0.250E+04 km /  0.250E+04 km /  0.250E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  6.38 /  9.86 /  7.96
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             nc1(  3) =                         88
+             ns =                              264
              v%n_s =                             7
-             c%n_s[global] =                  8538
+             c%n_s[global] =                  8440
              Effective levels:   1   2   3   4   5 
-                Horizontal support radius:    7500.00 km (   7500.00 km -    7500.00 km)
-                Estimated nc1 from horizontal support radius:      167
-                   Decimate full grid, at least      167 points required,     976 valid points found
-                   Subgrid hash:     75651903
-                Final nc1:      167
-                Effective horizontal resolution:  3.99
-             nc1(  1) =                        167
-             nc1(  2) =                        167
-             nc1(  3) =                        167
-             nc1(  4) =                        167
-             nc1(  5) =                        167
-             ns =                              835
+                   Requested distance between points (min/max/avg):  0.188E+04 km /  0.188E+04 km /  0.188E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  4.78 /  7.39 /  5.97
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             nc1(  3) =                         88
+             nc1(  4) =                         88
+             nc1(  5) =                         88
+             ns =                              440
              v%n_s =                             5
-             c%n_s[global] =                 29893
+             c%n_s[global] =                  6760
              Effective levels:   1   2   3   4   5 
-                Horizontal support radius:    3750.00 km (   3750.00 km -    3750.00 km)
-                Estimated nc1 from horizontal support radius:      670
-                   Decimate full grid, at least      670 points required,    1098 valid points found
-                   Subgrid hash:  -1113144737
-                Final nc1:      670
-                Effective horizontal resolution:  4.00
-             nc1(  1) =                        670
-             nc1(  2) =                        670
-             nc1(  3) =                        670
-             nc1(  4) =                        670
-             nc1(  5) =                        670
-             ns =                             3350
+                   Requested distance between points (min/max/avg):  0.938E+03 km /  0.938E+03 km /  0.938E+03 km
+                   Regular sampling grid size:      360 points
+                   Nearest neighbor distance (min/max/avg):  0.381E+03 km /  0.103E+04 km /  0.886E+03 km
+                   Effective resolution (min/max/avg):  3.63 /  9.84 /  4.66
+                   Subgrid hash:   -435093158
+                Subgrid size:      360
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             nc1(  3) =                        360
+             nc1(  4) =                        360
+             nc1(  5) =                        360
+             ns =                             1800
              v%n_s =                             5
-             c%n_s[global] =                 51810
+             c%n_s[global] =                 15080

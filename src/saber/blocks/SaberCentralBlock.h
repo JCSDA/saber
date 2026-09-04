@@ -130,6 +130,9 @@ class SaberCentralBlock : public util::Printable {
   // Block multiplication
   void multiply(oops::FieldSet3D &) const;
 
+  // Diagonal variance fieldset
+  oops::FieldSet3D variance() const;
+
   // Setup / calibration methods
 
   // Read block data
@@ -297,7 +300,6 @@ void SaberCentralBlock::calibrateBlock(const oops::Geometry<MODEL> & geom,
       if (outerBlockChain) outerBlockChain->leftInverseMultiply(fset);
 
       // Use FieldSet in the central block
-      oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
       this->iterativeCalibrationUpdate(fset);
     }
 

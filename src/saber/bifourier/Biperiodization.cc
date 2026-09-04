@@ -36,20 +36,21 @@ Biperiodization::Biperiodization(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::Biperiodization starting" << std::endl;
 
   // Setup biperiodization implementation
-  biper_.reset(new BiperiodizationImpl(outerGeometryData, outerVars, params_.biperParams.value()));
+  biper_ = std::make_unique<BiperiodizationImpl>(outerGeometryData, outerVars,
+    params_.biperParams.value());
 
   // Empty inner FieldSet
   atlas::FieldSet innerFset;
 
   if (!biper_->sameFs()) {
     // Generate inner GeometryData
-    innerGeometryData_.reset(new oops::GeometryData(biper_->innerFunctionSpace(), innerFset,
-      outerGeometryData.levelsAreTopDown(), comm_));
+    innerGeometryData_ = std::make_unique<oops::GeometryData>(biper_->innerFunctionSpace(),
+      innerFset, outerGeometryData.levelsAreTopDown(), comm_);
   }
 
-  if (params_.read.value() != boost::none) {
+  if (params_.read.value()) {
     // Create input test fieldset
-    inputTestFset_.reset(new oops::FieldSet3D(xb.validTime(), outerGeometryData.comm()));
+    inputTestFset_ = std::make_unique<oops::FieldSet3D>(xb.validTime(), outerGeometryData.comm());
   }
 
   oops::Log::trace() << classname() << "::Biperiodization done" << std::endl;
@@ -109,12 +110,12 @@ void Biperiodization::read() {
                        params_.read.value()->inputTestFile.value());
 
   // LeftInverseMultiply on input test file
-  outputInnerTestFset_.reset(new oops::FieldSet3D(*inputTestFset_));
+  outputInnerTestFset_ = std::make_unique<oops::FieldSet3D>(*inputTestFset_);
   outputInnerTestFset_->name() = "outputInnerTestFile";
   leftInverseMultiply(*outputInnerTestFset_);
 
   // Multiply on output inner test file
-  outputOuterTestFset_.reset(new oops::FieldSet3D(*outputInnerTestFset_));
+  outputOuterTestFset_ = std::make_unique<oops::FieldSet3D>(*outputInnerTestFset_);
   outputOuterTestFset_->name() = "outputOuterTestFile";
   multiply(*outputOuterTestFset_);
 
@@ -127,7 +128,7 @@ void Biperiodization::write() const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
   const auto & paramsRead = params_.read.value();
-  if (paramsRead != boost::none) {
+  if (paramsRead) {
     // Write output inner test file
     outputInnerTestFset_->write(paramsRead->outputInnerTestFile.value());
 

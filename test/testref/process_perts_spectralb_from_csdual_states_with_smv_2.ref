@@ -5,7 +5,6 @@ Wrote file testdata/process_perts_spectral_from_csdual_states_2//initial_CS14_va
 wb1_F14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 2.0149963676164877e+11
 wb1_F14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 2.0775348017681982e+11
 Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb1_F14_variance_1.nc
-Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb1_F14_inc_1.nc
 Fields:
   air_horizontal_streamfunction: 1.4580077312251380e+08
   air_horizontal_velocity_potential: 1.4530089599803329e+08
@@ -13,7 +12,6 @@ Norm of band perturbation: member 1: band 1: 1.8321486569088128e+08
 wb2_F14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.9575602078854547e+11
 wb2_F14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 1.6320347175148837e+11
 Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb2_F14_variance_1.nc
-Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb2_F14_inc_1.nc
 Fields:
   air_horizontal_streamfunction: 1.4638083231041279e+08
   air_horizontal_velocity_potential: 1.3504548742234981e+08
@@ -29,7 +27,6 @@ Wrote file testdata/process_perts_spectral_from_csdual_states_2//initial_CS14_va
 wb1_F14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 2.0149963676164877e+11
 wb1_F14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 2.0775348017681992e+11
 Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb1_F14_variance_2.nc
-Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb1_F14_inc_2.nc
 Fields:
   air_horizontal_streamfunction: 1.4580077312251380e+08
   air_horizontal_velocity_potential: 1.4530089599803331e+08
@@ -37,7 +34,6 @@ Norm of band perturbation: member 2: band 1: 1.8321486569088128e+08
 wb2_F14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.9575602078854547e+11
 wb2_F14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 1.6320347175148840e+11
 Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb2_F14_variance_2.nc
-Wrote file testdata/process_perts_spectral_from_csdual_states_2//wb2_F14_inc_2.nc
 Fields:
   air_horizontal_streamfunction: 1.4638083231041279e+08
   air_horizontal_velocity_potential: 1.3504548742234981e+08

@@ -83,6 +83,14 @@ class SaberOuterBlockBase : public util::Printable,
     {throw eckit::NotImplemented("rightInverseMultiply not implemented yet for the block "
       + blockName_, Here());}
 
+  // Transform an input variance fieldset into the output variance fieldset
+  // (element-wise) that this block would produce. Default throws so every
+  // outer block that may be used inside a covariance whose variance is queried
+  // must declare its behaviour explicitly (no-op for correlation-only blocks).
+  virtual void variance(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("variance not implemented yet for the block "
+      + blockName_, Here());}
+
   // Setup / calibration methods
 
   // Read block data

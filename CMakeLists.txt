@@ -72,7 +72,7 @@ endif()
 # see Atlas issue #186. Note this version also provides spherical
 # mean value interpolator and heterogeneous redistribution functionality.
 if ( atlas_VERSION VERSION_GREATER_EQUAL "0.46.0" )
-  add_compile_definitions( DATLAS_VERSION_46_OR_GREATER )
+  add_compile_definitions( ATLAS_VERSION_46_OR_GREATER )
   set( ATLAS_TEST_46_OR_GREATER ON )
 else()
   set( ATLAS_TEST_46_OR_GREATER OFF )

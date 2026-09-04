@@ -46,6 +46,12 @@ class Diffusion : public saber::SaberCentralBlockBase {
     {diffusion::randomize(geometryData(), groups_, fset);}
   void multiply(oops::FieldSet3D & fset) const override
     {diffusion::multiply(geometryData(), groups_, fset);}
+  oops::FieldSet3D variance() const override {
+    // Diffusion is a correlation operator with unit variance on the diagonal.
+    oops::FieldSet3D variance(validTime_, geometryData().comm());
+    variance.init(geometryData().functionSpace(), centralVars(), 1.0);
+    return variance;
+  }
 
   void read() override
     {diffusion::read(geometryData(), groups_, params_);}

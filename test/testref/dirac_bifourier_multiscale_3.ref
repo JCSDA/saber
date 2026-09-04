@@ -1,0 +1,134 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3848]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - geographical_y_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_temperature (10 levels):
+    + min close to zero
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.5987525987525989e-05
+    + stddev = 5.0977961892907635e-03
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+- Regional grid size: 74x52
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+- Regional grid size: 37x26
+- Cell sizes: 5.0000000000000000e+00 km x 5.0000000000000000e+00 km
+- Mean latitude: 5.6280321216393915e+01 deg
+- Spectral sizes: 19x14
+- Truncation parameters MxN: 18x12
+- Maximum total wave number: 18
+- Spectral array global size: 669
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralConverter passed
+Skipping inverse test for block BifourierSpectralConverter
+Adjoint test for block BifourierGridToSpectral passed
+Inner inverse test for block BifourierGridToSpectral passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierGridToSpectral passed: Uinv U (Uinv x) == (Uinv x)
+- Regional grid size: 37x26
+- Cell sizes: 5.0000000000000000e+00 km x 5.0000000000000000e+00 km
+- Mean latitude: 5.6280321216393915e+01 deg
+- Spectral sizes: 19x14
+- Truncation parameters MxN: 18x12
+- Maximum total wave number: 18
+- Spectral array global size: 669
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Covariance norms: 
+- allVars: 
+  + correlation square-root: 7.4831544762747959e-01
+  + standard-deviation:      3.3166247903553998e+00
+Adjoint test for block BifourierCovariance passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BifourierCovariance passed
+Square-root test for the multivariate central block passed
+- Regional grid size: 74x52
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Covariance norms: 
+- allVars: 
+  + correlation square-root: 2.8651694494963192e-01
+  + standard-deviation:      3.3166247903553998e+00
+Adjoint test for block BifourierCovariance passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BifourierCovariance passed
+Square-root test for the multivariate central block passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3848]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = -1.9252848832760051e-03
+    + max    = 4.6875117746998005e-05
+    + mean   = -6.0197779996006326e-06
+    + stddev = 4.4295960067498627e-05
+  - geographical_y_wind (10 levels):
+    + min    = -2.2310792574643831e-03
+    + max    = 1.3079208486798085e-04
+    + mean   = -1.1631629475622680e-06
+    + stddev = 2.4685054445188587e-05
+  - air_temperature (10 levels):
+    + min    = -5.0284890606135829e-04
+    + max    = 5.4863483954415322e-02
+    + mean   = 9.5869423190548834e-05
+    + stddev = 8.5350743756251073e-04
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = -5.1768036863123328e-07
+    + max    = 2.1648095500668247e-06
+    + mean   = 1.9464730680040642e-08
+    + stddev = 2.9698353873164924e-07
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -1.1239040565241951e-06
+    + max    = 3.0298571438060697e-06
+    + mean   = -2.8090474471032957e-09
+    + stddev = 5.3044320630320902e-08

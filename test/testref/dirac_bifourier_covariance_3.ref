@@ -1,40 +1,40 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [1872]
+  Geometry: structured [3264]
   Fields:
   - air_upward_absolute_vorticity (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 5.3418803418803419e-05
-    + stddev = 7.3088168275599876e-03
+    + mean   = 3.0637254901960784e-05
+    + stddev = 5.5350930346255494e-03
   - air_horizontal_divergence (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 5.3418803418803419e-05
-    + stddev = 7.3088168275599876e-03
+    + mean   = 3.0637254901960784e-05
+    + stddev = 5.5350930346255494e-03
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 4.8562548562548563e-05
-    + stddev = 6.9686834167248047e-03
+    + mean   = 2.7852049910873439e-05
+    + stddev = 5.2775041365099341e-03
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 5.3418803418803419e-05
-    + stddev = 7.3088168275599876e-03
-- xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 6.7245971254055749e+05 , N => 52 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 8.7576919900607318e+04 , N => 36 , endpoint => true}]
-Outer grid size: 1872
-- xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 7.2495971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 1.2507691990060732e+05 , N => 51 , endpoint => true}]
-Info     : Inner grid size: 3723
+    + mean   = 3.0637254901960784e-05
+    + stddev = 5.5350930346255494e-03
+- xspace: LocalConfiguration[root={type => linear , start => 5.2495971254055749e+05 , end => 6.9245971254055749e+05 , N => 68 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.4923080099392682e+04 , end => 1.0257691990060732e+05 , N => 48 , endpoint => true}]
+Outer grid size: 3264
+- xspace: LocalConfiguration[root={type => linear , start => 5.2495971254055749e+05 , end => 7.0745971254055749e+05 , N => 74 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.4923080099392682e+04 , end => 1.1257691990060732e+05 , N => 52 , endpoint => true}]
+Info     : Inner grid size: 3848
 Adjoint test for block Biperiodization passed
 Inner inverse test for block Biperiodization passed: U Uinv (U x) == (U x)
 Outer inverse test for block Biperiodization passed: Uinv U (Uinv x) == (Uinv x)
-- Regional grid size: 73x51
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6421911446117591e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6324273587681148e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -51,25 +51,25 @@ Adjoint test for block BifourierCovariance passed
 Square-root test for block BifourierCovariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [1872]
+  Geometry: structured [3264]
   Fields:
   - air_upward_absolute_vorticity (10 levels):
-    + min    = -3.9997053364313221e-11
-    + max    = 5.5329603214293053e-10
-    + mean   = 6.1260224913053795e-14
-    + stddev = 9.1669324071505505e-12
+    + min    = -4.2489211835340520e-11
+    + max    = 5.5329603214293032e-10
+    + mean   = 1.6671954639368910e-14
+    + stddev = 7.0912612912029602e-12
   - air_horizontal_divergence (10 levels):
-    + min    = -2.8488458312699551e-11
-    + max    = 3.2305862921761325e-10
-    + mean   = 3.5650422827084458e-14
-    + stddev = 5.2211228062170574e-12
+    + min    = -3.0255253277307028e-11
+    + max    = 3.2305862921761310e-10
+    + mean   = 1.0101766650561202e-14
+    + stddev = 4.0384177092987872e-12
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
     + min    = -8.5375673983992540e-06
-    + max    = 6.3892158810947953e-07
-    + mean   = 3.3119368055067728e-08
-    + stddev = 4.4359298669738382e-07
+    + max    = 6.3973700395548193e-07
+    + mean   = 5.3728440645572577e-08
+    + stddev = 3.4719438263617981e-07
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -1.4228820253838980e-09
-    + max    = 3.6863836528339586e-08
-    + mean   = 1.1363201592461813e-10
-    + stddev = 1.1169946743835887e-09
+    + min    = -1.3955626656231293e-09
+    + max    = 3.6863836528339579e-08
+    + mean   = 5.5368785856257751e-11
+    + stddev = 8.7098950105184923e-10

@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927613e-02
@@ -99,23 +99,23 @@ Covariance(hybrid) * Increment:
     + mean   = 3.3255227516358427e-02
     + stddev = 2.8697317576801884e-01
   - northward_wind (2 levels):
-    + min    = -1.9638508366215246e+00
-    + max    = 4.3381015664479483e-01
+    + min    = -1.9638508366215253e+00
+    + max    = 4.3381015664479461e-01
     + mean   = -6.9733498230905742e-03
-    + stddev = 8.5142300469799564e-02
+    + stddev = 8.5142300469799578e-02
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
     + min    = -3.0351738471944473e-01
     + max    = 2.4868201300079416e+00
-    + mean   = 1.0724084252444158e-02
+    + mean   = 1.0724084252444159e-02
     + stddev = 1.1568518189528695e-01
   - northward_wind (2 levels):
-    + min    = -1.1034580764115323e+00
+    + min    = -1.1034580764115327e+00
     + max    = 1.2163138398155922e+00
-    + mean   = -5.5735234825321431e-03
-    + stddev = 8.8043666760110606e-02
+    + mean   = -5.5735234825321466e-03
+    + stddev = 8.8043666760110620e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -185,26 +185,26 @@ Covariance(hybrid1_SABER) * Increment:
   Fields:
   - eastward_wind (2 levels):
     + min    = -4.2272882413303675e-13
-    + max    = 1.3245077672571633e-12
-    + mean   = -2.6547474822106584e-16
-    + stddev = 8.7991326244855622e-14
+    + max    = 1.3245077672571635e-12
+    + mean   = -2.6547474822106643e-16
+    + stddev = 8.7991326244855609e-14
   - northward_wind (2 levels):
-    + min    = -2.6850642577848529e-13
-    + max    = 2.4184293562979440e-13
-    + mean   = -5.3724378546260834e-17
+    + min    = -2.6850642577848509e-13
+    + max    = 2.4184293562979450e-13
+    + mean   = -5.3724378546261234e-17
     + stddev = 3.2362097461740333e-14
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
     + min    = -4.2272882413303675e-13
-    + max    = 1.3245077672571633e-12
-    + mean   = -2.6547474822106584e-16
-    + stddev = 8.7991326244855622e-14
+    + max    = 1.3245077672571635e-12
+    + mean   = -2.6547474822106643e-16
+    + stddev = 8.7991326244855609e-14
   - northward_wind (2 levels):
-    + min    = -2.6850642577848529e-13
-    + max    = 2.4184293562979440e-13
-    + mean   = -5.3724378546260834e-17
+    + min    = -2.6850642577848509e-13
+    + max    = 2.4184293562979450e-13
+    + mean   = -5.3724378546261234e-17
     + stddev = 3.2362097461740333e-14
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -221,10 +221,10 @@ Covariance(hybrid2_ensemble) * Increment:
     + min    = -1.1980229671859235e+00
     + max    = 1.1222411046092532e+01
     + mean   = 6.6510455032717089e-02
-    + stddev = 5.7394635153596929e-01
+    + stddev = 5.7394635153596940e-01
   - northward_wind (2 levels):
-    + min    = -3.9277016732430416e+00
-    + max    = 8.6762031328979328e-01
+    + min    = -3.9277016732430430e+00
+    + max    = 8.6762031328979283e-01
     + mean   = -1.3946699646181081e-02
     + stddev = 1.7028460093959852e-01
 - Valid time: 2010-01-01T18:00:00Z
@@ -234,11 +234,11 @@ Covariance(hybrid2_ensemble) * Increment:
     + min    = -6.0703476943868750e-01
     + max    = 4.9736402600145588e+00
     + mean   = 2.1448168504888575e-02
-    + stddev = 2.3137036379051387e-01
+    + stddev = 2.3137036379051390e-01
   - northward_wind (2 levels):
-    + min    = -2.2069161528230801e+00
+    + min    = -2.2069161528230810e+00
     + max    = 2.4326276796311821e+00
-    + mean   = -1.1147046965064219e-02
+    + mean   = -1.1147046965064225e-02
     + stddev = 1.7608733352022102e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -249,31 +249,31 @@ Covariance(hybrid2_ensemble) * Increment:
              Level   2 ~>  0.200E+01 vert. coord.
 Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
-  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000007e+00
 Localization(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000007e+00
     + mean   = 1.2011782306452006e-02
-    + stddev = 7.0574857117575135e-02
+    + stddev = 7.0574857117575149e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000007e+00
     + mean   = 1.2011782306452006e-02
-    + stddev = 7.0574857117575135e-02
+    + stddev = 7.0574857117575149e-02
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000007e+00
     + mean   = 1.2011782306452006e-02
-    + stddev = 7.0574857117575135e-02
+    + stddev = 7.0574857117575149e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000007e+00
     + mean   = 1.2011782306452006e-02
-    + stddev = 7.0574857117575135e-02
+    + stddev = 7.0574857117575149e-02

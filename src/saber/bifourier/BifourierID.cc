@@ -25,7 +25,7 @@ BifourierID::BifourierID(const oops::GeometryData & geometryData,
                          const oops::FieldSet3D & fg) :
     SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     comm_(geometryData.comm()),
-    trans_(transStore_.retrieveTransform(geometryData))
+    trans_(transStore_.retrieveTransform(geometryData, centralVars))
 {
   oops::Log::trace() << classname() << "::BifourierID starting" << std::endl;
   oops::Log::trace() << classname() << "::BifourierID done" << std::endl;

@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L72x46 [3312]
   Fields:
   - air_horizontal_streamfunction (4 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 7.8864353312302845e-05
     + stddev = 8.8805604165660551e-03
@@ -54,22 +54,22 @@ Covariance(SABER) * Increment:
   Geometry: L72x46 [3312]
   Fields:
   - air_horizontal_streamfunction (4 levels):
-    + min    = 1.8306696559379036e+09
-    + max    = 1.1342599757936182e+12
+    + min    = 1.8306696559379032e+09
+    + max    = 1.1342599757936179e+12
     + mean   = 1.4145096210878461e+11
-    + stddev = 1.7915765764318381e+11
+    + stddev = 1.7915765764318378e+11
   - air_horizontal_velocity_potential (4 levels):
-    + min    = -1.1332856845900806e+11
+    + min    = -1.1332856845900803e+11
     + max    = 1.2455253243267209e+11
-    + mean   = 3.8338530540770137e+08
-    + stddev = 2.1244720484858017e+10
+    + mean   = 3.8338530540770084e+08
+    + stddev = 2.1244720484858013e+10
   - air_temperature (4 levels):
-    + min    = -7.6379105452715696e+04
-    + max    = 5.9993395783620057e+04
-    + mean   = 9.7481156645806163e+02
+    + min    = -7.6379105452715681e+04
+    + max    = 5.9993395783620064e+04
+    + mean   = 9.7481156645806175e+02
     + stddev = 1.2581015379533012e+04
   - air_pressure_at_surface (1 levels):
-    + min    = -8.1053664338512169e+02
-    + max    = 5.2277479206398334e+02
-    + mean   = -3.5630194401656915e+01
-    + stddev = 1.9622228700041259e+02
+    + min    = -8.1053664338512181e+02
+    + max    = 5.2277479206398368e+02
+    + mean   = -3.5630194401656922e+01
+    + stddev = 1.9622228700041265e+02

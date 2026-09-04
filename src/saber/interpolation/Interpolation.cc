@@ -98,6 +98,26 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
+void Interpolation::variance(oops::FieldSet3D & fieldSet) const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+
+  // Interpolating the inner variance vector is only an approximation of the true
+  // outer-frame variance diag(T C T^t); see the WARNING in Interpolation.h for
+  // details and an example. Warn so this approximation is not silently relied on.
+  oops::Log::warning() << classname() << "::variance: interpolating a variance is "
+                       << "only approximate. The exact outer variance diag(T C T^t) "
+                       << "depends on the inner covariance correlations, not just its "
+                       << "diagonal; the interpolated variance can over- or "
+                       << "under-estimate it. See Interpolation.h for details."
+                       << std::endl;
+
+  multiply(fieldSet);
+
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 

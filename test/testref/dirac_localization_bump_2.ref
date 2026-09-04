@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927613e-02
@@ -11,7 +11,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.3123359580052493e-03
     + stddev = 3.6226177800110629e-02
@@ -106,20 +106,20 @@ Covariance(hybrid) * Increment:
     + mean   = 1.0323209283066268e-02
     + stddev = 6.3494742053584158e-02
   - northward_wind (2 levels):
-    + min    = -1.7289449098265491e-01
-    + max    = 2.1986998141064332e-01
+    + min    = -1.7289449098265497e-01
+    + max    = 2.1986998141064326e-01
     + mean   = 1.4425794564794684e-03
-    + stddev = 2.0315337361723630e-02
+    + stddev = 2.0315337361723633e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -2.3796891040485647e-02
-    + max    = 7.1255453579863781e-01
-    + mean   = 4.3600816110641368e-03
-    + stddev = 4.0736994795451655e-02
+    + min    = -2.3796891040485657e-02
+    + max    = 7.1255453579863848e-01
+    + mean   = 4.3600816110641403e-03
+    + stddev = 4.0736994795451682e-02
   - air_horizontal_streamfunction (2 levels):
     + min    = -4.9381584234005030e-02
-    + max    = 2.5253943500275600e-01
-    + mean   = 3.9737110665982647e-04
-    + stddev = 9.7809099264738100e-03
+    + max    = 2.5253943500275622e-01
+    + mean   = 3.9737110665982685e-04
+    + stddev = 9.7809099264738169e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -156,25 +156,25 @@ Covariance(hybrid1_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -9.2876894505469987e-02
-    + max    = 9.8575162343944689e-01
+    + min    = -9.2876894505469945e-02
+    + max    = 9.8575162343944656e-01
     + mean   = 1.0323209283066268e-02
-    + stddev = 6.3494742053584158e-02
+    + stddev = 6.3494742053584144e-02
   - northward_wind (2 levels):
-    + min    = -1.7289449098265491e-01
-    + max    = 2.1986998141064332e-01
-    + mean   = 1.4425794564794684e-03
+    + min    = -1.7289449098265497e-01
+    + max    = 2.1986998141064323e-01
+    + mean   = 1.4425794564794678e-03
     + stddev = 2.0315337361723630e-02
   - air_pressure_at_surface (1 levels):
     + min    = -2.3796891040485647e-02
-    + max    = 7.1255453579863781e-01
-    + mean   = 4.3600816110641368e-03
-    + stddev = 4.0736994795451655e-02
+    + max    = 7.1255453579863837e-01
+    + mean   = 4.3600816110641394e-03
+    + stddev = 4.0736994795451675e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -4.9381584234005030e-02
-    + max    = 2.5253943500275600e-01
-    + mean   = 3.9737110665982647e-04
-    + stddev = 9.7809099264738100e-03
+    + min    = -4.9381584234005016e-02
+    + max    = 2.5253943500275622e-01
+    + mean   = 3.9737110665982685e-04
+    + stddev = 9.7809099264738169e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -208,32 +208,32 @@ Covariance(hybrid1_ensemble) * Increment:
              c%n_s[global] =                 13760
 Localization(hybrid1_ensemble_localization) diagnostics:
 - Localization at zero separation:
-  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000002e+00
-  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.9999999999999967e-01
+  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000002e+00
 Localization(hybrid1_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000002e+00
-    + mean   = 3.6461020445617533e-02
-    + stddev = 1.2173790634987158e-01
+    + min close to zero
+    + max    = 9.9999999999999967e-01
+    + mean   = 3.6461020445617519e-02
+    + stddev = 1.2173790634987156e-01
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000002e+00
-    + mean   = 3.6461020445617533e-02
-    + stddev = 1.2173790634987158e-01
+    + min close to zero
+    + max    = 9.9999999999999967e-01
+    + mean   = 3.6461020445617519e-02
+    + stddev = 1.2173790634987156e-01
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000002e+00
     + mean   = 1.2788222029481747e-02
-    + stddev = 8.0320252008336368e-02
+    + stddev = 8.0320252008336382e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
-    + mean   = 8.8009035815887360e-03
-    + stddev = 6.0903997636905786e-02
+    + min close to zero
+    + max    = 1.0000000000000002e+00
+    + mean   = 8.8009035815887378e-03
+    + stddev = 6.0903997636905800e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -253,25 +253,25 @@ Covariance(hybrid2_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -9.2876894505469987e-02
-    + max    = 9.8575162343944689e-01
+    + min    = -9.2876894505469945e-02
+    + max    = 9.8575162343944656e-01
     + mean   = 1.0323209283066268e-02
-    + stddev = 6.3494742053584158e-02
+    + stddev = 6.3494742053584144e-02
   - northward_wind (2 levels):
-    + min    = -1.7289449098265491e-01
-    + max    = 2.1986998141064332e-01
-    + mean   = 1.4425794564794684e-03
+    + min    = -1.7289449098265497e-01
+    + max    = 2.1986998141064323e-01
+    + mean   = 1.4425794564794678e-03
     + stddev = 2.0315337361723630e-02
   - air_pressure_at_surface (1 levels):
     + min    = -2.3796891040485647e-02
-    + max    = 7.1255453579863781e-01
-    + mean   = 4.3600816110641368e-03
-    + stddev = 4.0736994795451655e-02
+    + max    = 7.1255453579863837e-01
+    + mean   = 4.3600816110641394e-03
+    + stddev = 4.0736994795451675e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -4.9381584234005030e-02
-    + max    = 2.5253943500275600e-01
-    + mean   = 3.9737110665982647e-04
-    + stddev = 9.7809099264738100e-03
+    + min    = -4.9381584234005016e-02
+    + max    = 2.5253943500275622e-01
+    + mean   = 3.9737110665982685e-04
+    + stddev = 9.7809099264738169e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -288,32 +288,32 @@ Covariance(hybrid2_ensemble) * Increment:
              Level   2 ~>  0.200E+01 vert. coord.
 Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
-  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000002e+00
-  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.9999999999999967e-01
+  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000002e+00
 Localization(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000002e+00
-    + mean   = 3.6461020445617533e-02
-    + stddev = 1.2173790634987158e-01
+    + min close to zero
+    + max    = 9.9999999999999967e-01
+    + mean   = 3.6461020445617519e-02
+    + stddev = 1.2173790634987156e-01
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000002e+00
-    + mean   = 3.6461020445617533e-02
-    + stddev = 1.2173790634987158e-01
+    + min close to zero
+    + max    = 9.9999999999999967e-01
+    + mean   = 3.6461020445617519e-02
+    + stddev = 1.2173790634987156e-01
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
+    + min close to zero
+    + max    = 1.0000000000000002e+00
     + mean   = 1.2788222029481747e-02
-    + stddev = 8.0320252008336368e-02
+    + stddev = 8.0320252008336382e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
-    + mean   = 8.8009035815887360e-03
-    + stddev = 6.0903997636905786e-02
+    + min close to zero
+    + max    = 1.0000000000000002e+00
+    + mean   = 8.8009035815887378e-03
+    + stddev = 6.0903997636905800e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -330,25 +330,25 @@ Covariance(hybrid3_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -9.2876894505469987e-02
-    + max    = 9.8575162343944689e-01
-    + mean   = 1.0323209283066268e-02
-    + stddev = 6.3494742053584158e-02
+    + min    = -9.2876894505470015e-02
+    + max    = 9.8575162343944711e-01
+    + mean   = 1.0323209283066272e-02
+    + stddev = 6.3494742053584172e-02
   - northward_wind (2 levels):
-    + min    = -1.7289449098265491e-01
-    + max    = 2.1986998141064332e-01
+    + min    = -1.7289449098265500e-01
+    + max    = 2.1986998141064329e-01
     + mean   = 1.4425794564794684e-03
-    + stddev = 2.0315337361723630e-02
+    + stddev = 2.0315337361723640e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -2.3796891040485647e-02
-    + max    = 7.1255453579863781e-01
-    + mean   = 4.3600816110641368e-03
-    + stddev = 4.0736994795451655e-02
+    + min    = -2.3796891040485664e-02
+    + max    = 7.1255453579863848e-01
+    + mean   = 4.3600816110641412e-03
+    + stddev = 4.0736994795451682e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -4.9381584234005030e-02
-    + max    = 2.5253943500275600e-01
-    + mean   = 3.9737110665982647e-04
-    + stddev = 9.7809099264738100e-03
+    + min    = -4.9381584234005044e-02
+    + max    = 2.5253943500275622e-01
+    + mean   = 3.9737110665982668e-04
+    + stddev = 9.7809099264738169e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -376,22 +376,22 @@ Covariance(hybrid4_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -9.2876894505469987e-02
-    + max    = 9.8575162343944689e-01
-    + mean   = 1.0323209283066268e-02
-    + stddev = 6.3494742053584158e-02
+    + min    = -9.2876894505470015e-02
+    + max    = 9.8575162343944711e-01
+    + mean   = 1.0323209283066272e-02
+    + stddev = 6.3494742053584172e-02
   - northward_wind (2 levels):
-    + min    = -1.7289449098265491e-01
-    + max    = 2.1986998141064332e-01
+    + min    = -1.7289449098265500e-01
+    + max    = 2.1986998141064329e-01
     + mean   = 1.4425794564794684e-03
-    + stddev = 2.0315337361723630e-02
+    + stddev = 2.0315337361723640e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -2.3796891040485647e-02
-    + max    = 7.1255453579863781e-01
-    + mean   = 4.3600816110641368e-03
-    + stddev = 4.0736994795451655e-02
+    + min    = -2.3796891040485664e-02
+    + max    = 7.1255453579863848e-01
+    + mean   = 4.3600816110641412e-03
+    + stddev = 4.0736994795451682e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -4.9381584234005030e-02
-    + max    = 2.5253943500275600e-01
-    + mean   = 3.9737110665982647e-04
-    + stddev = 9.7809099264738100e-03
+    + min    = -4.9381584234005044e-02
+    + max    = 2.5253943500275622e-01
+    + mean   = 3.9737110665982668e-04
+    + stddev = 9.7809099264738169e-03

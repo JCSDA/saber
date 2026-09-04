@@ -106,6 +106,9 @@ class BifourierBalanceParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<std::vector<BifourierBalanceRowParameters>>
     rows{"rows", this};
 
+  // Extra variable for auto-covariances
+  oops::OptionalParameter<std::string> extraVar{"extra variable for auto-covariances", this};
+
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}
 };
@@ -169,6 +172,9 @@ class BifourierBalance : public SaberOuterBlockBase {
   // Ordered variables
   oops::Variables balVars_;
 
+  // Ordered variables, with a possible extra variable in first position for auto-covariances
+  oops::Variables balVarsExt_;
+
   // Number of active regression components
   size_t nCmp_;
 
@@ -189,6 +195,9 @@ class BifourierBalance : public SaberOuterBlockBase {
 
   // Compute regressions from covariances
   void computeRegressionsFromCovariances();
+
+  // Get variables to compute full covariances with
+  oops::Variables xxCovVars(const oops::Variable &) const;
 
   // Print
   void print(std::ostream &) const override;

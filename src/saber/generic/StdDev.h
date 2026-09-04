@@ -102,6 +102,7 @@ class StdDev : public SaberOuterBlockBase {
     {inverseMultiply(fset);}
   void rightInverseMultiply(oops::FieldSet3D & fset) const override
     {inverseMultiply(fset);}
+  void variance(oops::FieldSet3D &) const override;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;

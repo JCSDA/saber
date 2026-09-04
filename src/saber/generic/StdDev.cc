@@ -464,6 +464,34 @@ void StdDev::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
+void StdDev::variance(oops::FieldSet3D & variance) const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+
+  // Variance gets multiplied elementwise by sigma^2. Apply the same selection
+  // logic as multiply: stored stdDevFset_ takes precedence over scalar scaling.
+  if (stdDevFset_) {
+    variance *= *stdDevFset_;
+    variance *= *stdDevFset_;
+  } else {
+    for (auto & field : variance) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var) * scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void StdDev::inverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   if (stdDevFset_) {

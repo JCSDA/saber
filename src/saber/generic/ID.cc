@@ -104,6 +104,17 @@ void IDCentral::multiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+oops::FieldSet3D IDCentral::variance() const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+  // Identity central block has unit variance on the diagonal.
+  oops::FieldSet3D variance(validTime_, geometryData().comm());
+  variance.init(geometryData().functionSpace(), centralVars(), 1.0);
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+  return variance;
+}
+
+// -----------------------------------------------------------------------------
+
 void IDCentral::print(std::ostream & os) const {
   os << classname();
 }

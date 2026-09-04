@@ -12,47 +12,33 @@
              Level   4 ~>  0.400E+01 vert. coord.
              Level   5 ~>  0.500E+01 vert. coord.
              Effective levels:   1   2   3   4   5 
-                Horizontal support radius:    3750.00 km (   3750.00 km -    3750.00 km)
-                Estimated nc1 from horizontal support radius:      670
-                   Decimate full grid, at least      670 points required,    1098 valid points found
-                   Subgrid hash:  -1113144737
-                Final nc1:      670
-                Effective horizontal resolution:  4.00
-             nc1(  1) =                        670
-             nc1(  2) =                        670
-             nc1(  3) =                        670
-             nc1(  4) =                        670
-             nc1(  5) =                        670
-             ns =                             3350
+                   Requested distance between points (min/max/avg):  0.938E+03 km /  0.938E+03 km /  0.938E+03 km
+                   Regular sampling grid size:      360 points
+                   Nearest neighbor distance (min/max/avg):  0.381E+03 km /  0.103E+04 km /  0.886E+03 km
+                   Effective resolution (min/max/avg):  3.63 /  9.84 /  4.66
+                   Subgrid hash:   -435093158
+                Subgrid size:      360
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             nc1(  3) =                        360
+             nc1(  4) =                        360
+             nc1(  5) =                        360
+             ns =                             1800
              v%n_s =                             5
-             c%n_s[global] =               1430938
-             Effective levels:   1   2   3   4   5 
-                Horizontal support radius:    3750.00 km (   3750.00 km -    3750.00 km)
-                Estimated nc1 from horizontal support radius:      670
-                   Decimate full grid, at least      670 points required,    1098 valid points found
-                   Subgrid hash:  -1113144737
-                Final nc1:      670
-                Effective horizontal resolution:  4.00
-             nc1(  1) =                        670
-             nc1(  2) =                        670
-             nc1(  3) =                        670
-             nc1(  4) =                        670
-             nc1(  5) =                        670
-             ns =                             3350
+             c%n_s[global] =                424264
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             nc1(  3) =                        360
+             nc1(  4) =                        360
+             nc1(  5) =                        360
+             ns =                             1800
              v%n_s =                             5
-             c%n_s[global] =                482898
-             Effective levels:   1   2   3   4   5 
-                Horizontal support radius:    3750.00 km (   3750.00 km -    3750.00 km)
-                Estimated nc1 from horizontal support radius:      670
-                   Decimate full grid, at least      670 points required,    1098 valid points found
-                   Subgrid hash:  -1113144737
-                Final nc1:      670
-                Effective horizontal resolution:  4.00
-             nc1(  1) =                        670
-             nc1(  2) =                        670
-             nc1(  3) =                        670
-             nc1(  4) =                        670
-             nc1(  5) =                        670
-             ns =                             3350
+             c%n_s[global] =                148960
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             nc1(  3) =                        360
+             nc1(  4) =                        360
+             nc1(  5) =                        360
+             ns =                             1800
              v%n_s =                             5
-             c%n_s[global] =                 51810
+             c%n_s[global] =                 15080

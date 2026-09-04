@@ -55,6 +55,8 @@ class NICAS : public SaberCentralBlockBase {
         const oops::FieldSet3D &);
   virtual ~NICAS();
 
+  oops::FieldSet3D variance() const override;
+
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
