@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: structured [3723]
   Fields:
   - air_temperature_1 (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.6860059092130003e-05
     + stddev = 5.1826691088794610e-03
   - air_temperature_2 (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 2.6860059092130003e-05
     + stddev = 5.1826691088792225e-03
@@ -17,12 +17,12 @@ Covariance(SABER) * Increment:
   Geometry: structured [3723]
   Fields:
   - air_temperature_1 (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 8.6072655542923038e-01
     + mean   = 4.7171099299428379e-02
     + stddev = 1.2837275717988653e-01
   - air_temperature_2 (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 8.7630963195777267e-01
     + mean   = 1.4675619737742882e-01
     + stddev = 2.1394732531682789e-01

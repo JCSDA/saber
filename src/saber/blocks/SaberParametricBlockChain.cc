@@ -118,6 +118,14 @@ oops::Variables SaberParametricBlockChain::initCentralBlock(
   centralFunctionSpace_ = outerGeom.functionSpace();
   centralVars_ = activeVars;
 
+  // Save per-field metadata of xb so that variance() can add it to variance
+  // fields.
+  for (const auto & var : activeVars) {
+    if (fset4dXb[0].fieldSet().has(var.name())) {
+      centralXbMetadata_[var.name()] = fset4dXb[0].fieldSet()[var.name()].metadata();
+    }
+  }
+
   oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock exiting..." << std::endl;
   return currentOuterVars;
 }
@@ -234,6 +242,17 @@ void SaberParametricBlockChain::randomize(oops::FieldSet4D & fset4d) const {
     }
   }
 
+  // Copy metadata to the new fields so that outer blocks (e.g.
+  // Interpolation) can read field-level metadata such as "interp_type".
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    for (auto & field : fset4d[jtime].fieldSet()) {
+      auto it = centralXbMetadata_.find(field.name());
+      if (it != centralXbMetadata_.end()) {
+        field.metadata() = it->second;
+      }
+    }
+  }
+
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
@@ -310,10 +329,43 @@ void SaberParametricBlockChain::multiplySqrt(const atlas::Field & cv,
     }
   }
 
+  // Copy metadata to the new fields so that outer blocks (e.g.
+  // Interpolation) can read field-level metadata such as "interp_type".
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    for (auto & field : fset4d[jtime].fieldSet()) {
+      auto it = centralXbMetadata_.find(field.name());
+      if (it != centralXbMetadata_.end()) {
+        field.metadata() = it->second;
+      }
+    }
+  }
+
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
   }
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SaberParametricBlockChain::variance() const {
+  oops::Log::trace() << "SaberParametricBlockChain::variance starting" << std::endl;
+  // Start from the central block's diagonal variance
+  oops::FieldSet3D variance = centralBlock_->variance();
+  // Copy metadata to the new fields so that outer blocks (e.g.
+  // Interpolation) can read field-level metadata such as "interp_type".
+  for (auto & field : variance.fieldSet()) {
+    auto it = centralXbMetadata_.find(field.name());
+    if (it != centralXbMetadata_.end()) {
+      field.metadata() = it->second;
+    }
+  }
+  // Propagate through the outer blocks in forward (innermost-first) order.
+  if (outerBlockChain_) {
+    outerBlockChain_->applyBackgroundVariance(variance);
+  }
+  oops::Log::trace() << "SaberParametricBlockChain::variance done" << std::endl;
+  return variance;
 }
 
 // -----------------------------------------------------------------------------

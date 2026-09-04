@@ -3,12 +3,12 @@ Input Dirac increment:
   Geometry: CS-LFR-15 [1350]
   Fields:
   - eastward_wind (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.0582010582010582e-05
     + stddev = 3.2530002431630737e-03
   - mu (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.0582010582010582e-05
     + stddev = 3.2530002431630737e-03
@@ -16,7 +16,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - unbalanced_pressure_levels_minus_one (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.0582010582010582e-05
     + stddev = 3.2530002431630737e-03
@@ -53,7 +53,7 @@ Covariance(SABER) * Increment:
   - northward_wind (70 levels):
     + min    = -1.8965542230476164e-02
     + max    = 1.8965542230476164e-02
-    + mean   ~ 0
+    + mean close to zero
     + stddev = 7.5610670427187355e-04
   - unbalanced_pressure_levels_minus_one (70 levels):
     + min    = -1.8968016654217902e+01

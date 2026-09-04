@@ -41,6 +41,12 @@ class BifourierTransformStore {
   // Retrieve an existing spectral transform from a spectral function space (PointCloud)
   std::shared_ptr<BifourierTransformBase> retrieveTransform(
     const oops::GeometryData &) const;
+
+  // Retrieve an existing spectral transform from a spectral function space (PointCloud),
+  // for a specific number of variables/levels
+  std::shared_ptr<BifourierTransformBase> retrieveTransform(
+    const oops::GeometryData &,
+    const oops::Variables &) const;
 };
 
 // -----------------------------------------------------------------------------

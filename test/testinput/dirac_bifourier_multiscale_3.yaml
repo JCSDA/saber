@@ -1,0 +1,115 @@
+# Dirac test for an ensemble B with a multiscale bifourier localization matrix, with ensemble read at lower resolution
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 74
+    ny : 52
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - geographical_x_wind
+    - geographical_y_wind
+    - air_temperature
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 10
+  - variables:
+    - log_of_air_pressure_at_surface
+    levels: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: &vars
+  - geographical_x_wind
+  - geographical_y_wind
+  - air_temperature
+  - log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+background error:
+  covariance model: SABER
+  covariance type: ensemble
+  adjoint test: true
+  adjoint tolerance: 1.0e-11
+  square-root test: true
+  square-root tolerance: 1.0e-8
+  inverse test: true
+  scales:
+  - interpolator:
+    - saber block name: BifourierGridToSpectral
+    - saber block name: BifourierSpectralConverter
+      skip inverse test: true
+      nx: 37
+      ny: 26
+      transform:
+        no wavenumber on last task: true
+    - saber block name: BifourierSpectralToGrid
+    ensemble pert on other geometry:
+      members from template:
+        template:
+          date: 2010-01-01T12:00:00Z
+          filepath: testdata/dirac_bifourier_multiscale_2/_MPI_-_OMP__filtered_pert_mb%MEM%_wb1
+          state variables: *vars
+        pattern: '%MEM%'
+        nmembers: 25
+    localization:
+      saber central block:
+        multivariate strategy: duplicated
+        groups:
+        - group name: allVars
+          variables: *vars
+          variables on extra levels:
+          - log_of_air_pressure_at_surface
+          group central block:
+            saber block name: BifourierCovariance
+            profiles:
+            - variable: allVars
+              horizontal length-scales: [50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3, 50.0e3]
+              vertical length-scale: 4.0
+          group outer blocks:
+          - saber block name: BifourierSpectralToGrid
+  - ensemble pert:
+      members from template:
+        template:
+          date: 2010-01-01T12:00:00Z
+          filepath: testdata/dirac_bifourier_multiscale_2/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
+          state variables: *vars
+        pattern: '%MEM%'
+        nmembers: 25
+    localization:
+      saber central block:
+        multivariate strategy: duplicated
+        groups:
+        - group name: allVars
+          variables: *vars
+          variables on extra levels:
+          - log_of_air_pressure_at_surface
+          group central block:
+            saber block name: BifourierCovariance
+            profiles:
+            - variable: allVars
+              horizontal length-scales: [10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3, 10.0e3]
+              vertical length-scale: 1.5
+          group outer blocks:
+          - saber block name: BifourierSpectralToGrid
+  multiscale strategy: separated
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 10
+  variable:
+  - air_temperature
+output dirac:
+  filepath: testdata/dirac_bifourier_multiscale_3/_MPI_-_OMP__dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_multiscale_3.ref
+

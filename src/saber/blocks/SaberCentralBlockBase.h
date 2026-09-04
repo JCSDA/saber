@@ -59,6 +59,13 @@ class SaberCentralBlockBase : public util::Printable,
   // Block multiplication
   virtual void multiply(oops::FieldSet3D &) const;
 
+  // Return the diagonal variance fieldset of this central block. Default
+  // throws so every central block must declare it (correlation-only blocks
+  // return a unit-variance fieldset; StdDev-style blocks return sigma^2).
+  virtual oops::FieldSet3D variance() const
+    {throw eckit::NotImplemented("variance not implemented yet for the block "
+      + blockName_, Here());}
+
   // Setup / calibration methods
 
   // Read block data

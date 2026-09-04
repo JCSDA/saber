@@ -21,6 +21,7 @@ namespace atlas {
 }
 
 namespace oops {
+  class FieldSet3D;
   class FieldSet4D;
   class FieldSets;
   template <class MODEL> class Geometry;
@@ -46,6 +47,9 @@ class SaberBlockChainBase {
     const = 0;
   virtual const atlas::FunctionSpace & outerFunctionSpace() const = 0;
   virtual const oops::Variables & outerVariables() const = 0;
+
+  /// @brief Diagonal variance of this block chain on its outer function space.
+  virtual oops::FieldSet3D variance() const = 0;
 };
 
 template<typename MODEL>

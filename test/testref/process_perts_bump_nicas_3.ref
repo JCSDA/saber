@@ -32,9 +32,9 @@
              ns =                              589
              v%n_s =                             1
              c%n_s[global] =                  7405
-Norm of perturbation: member 1: 2.6620275517839023e+01
-Norm of band perturbation: member 1: band 1: 1.2499346409334429e+01
-Norm of band perturbation: member 1: band 2: 2.0091601768023054e+01
-Norm of perturbation: member 2: 2.5901045342933084e+01
-Norm of band perturbation: member 2: band 1: 1.2737645373666396e+01
-Norm of band perturbation: member 2: band 2: 1.9002522754871798e+01
+Norm of perturbation: member 1: 8.8199494506661708e+01
+Norm of band perturbation: member 1: band 1: 4.2090540597361603e+01
+Norm of band perturbation: member 1: band 2: 6.5970844166888853e+01
+Norm of perturbation: member 2: 8.5362569137694251e+01
+Norm of band perturbation: member 2: band 1: 4.3050164747364853e+01
+Norm of band perturbation: member 2: band 2: 6.2075156273156452e+01

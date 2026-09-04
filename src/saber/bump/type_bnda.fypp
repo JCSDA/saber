@@ -8,8 +8,9 @@
 !----------------------------------------------------------------------
 module type_bnda
 
+use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: zero
+use tools_const, only: zero,half,one,pi
 use tools_func, only: lonlat2xyz,vector_product,det
 use tools_kinds, only: kind_real
 use tools_repro, only: repro_th
@@ -21,11 +22,20 @@ implicit none
 
 ! Horizontal boundaries derived type
 type bnda_hor_type
+   ! Class
+   integer :: id                           !< Boundary class of each level
+
    ! Boundaries structure
    integer :: n                            !< Number of boundary points
    real(kind_real),allocatable :: v1(:,:)  !< Mask boundary arcs, first vector
    real(kind_real),allocatable :: v2(:,:)  !< Mask boundary arcs, second vector
    real(kind_real),allocatable :: va(:,:)  !< Mask boundary arcs, orthogonal vector
+
+   ! Bounding cap of each arc, used to reject arcs without testing them
+   real(kind_real),allocatable :: vc(:,:)  !< Mask boundary arcs, cap centre
+   real(kind_real),allocatable :: r(:)     !< Mask boundary arcs, cap angular radius
+   real(kind_real),allocatable :: cosr(:)  !< Cosine of the cap angular radius
+   real(kind_real),allocatable :: sinr(:)  !< Sine of the cap angular radius
 contains
    procedure :: init => bnda_hor_init
 end type bnda_hor_type
@@ -34,11 +44,18 @@ end type bnda_hor_type
 type bnda_type
    ! Set of horizontal boundaries
    type(bnda_hor_type),allocatable :: hor(:) !< Set of horizontal boundaries
+
+   ! Characteristics
+   integer :: nclass                         !< Number of classes
+   integer :: nmax                           !< Max number of arcs
 contains
    procedure :: init => bnda_init
    procedure :: dealloc => bnda_dealloc
+   procedure :: select => bnda_select
    procedure :: check_arc => bnda_check_arc
 end type bnda_type
+
+real(kind_real),parameter :: sel_margin = 1.0e-12_kind_real !< Rounding margin on the cap rejection test
 
 private
 public :: bnda_type
@@ -62,7 +79,7 @@ logical,intent(in) :: gmask(mesh%n)            !< Mask
 ! Local variables
 integer :: i,ii,j,k,kk,knext,kknext,ibnda
 integer,allocatable :: bnda_to_grid(:,:)
-real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2),vc(3),norm
 
 ! Set name
 @:set_name(bnda_hor_init)
@@ -95,6 +112,10 @@ allocate(bnda_to_grid(2,bnda_hor%n))
 allocate(bnda_hor%v1(3,bnda_hor%n))
 allocate(bnda_hor%v2(3,bnda_hor%n))
 allocate(bnda_hor%va(3,bnda_hor%n))
+allocate(bnda_hor%vc(3,bnda_hor%n))
+allocate(bnda_hor%r(bnda_hor%n))
+allocate(bnda_hor%cosr(bnda_hor%n))
+allocate(bnda_hor%sinr(bnda_hor%n))
 
 ! Get boundary arcs
 ibnda = 0
@@ -129,6 +150,22 @@ do ibnda=1,bnda_hor%n
    bnda_hor%v1(:,ibnda) = (/xbnda(1),ybnda(1),zbnda(1)/)
    bnda_hor%v2(:,ibnda) = (/xbnda(2),ybnda(2),zbnda(2)/)
    call vector_product(bnda_hor%v1(:,ibnda),bnda_hor%v2(:,ibnda),bnda_hor%va(:,ibnda))
+
+   ! Bounding cap: centred on the arc midpoint, with an angular radius of half the
+   ! arc length. Two arcs whose caps do not overlap cannot cross, which lets
+   ! bnda_select discard most of the coastline without any crossing test.
+   vc = half*(bnda_hor%v1(:,ibnda)+bnda_hor%v2(:,ibnda))
+   norm = sqrt(sum(vc**2))
+   if (norm>zero) then
+      bnda_hor%vc(:,ibnda) = vc/norm
+   else
+      ! Antipodal end points: the cap degenerates to the whole sphere
+      bnda_hor%vc(:,ibnda) = bnda_hor%v1(:,ibnda)
+   end if
+   bnda_hor%cosr(ibnda) = sum(bnda_hor%vc(:,ibnda)*bnda_hor%v1(:,ibnda))
+   bnda_hor%cosr(ibnda) = max(-one,min(one,bnda_hor%cosr(ibnda)))
+   bnda_hor%r(ibnda) = acos(bnda_hor%cosr(ibnda))
+   bnda_hor%sinr(ibnda) = sin(bnda_hor%r(ibnda))
 end do
 
 ! Probe out
@@ -154,7 +191,8 @@ logical,intent(in) :: gmask(n,nl0)     !< 3D mask
 type(mesh_type),intent(in) :: mesh     !< Mesh
 
 ! Local variables
-integer :: il0
+integer :: il0,jl0,i
+integer :: ndiff(nl0)
 
 ! Set name
 @:set_name(bnda_init)
@@ -169,6 +207,45 @@ allocate(bnda%hor(0:nl0))
 call bnda%hor(0)%init(mpl,mesh,gmask_hor)
 do il0=1,nl0
    call bnda%hor(il0)%init(mpl,mesh,gmask(:,il0))
+end do
+
+! Group levels by mask
+bnda%hor(0)%id = 0
+do il0=1,nl0
+   ndiff = 1
+   do jl0=1,il0-1
+      if (bnda%hor(jl0)%id==jl0) then
+         ! Compare against a class representative only, and stop at the first difference
+         ndiff(jl0) = 0
+         do i=1,n
+            if (gmask(i,il0).neqv.gmask(i,jl0)) then
+               ndiff(jl0) = 1
+               exit
+            end if
+         end do
+      end if
+   end do
+   call mpl%f_comm%allreduce(ndiff,fckit_mpi_sum())
+
+   bnda%hor(il0)%id = il0
+   do jl0=1,il0-1
+      if (ndiff(jl0)==0) then
+         bnda%hor(il0)%id = jl0
+         exit
+      end if
+   end do
+end do
+
+! Compute max number of arcs
+bnda%nmax = 0
+do il0=1,nl0
+   bnda%nmax = max(bnda%nmax,bnda%hor(il0)%n)
+end do
+
+! Number of classes
+bnda%nclass = 0
+do il0=1,nl0
+   if (bnda%hor(il0)%id==il0) bnda%nclass = bnda%nclass+1
 end do
 
 ! Probe out
@@ -202,6 +279,10 @@ if (allocated(bnda%hor)) then
       if (allocated(bnda%hor(il0)%v1)) deallocate(bnda%hor(il0)%v1)
       if (allocated(bnda%hor(il0)%v2)) deallocate(bnda%hor(il0)%v2)
       if (allocated(bnda%hor(il0)%va)) deallocate(bnda%hor(il0)%va)
+      if (allocated(bnda%hor(il0)%vc)) deallocate(bnda%hor(il0)%vc)
+      if (allocated(bnda%hor(il0)%r)) deallocate(bnda%hor(il0)%r)
+      if (allocated(bnda%hor(il0)%cosr)) deallocate(bnda%hor(il0)%cosr)
+      if (allocated(bnda%hor(il0)%sinr)) deallocate(bnda%hor(il0)%sinr)
    end do
    deallocate(bnda%hor)
 end if
@@ -212,10 +293,76 @@ end if
 end subroutine bnda_dealloc
 
 !----------------------------------------------------------------------
+! Subroutine: bnda_select
+!> Select the boundary arcs that any arc inside a cap could possibly cross
+!----------------------------------------------------------------------
+subroutine bnda_select(bnda,mpl,lon,lat,radius,il0,nsel,sel)
+
+implicit none
+
+! Passed variables
+class(bnda_type),intent(in) :: bnda  !< Boundaries
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+real(kind_real),intent(in) :: lon    !< Cap centre longitude
+real(kind_real),intent(in) :: lat    !< Cap centre latitude
+real(kind_real),intent(in) :: radius !< Cap angular radius
+integer,intent(in) :: il0            !< Level
+integer,intent(out) :: nsel          !< Number of selected arcs
+integer,intent(inout) :: sel(:)      !< Selected arcs
+
+! Local variables
+integer :: ibnda
+real(kind_real) :: v(3),cosrad,sinrad,cosmax
+
+! Set name
+@:set_name(bnda_select)
+
+! Probe in
+@:probe_in()
+
+! Every arc tested by the caller has both end points inside the cap, so an arc
+! whose own bounding cap is further than radius+r from the centre cannot be
+! crossed by any of them.
+nsel = 0
+
+if (allocated(bnda%hor)) then
+   if (bnda%hor(il0)%n>0) then
+      call lonlat2xyz(mpl,lon,lat,v(1),v(2),v(3))
+      cosrad = cos(radius)
+      sinrad = sin(radius)
+
+      if (bnda%hor(il0)%n>size(sel)) call mpl%abort('${subr}$','sel buffer too small for the boundary arcs')
+
+      do ibnda=1,bnda%hor(il0)%n
+         if (radius+bnda%hor(il0)%r(ibnda)>=pi) then
+            ! The caps cover the sphere, no rejection possible
+            nsel = nsel+1
+            sel(nsel) = ibnda
+         else
+            ! cos(radius+r), expanded to keep this free of inverse trigonometry
+            cosmax = cosrad*bnda%hor(il0)%cosr(ibnda)-sinrad*bnda%hor(il0)%sinr(ibnda)
+
+            ! Margin of a few ulps, so that an arc grazing the cap edge is kept
+            ! rather than rejected on rounding
+            if (sum(v*bnda%hor(il0)%vc(:,ibnda))>=cosmax-sel_margin) then
+               nsel = nsel+1
+               sel(nsel) = ibnda
+            end if
+         end if
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_select
+
+!----------------------------------------------------------------------
 ! Subroutine: bnda_check_arc
 !> Check if an arc is crossing mask boundaries
 !----------------------------------------------------------------------
-subroutine bnda_check_arc(bnda,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid,prt)
+subroutine bnda_check_arc(bnda,mpl,lon_s,lat_s,lon_e,lat_e,il0,nsel,sel,valid,prt)
 
 implicit none
 
@@ -227,11 +374,13 @@ real(kind_real),intent(in) :: lat_s !< First point latitude
 real(kind_real),intent(in) :: lon_e !< Second point longitude
 real(kind_real),intent(in) :: lat_e !< Second point latitude
 integer,intent(in) :: il0           !< Level
+integer,intent(in) :: nsel          !< Number of pre-selected arcs (from bnda_select)
+integer,intent(in) :: sel(:)        !< Pre-selected arcs (from bnda_select)
 logical,intent(inout) :: valid      !< True for valid arcs
 logical,intent(in),optional :: prt  !< Print values (very useful for debugging)
 
 ! Local variables
-integer :: ibnda
+integer :: i,ibnda
 real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4),tmin,tmax
 logical :: lprt
 
@@ -255,7 +404,10 @@ if (allocated(bnda%hor)) then
       call vector_product(v1,v2,va)
 
       ! Check if arc is crossing boundary arcs
-      do ibnda=1,bnda%hor(il0)%n
+      do i=1,nsel
+         ! Boundary arc index
+         ibnda = sel(i)
+
          if (valid) then
             ! Compute factors
             call vector_product(va,bnda%hor(il0)%va(:,ibnda),vp)
@@ -282,6 +434,9 @@ if (allocated(bnda%hor)) then
                call mpl%flush
             end if
          end if
+
+         ! Stop early
+         if (.not.valid) exit
       end do
    end if
 end if

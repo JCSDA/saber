@@ -1228,24 +1228,24 @@ void Fields::print(std::ostream & os) const {
     const double tiny = 1.0e-12*std::max({std::abs(zzmin), std::abs(zzmax), std::abs(zzave),
       std::abs(zzstd)});
     os << prefix << "  - " << var.name() << " (" << field.shape(1) << " levels):" << std::endl;
-    if ((std::abs(zzmin) > 0.0) && (std::abs(zzmin) < tiny)) {
-      os << prefix << "    + min    ~ 0" << std::endl;
+    if (std::abs(zzmin) < tiny) {
+      os << prefix << "    + min close to zero" << std::endl;
     } else {
       os << prefix << "    + min    = " << zzmin << std::endl;
     }
-    if ((std::abs(zzmax) > 0.0) && (std::abs(zzmax) < tiny)) {
-      os << prefix << "    + max    ~ 0" << std::endl;
+    if (std::abs(zzmax) < tiny) {
+      os << prefix << "    + max close to zero" << std::endl;
     } else {
       os << prefix << "    + max    = " << zzmax << std::endl;
     }
     if (zzmin != zzmax) {
-      if ((std::abs(zzave) > 0.0) && (std::abs(zzave) < tiny)) {
-        os << prefix << "    + mean   ~ 0" << std::endl;
+      if (std::abs(zzave) < tiny) {
+        os << prefix << "    + mean close to zero" << std::endl;
       } else {
         os << prefix << "    + mean   = " << zzave << std::endl;
       }
-      if ((std::abs(zzstd) > 0.0) && (std::abs(zzstd) < tiny)) {
-        os << prefix << "    + stddev ~ 0" << std::endl;
+      if (std::abs(zzstd) < tiny) {
+        os << prefix << "    + stddev close to zero" << std::endl;
       } else {
         os << prefix << "    + stddev = " << zzstd << std::endl;
       }

@@ -50,6 +50,7 @@ background error:
         write moments: true
         write diagnostics: true
         write diagnostics detail: true
+        write diagnostics in yaml: true
       sampling:
         computation grid size: 500
         diagnostic grid size: 250

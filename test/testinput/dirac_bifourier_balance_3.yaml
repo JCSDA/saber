@@ -3,8 +3,8 @@ geometry:
   function space: StructuredColumns
   grid:
     type : regional
-    nx : 52
-    ny : 36
+    nx : 68
+    ny : 48
     dx : 2.5e3
     dy : 2.5e3
     lonlat(centre) : [9.9, 56.3]
@@ -62,10 +62,10 @@ background error:
   - saber block name: BifourierSpectralToGrid
   - saber block name: Biperiodization
     biperiodization:
-      x inner extension: 28
-      y inner extension: 20
-      x outer extension: 7
-      y outer extension: 5
+      x inner extension: 12
+      y inner extension: 8
+      x outer extension: 6
+      y outer extension: 4
     skip tests: true
 dirac:
   lon:

@@ -8,12 +8,14 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/util/Metadata.h"
 
 #include "eckit/exception/Exceptions.h"
 
@@ -92,6 +94,9 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   /// @brief Multiply the increment by this B matrix square-root adjoint.
   void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const;
 
+  /// @brief Return the block chain variance (diagonal of B).
+  oops::FieldSet3D variance() const override;
+
   /// @brief Accessor to outer function space
   const atlas::FunctionSpace & outerFunctionSpace() const {return outerFunctionSpace_;}
   /// @brief Accessor to outer variables
@@ -120,6 +125,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   size_t size4D_;
   oops::Variables centralVars_;
   atlas::FunctionSpace centralFunctionSpace_;
+  /// @brief Per-variable xb metadata for constructing new fields with correct metadata.
+  std::map<std::string, atlas::util::Metadata> centralXbMetadata_;
 };
 
 // -----------------------------------------------------------------------------

@@ -70,7 +70,7 @@ BifourierTransformBase::BifourierTransformBase(const oops::GeometryData & gdata,
                                                const BifourierTransformParameters & params) :
     gdata_(gdata),
     comm_(gdata_.comm()),
-    myrank_(comm_.rank()),
+      myrank_(comm_.rank()),
     params_(params),
     gridUid_(gridUid),
     dwGlb_(params_.dwGlb.value())
@@ -96,7 +96,23 @@ BifourierTransformBase::BifourierTransformBase(const oops::GeometryData & gdata,
 
   // Cell size
   dx_ = fs.grid().dx(0);
-  dy_ = fs.grid().y(1) - fs.grid().y(0);
+  dy_ = std::abs(fs.grid().y(1) - fs.grid().y(0));
+  if (fs.grid().spec().has("domain")) {
+    const eckit::LocalConfiguration domain = fs.grid().spec().getSubConfiguration("domain");
+    const std::string units = domain.getString("units");
+    if (units == "degrees") {
+      const eckit::LocalConfiguration xspace = fs.grid().spec().getSubConfiguration("xspace");
+      const eckit::LocalConfiguration yspace = fs.grid().spec().getSubConfiguration("yspace");
+      const double xmin = domain.getDouble("xmin");
+      const double ymin = domain.getDouble("ymin");
+      double centre[] = {xmin+0.5*static_cast<double>(nx_)*dx_,
+        ymin+0.5*static_cast<double>(ny_)*dy_};
+      fs.grid().projection().lonlat2xy(centre);
+      const double degToRad = M_PI / 180.;
+      dx_ *= degToRad*atlas::util::Earth::radius()*std::cos(centre[1]*degToRad);
+      dy_ *= degToRad*atlas::util::Earth::radius();
+    }
+  }
   oops::Log::test() << "- Cell sizes: " << dx_*1.0e-3 << " km x " << dy_*1.0e-3 << " km"
     << std::endl;
 
@@ -113,6 +129,21 @@ BifourierTransformBase::BifourierTransformBase(const oops::GeometryData & gdata,
   }
 
   oops::Log::trace() << classname() << "::BifourierTransformBase done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+size_t BifourierTransformBase::sGlbToTask(const size_t & jsGlb) const {
+  ASSERT(jsGlb < nsGlb_);
+  return spVec_[jsGlb].jt;
+}
+
+// -----------------------------------------------------------------------------
+
+size_t BifourierTransformBase::sGlbToS(const size_t & jsGlb) const {
+  const size_t jt = sGlbToTask(jsGlb);
+  ASSERT(jt == myrank_);
+  return spVec_[jsGlb].js;
 }
 
 // -----------------------------------------------------------------------------
@@ -245,14 +276,13 @@ void BifourierTransformBase::gp2sp(const atlas::FieldSet & gpFset,
   }
   ASSERT(nvz == nvz_);
 
-  // Create recv vectors
-  std::vector<double> recvVec;
+  // Create recv vector
+  std::vector<double> recvVec(gridRecvSize_*nvz_);
 
   // Ghost points
   const auto ghostView = make_view<int, 1>(gdata_.functionSpace().ghost());
 
   // Serialize from grid-point FieldSet
-  recvVec.resize(gridRecvSize_*nvz_);
   size_t zOffset = 0;
   for (const auto & var : activeVars) {
     // Get number of vertical levels
@@ -363,8 +393,8 @@ void BifourierTransformBase::sp2gp(const atlas::FieldSet & spFset,
   }
   ASSERT(nvz == nvz_);
 
-  // Create recv vectors
-  std::vector<double> recvVec;
+  // Create recv vector
+  std::vector<double> recvVec(recvSize()*nvz_);
 
   // Reserialize from spectral FieldSet
   std::vector<double> sendVec(eqchSendSize_*nvz_);
@@ -405,7 +435,6 @@ void BifourierTransformBase::sp2gp(const atlas::FieldSet & spFset,
   }
 
   // Communication
-  recvVec.resize(recvSize()*nvz_);
   comm_.allToAllv(sendVec.data(), eqchSendCounts_.data(), eqchSendDispls_.data(),
     recvVec.data(), recvCounts().data(), recvDispls().data());
 
@@ -481,8 +510,8 @@ void BifourierTransformBase::gp2spAdj(const atlas::FieldSet & spFset,
   }
   ASSERT(nvz == nvz_);
 
-  // Create recv vectors
-  std::vector<double> recvVec;
+  // Create recv vector
+  std::vector<double> recvVec(recvSize()*nvz_);
 
   // Reserialize from spectral FieldSet
   std::vector<double> sendVec(eqchSendSize_*nvz_);
@@ -523,7 +552,6 @@ void BifourierTransformBase::gp2spAdj(const atlas::FieldSet & spFset,
   }
 
   // Communication
-  recvVec.resize(recvSize()*nvz_);
   comm_.allToAllv(sendVec.data(), eqchSendCounts_.data(), eqchSendDispls_.data(),
     recvVec.data(), recvCounts().data(), recvDispls().data());
 
@@ -599,14 +627,13 @@ void BifourierTransformBase::sp2gpAdj(const atlas::FieldSet & gpFset,
   }
   ASSERT(nvz == nvz_);
 
-  // Create vectors
-  std::vector<double> recvVec;
+  // Create recv vector
+  std::vector<double> recvVec(gridRecvSize_*nvz_);
 
   // Ghost points
   const auto ghostView = make_view<int, 1>(gdata_.functionSpace().ghost());
 
   // Serialize from grid-point FieldSet
-  recvVec.resize(gridRecvSize_*nvz_);
   size_t zOffset = 0;
   for (const auto & var : activeVars) {
     // Get number of vertical levels
@@ -1063,7 +1090,7 @@ double BifourierTransformBase::rkstar(const size_t & jk,
 
 // -----------------------------------------------------------------------------
 
-double BifourierTransformBase::ikstar(const size_t & jk,
+size_t BifourierTransformBase::ikstar(const size_t & jk,
                                       const size_t & jl,
                                       const size_t & M,
                                       const size_t & N,
@@ -1703,6 +1730,8 @@ void BifourierTransformBase::setupParallelizationInit() {
   std::vector<int> jlVec;
   std::vector<size_t> jwGlbVec;
   std::vector<size_t> nklPerTaskTarget(comm_.size(), 0);
+  const size_t lastTask = params_.noWavenumberOnLastTask.value() && (comm_.size() > 1) ?
+    comm_.size()-1 : comm_.size();
   size_t index = 0;
   for (size_t jk = 0; jk < ellips_.size(); ++jk) {
     for (size_t jl = 0; jl <= ellips_[jk]; ++jl) {
@@ -1711,7 +1740,7 @@ void BifourierTransformBase::setupParallelizationInit() {
       jwGlbVec.push_back(ikstar(jk, jl, M_, N_, nwGlb_));
       ++nklPerTaskTarget[index];
       ++index;
-      if (index == comm_.size()) index = 0;
+      if (index == lastTask) index = 0;
     }
   }
 
@@ -1768,6 +1797,7 @@ void BifourierTransformBase::setupParallelizationInit() {
 
     if (jt == myrank_) {
       // Add local spectral coefficient
+      spVec_[jsGlb].js = sToSGlb_.size();
       sToSGlb_.push_back(jsGlb);
     }
   }
@@ -1778,20 +1808,23 @@ void BifourierTransformBase::setupParallelizationInit() {
   // Communication vectors and mapping
   sCounts_.resize(comm_.size());
   sDispls_.resize(comm_.size());
-  if (myrank_ == 0) {
-    sMapping_.resize(nsGlb_);
-  }
+  sMapping_.resize(nsGlb_);
   for (size_t jt = 0; jt < comm_.size(); ++jt) {
     sCounts_[jt] = nsPerTask_[jt];
     sDispls_[jt] = static_cast<int>(jt ? sDispls_[jt-1] + sCounts_[jt-1] : 0);
   }
-  comm_.gatherv(sToSGlb_.cbegin(), sToSGlb_.cend(), sMapping_.begin(), sMapping_.end(),
-    sCounts_, sDispls_, 0);
+  comm_.allGatherv(sToSGlb_.cbegin(), sToSGlb_.cend(), sMapping_.data(), sCounts_.data(),
+    sDispls_.data());
 
   // Compute spectral imbalance
-  const double sImb = static_cast<double>(*std::max_element(nsPerTask_.begin(), nsPerTask_.end()))
-    / static_cast<double>(*std::min_element(nsPerTask_.begin(), nsPerTask_.end()));
-  oops::Log::info() << "Info     : - Spectral imbalance (max/min): " << sImb << std::endl;
+  const size_t nsMin = *std::min_element(nsPerTask_.begin(), nsPerTask_.end());
+  const size_t nsMax = *std::max_element(nsPerTask_.begin(), nsPerTask_.end());
+  if (nsMin > 0) {
+    const double sImb = static_cast<double>(nsMax)/static_cast<double>(nsMin);
+    oops::Log::info() << "Info     : - Spectral imbalance (max/min): " << sImb << std::endl;
+  } else {
+    oops::Log::info() << "Info     : - Some tasks have no wavenumber" << std::endl;
+  }
 
   oops::Log::trace() << classname() << "::setupParallelizationInit done" << std::endl;
 }
@@ -1802,8 +1835,8 @@ void BifourierTransformBase::setupParallelizationFinal() {
   oops::Log::trace() << classname() << "::setupParallelizationFinal starting" << std::endl;
 
   // Get min and max jwGlb
-  nwStartPerTask_.resize(comm_.size(), nwGlb_-1);
-  nwEndPerTask_.resize(comm_.size(), 0);
+  nwStartPerTask_.resize(comm_.size(), nwGlb_);
+  std::vector<size_t> nwEndPerTask(comm_.size(), 0);
   for (size_t jsGlb = 0; jsGlb < nsGlb_; ++jsGlb) {
     // Get task
     const size_t jt = spVec_[jsGlb].jt;
@@ -1813,7 +1846,7 @@ void BifourierTransformBase::setupParallelizationFinal() {
 
     // Update min and max global total wavenumber
     nwStartPerTask_[jt] = std::min(nwStartPerTask_[jt], jwGlb);
-    nwEndPerTask_[jt] = std::max(nwEndPerTask_[jt], jwGlb);
+    nwEndPerTask[jt] = std::max(nwEndPerTask[jt], jwGlb);
 
     if (dwGlb_ > 0.0) {
       // Get jkstar
@@ -1825,16 +1858,26 @@ void BifourierTransformBase::setupParallelizationFinal() {
           && (jkstar <= static_cast<double>(jwGlb)+dwGlb_)) {
           // Update min and max global total wavenumber
           nwStartPerTask_[jt] = std::min(nwStartPerTask_[jt], jwGlb);
-          nwEndPerTask_[jt] = std::max(nwEndPerTask_[jt], jwGlb);
+          nwEndPerTask[jt] = std::max(nwEndPerTask[jt], jwGlb);
         }
       }
     }
   }
 
   // Define nwPerTask_
-  nwPerTask_.resize(comm_.size());
+  nwPerTask_.resize(comm_.size(), 0);
   for (size_t jt = 0; jt < comm_.size(); ++jt) {
-    nwPerTask_[jt] = nwEndPerTask_[jt] - nwStartPerTask_[jt] + 1;
+    if ((nwStartPerTask_[jt] == nwGlb_) && (nwEndPerTask[jt] == 0)) {
+      // No total wavenumber on this task
+      if (jt == 0) {
+        nwStartPerTask_[jt] = 0;
+      } else {
+        nwStartPerTask_[jt] = nwStartPerTask_[jt-1]+nwPerTask_[jt-1];
+      }
+    } else {
+      // Normal task
+      nwPerTask_[jt] = nwEndPerTask[jt] - nwStartPerTask_[jt] + 1;
+    }
   }
 
   // Local number of total wavenumbers
@@ -1859,21 +1902,28 @@ void BifourierTransformBase::setupParallelizationFinal() {
   }
 
   // Compute total wavenumber imbalance
-  const double wImb = static_cast<double>(*std::max_element(nwPerTask_.begin(), nwPerTask_.end()))
-    / static_cast<double>(*std::min_element(nwPerTask_.begin(), nwPerTask_.end()));
-  oops::Log::info() << "Info     : - Total wavenumber imbalance (max/min): " << wImb << std::endl;
+  const size_t nwMin = *std::min_element(nwPerTask_.begin(), nwPerTask_.end());
+  const size_t nwMax = *std::max_element(nwPerTask_.begin(), nwPerTask_.end());
+  if (nwMin > 0) {
+    const double wImb = static_cast<double>(nwMax)/static_cast<double>(nwMin);
+    oops::Log::info() << "Info     : - Total wavenumber imbalance (max/min): " << wImb << std::endl;
+  } else {
+    oops::Log::info() << "Info     : - Some tasks have no total wavenumber" << std::endl;
+  }
 
   // Prepare covariance communicators
   myJwGlb_.resize(nwGlb_);
   for (size_t jwGlb = 0; jwGlb < nwGlb_; ++jwGlb) {
     // Define used global wavenumbers
-    myJwGlb_[jwGlb] = (nwStartPerTask_[myrank_] <= jwGlb) && (jwGlb <= nwEndPerTask_[myrank_]);
+    myJwGlb_[jwGlb] = (nwStartPerTask_[myrank_] <= jwGlb)
+      && (jwGlb < nwStartPerTask_[myrank_]+nwPerTask_[myrank_]);
 
     // Define color of the reduction communicator
     const size_t covRedColor = myJwGlb_[jwGlb] ? 1 : 0;
 
     // Communicator name
-    const std::string covRedCommName = "covRed_" + std::to_string(jwGlb);
+    const std::string covRedCommName = "covRed_" + gridUid_ + "_" + "L" + std::to_string(nvz_)
+      + "_" + std::to_string(jwGlb);
 
     // Split communicator
     covRedComm_.push_back(&comm_.split(covRedColor, covRedCommName.c_str()));
@@ -1882,7 +1932,8 @@ void BifourierTransformBase::setupParallelizationFinal() {
     const size_t covBcastColor = myJwGlb_[jwGlb] || myrank_ == 0 ? 1 : 0;
 
     // Communicator name
-    const std::string covBcastCommName = "covBcast_" + std::to_string(jwGlb);
+    const std::string covBcastCommName = "covBcast_" + gridUid_ + "_" + "L" + std::to_string(nvz_)
+      + "_" + std::to_string(jwGlb);
 
     // Split communicator=
     covBcastComm_.push_back(&comm_.split(covBcastColor, covBcastCommName.c_str()));
@@ -1941,13 +1992,14 @@ void BifourierTransformBase::setupLocalSpectralSpace() {
     // Define global index field
     globalIndexView(js) = static_cast<int64_t>(jsGlb);
   }
-  spFspace_.reset(new atlas::functionspace::PointCloud(flds));
+  spFspace_ = std::make_unique<atlas::functionspace::PointCloud>(flds);
 
   // Generate spectral UID
   specUid_ = generateSpectralUid(*spFspace_, comm_);
 
   // Print UIDs
   oops::Log::info() << "Info     : - UIDs: " << gridUid_ << " / " << specUid_ << std::endl;
+  oops::Log::info() << "Info     : - Number of levels for all variables: " << nvz_ << std::endl;
 
   // Allocate vectors
   jkVec_.resize(ns_);
