@@ -2168,12 +2168,14 @@ call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%gmask_hor_c0a,mask_c0
 call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,rh_c0a,rh_c0)
 
 ! Print support radius stats
-write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,e10.3,a,e10.3,a,e10.3,a)'
-write(mpl%test,trim(cfmt)) '','Requested distance between points (min/max/avg): ', &
+if (mpl%main) then
+  write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,e10.3,a,e10.3,a,e10.3,a)'
+  write(mpl%test,trim(cfmt)) '','Requested distance between points (min/max/avg): ', &
  & minval(rh_c0,mask=mpl%msv%isnot(rh_c0))/resol*reqkm,' km / ', &
  & maxval(rh_c0,mask=mpl%msv%isnot(rh_c0))/resol*reqkm,' km / ', &
  & (sum(rh_c0,mask=mpl%msv%isnot(rh_c0))/real(count(mpl%msv%isnot(rh_c0)),kind_real))/resol*reqkm,' km'
-if (ifmt>0) call mpl%flush
+  if (ifmt>0) call mpl%flush
+end if
 
 if (mpl%main) then
    ! Fill masked points with minimum support radius
@@ -2488,7 +2490,6 @@ if (mpl%main) then
       write(mpl%test,trim(cfmt)) '','Effective resolution (min/max/avg): ',minval(resol_eff),' / ', &
  & maxval(resol_eff),' / ',sum(resol_eff)/real(ns,kind_real)
       call mpl%flush
-
    end if
 
    ! Release memory
