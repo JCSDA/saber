@@ -15,25 +15,25 @@ Input Dirac increment:
     + max    = 0.0000000000000000e+00
 Covariance(ensemble) diagnostics:
 - Variances at Dirac points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 8.6592677824788034e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.4234727688911823e-01
 - Covariances at diagnostic points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 9.1649976495361996e-01
-  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 3.8376853858137017e-01
-  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 2.2614730468857094e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 7.8817117345842824e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): -1.7238628647536758e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 1.5939239774363317e-01
 Covariance(ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -6.6831516446118977e-01
-    + max    = 9.3955317886609602e-01
-    + mean   = -4.0716201967943545e-02
-    + stddev = 2.1617964535080503e-01
+    + min    = -6.0686431761858739e-01
+    + max    = 9.5448573708064999e-01
+    + mean   = 9.1579169573094768e-03
+    + stddev = 1.8264985255099733e-01
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -7.4109500454829202e-01
-    + max    = 5.7283393698040774e-01
-    + mean   = -2.0364968825224330e-02
-    + stddev = 1.9873884679433779e-01
+    + min    = -5.3898020721986517e-01
+    + max    = 5.9805999402628052e-01
+    + mean   = -3.5603157946107564e-02
+    + stddev = 2.0569558898447085e-01

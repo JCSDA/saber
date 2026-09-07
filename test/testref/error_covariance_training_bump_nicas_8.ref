@@ -6,22 +6,22 @@
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.400E+03 km /  0.400E+03 km /  0.400E+03 km
-                   Regular sampling grid size:     2520 points
-                   Nearest neighbor distance (min/max/avg):  0.113E+03 km /  0.477E+03 km /  0.430E+03 km
-                   Effective resolution (min/max/avg):  4.19 / 17.74 /  4.90
-                   Subgrid hash:   -144504417
-                Subgrid size:     2520
-             nc1(  1) =                       2520
-             nc1(  2) =                       2520
-             ns =                             5040
+                   Requested distance between points (min/max/avg):  0.347E+03 km /  0.347E+03 km /  0.347E+03 km
+                   Regular sampling grid size:     3168 points
+                   Nearest neighbor distance (min/max/avg):  0.988E+02 km /  0.433E+03 km /  0.388E+03 km
+                   Effective resolution (min/max/avg):  4.62 / 20.24 /  5.38
+                   Subgrid hash:    661457954
+                Subgrid size:     3168
+             nc1(  1) =                       3168
+             nc1(  2) =                       3168
+             ns =                             6336
              v%n_s =                             2
-             c%n_s[global] =                619424
-             nc1(  1) =                       2520
-             nc1(  2) =                       2520
-             ns =                             5040
+             c%n_s[global] =                481280
+             nc1(  1) =                       3168
+             nc1(  2) =                       3168
+             ns =                             6336
              v%n_s =                             2
-             c%n_s[global] =                162976
+             c%n_s[global] =                256064
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -41,7 +41,7 @@
           Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.5999120
+          Level   2:  0.0000000 -  0.5998435
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000

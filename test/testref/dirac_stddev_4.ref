@@ -10,23 +10,23 @@ Input Dirac increment:
   - air_horizontal_velocity_potential (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-Norm of input parameter StdDev: 1.1753795711069513e+02
+Norm of input parameter StdDev: 1.1255594824692569e+02
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 4.1139707772347833e+00
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 4.2607497955259470e+00
 - Covariances at diagnostic points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 4.1139707772347833e+00
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 4.2607497955259470e+00
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
-    + max    = 4.1139707772347833e+00
-    + mean   = 2.6994558905740046e-03
-    + stddev = 1.0538255381349952e-01
+    + max    = 4.2607497955259470e+00
+    + mean   = 2.7957675823661069e-03
+    + stddev = 1.0914241226446017e-01
   - air_horizontal_velocity_potential (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00

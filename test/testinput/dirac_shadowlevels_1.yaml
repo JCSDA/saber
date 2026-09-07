@@ -43,7 +43,7 @@ background error:
         write local nicas: true
         adjoints test: true
       nicas:
-        resolution: 5
+        resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:

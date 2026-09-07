@@ -31,7 +31,7 @@ background error:
         adjoints test: true
         internal dirac test: true
       nicas:
-        resolution: 5
+        resolution: 4.0
         default off-diagonal weight: 0.5
         horizontal interpolation test: true
       dirac:

@@ -39,7 +39,7 @@ background error:
         compute nicas: true
         adjoints test: true
       nicas:
-        resolution: 5
+        resolution: 10.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:

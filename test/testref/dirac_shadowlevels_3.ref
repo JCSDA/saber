@@ -49,5 +49,5 @@ Covariance(SABER) * Increment:
   - snow_depth (1 levels):
     + min close to zero
     + max    = 1.0000000000000002e+00
-    + mean   = 1.0240127619533657e-02
-    + stddev = 7.7578716954688168e-02
+    + mean   = 1.0872107299997888e-02
+    + stddev = 7.9407807040104084e-02

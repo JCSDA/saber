@@ -1,27 +1,27 @@
        Independent levels:  1[2]
-          Subset Sc0 size:             3122
+          Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.800E+03 km /  0.800E+03 km /  0.800E+03 km
-                   Regular sampling grid size:      544 points
-                   Nearest neighbor distance (min/max/avg):  0.289E+03 km /  0.889E+03 km /  0.774E+03 km
-                   Effective resolution (min/max/avg):  4.50 / 13.82 /  5.67
-                   Subgrid hash:   -474283508
-                Subgrid size:      544
-             nc1(  1) =                        544
-             nc1(  2) =                        544
-             ns =                             1088
+                   Requested distance between points (min/max/avg):  0.100E+04 km /  0.100E+04 km /  0.100E+04 km
+                   Regular sampling grid size:      360 points
+                   Nearest neighbor distance (min/max/avg):  0.381E+03 km /  0.103E+04 km /  0.886E+03 km
+                   Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
+                   Subgrid hash:   -435093158
+                Subgrid size:      360
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             ns =                              720
              v%n_s =                             2
-             c%n_s[global] =                 30688
-             nc1(  1) =                        544
-             nc1(  2) =                        544
-             ns =                             1088
+             c%n_s[global] =                 13952
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             ns =                              720
              v%n_s =                             2
-             c%n_s[global] =                 30688
+             c%n_s[global] =                 13952
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -49,14 +49,14 @@
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-          MSE (exp. / th. / ratio):  0.30689903E+04 /  0.31435926E+04 / 0.976
-          MSE (exp. / th. / ratio):  0.12189572E+04 /  0.12574370E+04 / 0.969
-          MSE (exp. / th. / ratio):  0.83267920E+03 /  0.83829135E+03 / 0.993
-          MSE (exp. / th. / ratio):  0.61690429E+03 /  0.59877954E+03 / 1.030
-          MSE (exp. / th. / ratio):  0.49258422E+03 /  0.48362963E+03 / 1.019
-          MSE (exp. / th. / ratio):  0.39102961E+03 /  0.39294907E+03 / 0.995
-          MSE (exp. / th. / ratio):  0.33202530E+03 /  0.33984785E+03 / 0.977
-          MSE (exp. / th. / ratio):  0.28369503E+03 /  0.29242722E+03 / 0.970
-          MSE (exp. / th. / ratio):  0.24269335E+03 /  0.25661980E+03 / 0.946
-Norm of output parameter cor_rh - 1: 4.4699888143036777e+08
-Norm of output parameter cor_rv - 1: 3.3524916107277585e+02
+          MSE (exp. / th. / ratio):  0.75715621E+03 /  0.76679359E+03 / 0.987
+          MSE (exp. / th. / ratio):  0.29706370E+03 /  0.30671744E+03 / 0.969
+          MSE (exp. / th. / ratio):  0.19581168E+03 /  0.20447829E+03 / 0.958
+          MSE (exp. / th. / ratio):  0.14068748E+03 /  0.14605592E+03 / 0.963
+          MSE (exp. / th. / ratio):  0.11264906E+03 /  0.11796824E+03 / 0.955
+          MSE (exp. / th. / ratio):  0.92460699E+02 /  0.95849199E+02 / 0.965
+          MSE (exp. / th. / ratio):  0.78652218E+02 /  0.82896604E+02 / 0.949
+          MSE (exp. / th. / ratio):  0.68909737E+02 /  0.71329636E+02 / 0.966
+          MSE (exp. / th. / ratio):  0.60525143E+02 /  0.62595395E+02 / 0.967
+Norm of output parameter cor_rh - 1: 2.2083477986947617e+08
+Norm of output parameter cor_rv - 1: 1.6562608490210712e+02

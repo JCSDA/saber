@@ -173,7 +173,7 @@ class GeneralSection : public oops::Parameters {
   oops::Parameter<bool> repro_ops{"reproducibility operators", true, this};
   // Reproducibility threshold
   oops::Parameter<double> repro_th{"reproducibility threshold", 1.0e-12, this};
-  // Timers
+  // Use timers
   oops::Parameter<bool> timers{"timers", false, this};
   // Universe radius [in meters]
   oops::Parameter<double> universe_radius{"universe length-scale", 6371229*M_PI, this};

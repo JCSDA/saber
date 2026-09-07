@@ -21,110 +21,110 @@
              Level   8 ~>  0.800E+01 vert. coord.
              Level   9 ~>  0.900E+01 vert. coord.
              Level  10 ~>  0.100E+02 vert. coord.
-Norm of input parameter sampling_mask_field - 1: 8.9728039154758349e+01
-          Norm of air_horizontal_streamfunction:  0.87865069E+02
-          Norm of air_horizontal_streamfunction:  0.79131883E+02
-          Norm of air_horizontal_streamfunction:  0.78481342E+02
-          Norm of air_horizontal_streamfunction:  0.75061612E+02
-          Norm of air_horizontal_streamfunction:  0.75900651E+02
-          Norm of air_horizontal_streamfunction:  0.76099500E+02
-          Norm of air_horizontal_streamfunction:  0.83794955E+02
-          Norm of air_horizontal_streamfunction:  0.80365417E+02
-          Norm of air_horizontal_streamfunction:  0.75714856E+02
-          Norm of air_horizontal_streamfunction:  0.77898998E+02
-          Norm of air_horizontal_streamfunction:  0.84842261E+02
-          Norm of air_horizontal_streamfunction:  0.79606262E+02
-          Norm of air_horizontal_streamfunction:  0.82400163E+02
-          Norm of air_horizontal_streamfunction:  0.80887735E+02
-          Norm of air_horizontal_streamfunction:  0.76869443E+02
-          Norm of air_horizontal_streamfunction:  0.77749044E+02
-          Norm of air_horizontal_streamfunction:  0.78449048E+02
-          Norm of air_horizontal_streamfunction:  0.77822257E+02
-          Norm of air_horizontal_streamfunction:  0.81775576E+02
-          Norm of air_horizontal_streamfunction:  0.85055426E+02
-          Norm of air_horizontal_streamfunction:  0.79910633E+02
-          Norm of air_horizontal_streamfunction:  0.83802511E+02
-          Norm of air_horizontal_streamfunction:  0.80686875E+02
-          Norm of air_horizontal_streamfunction:  0.80375848E+02
-          Norm of air_horizontal_streamfunction:  0.88705606E+02
-          Level   1 ~>   3.5%
-          Level   2 ~>   3.3%
-          Level   3 ~>   5.0%
-          Level   4 ~>   3.1%
-          Level   5 ~>   4.5%
-          Level   6 ~>   3.1%
-          Level   7 ~>   4.3%
-          Level   8 ~>   2.4%
-          Level   9 ~>   2.1%
-          Level  10 ~>   2.4%
+Norm of input parameter sampling_mask_field - 1: 7.6056477143600858e+01
+          Norm of air_horizontal_streamfunction:  0.75492078E+02
+          Norm of air_horizontal_streamfunction:  0.82385788E+02
+          Norm of air_horizontal_streamfunction:  0.76482276E+02
+          Norm of air_horizontal_streamfunction:  0.75442351E+02
+          Norm of air_horizontal_streamfunction:  0.80571208E+02
+          Norm of air_horizontal_streamfunction:  0.78479039E+02
+          Norm of air_horizontal_streamfunction:  0.83385787E+02
+          Norm of air_horizontal_streamfunction:  0.76639120E+02
+          Norm of air_horizontal_streamfunction:  0.82923926E+02
+          Norm of air_horizontal_streamfunction:  0.76479665E+02
+          Norm of air_horizontal_streamfunction:  0.80130332E+02
+          Norm of air_horizontal_streamfunction:  0.83071456E+02
+          Norm of air_horizontal_streamfunction:  0.80228626E+02
+          Norm of air_horizontal_streamfunction:  0.74020175E+02
+          Norm of air_horizontal_streamfunction:  0.75800303E+02
+          Norm of air_horizontal_streamfunction:  0.74477531E+02
+          Norm of air_horizontal_streamfunction:  0.76180833E+02
+          Norm of air_horizontal_streamfunction:  0.81519484E+02
+          Norm of air_horizontal_streamfunction:  0.89523251E+02
+          Norm of air_horizontal_streamfunction:  0.83092650E+02
+          Norm of air_horizontal_streamfunction:  0.88258991E+02
+          Norm of air_horizontal_streamfunction:  0.78893218E+02
+          Norm of air_horizontal_streamfunction:  0.81020087E+02
+          Norm of air_horizontal_streamfunction:  0.82623351E+02
+          Norm of air_horizontal_streamfunction:  0.80033696E+02
+          Level   1 ~>   5.5%
+          Level   2 ~>   3.7%
+          Level   3 ~>   6.7%
+          Level   4 ~>   5.2%
+          Level   5 ~>   8.4%
+          Level   6 ~>   4.3%
+          Level   7 ~>   5.8%
+          Level   8 ~>   3.5%
+          Level   9 ~>   4.9%
+          Level  10 ~>   6.2%
           Profile A computed at lon/lat:    0.0 /    0.0
           Profile B computed at lon/lat:  -18.0 /   54.0
           Profile C computed at lon/lat: -126.0 /   -9.0
-             -90.00 deg.  ~>55-32-12- 4- 2- 2- 2- 4- 0- 2 
-             -90.00 deg.  ~>51-34-14- 4- 0- 2- 2- 2- 2- 6 
-             -90.00 deg.  ~>77-44-26-12- 4- 6- 8- 6- 6-10 
-             -90.00 deg.  ~>48-24-12- 6- 4- 2- 2- 4- 2- 8 
-             -90.00 deg.  ~>69-34-24-12-10- 2- 4- 6- 4- 8 
-             -90.00 deg.  ~>48-22-14- 4- 6- 0- 4- 2- 2- 4 
-             -90.00 deg.  ~>67-38-28-10-10- 2- 4- 6- 4- 6 
-             -90.00 deg.  ~>36-18- 4- 2- 6- 0- 8- 0- 4- 0 
-             -90.00 deg.  ~>32-18- 8- 6- 4- 2- 0- 2- 2- 2 
-             -90.00 deg.  ~>36-18- 8- 6- 2- 2- 0- 2- 2- 0 
-          nc1 =       49
-          nc2 =       49
+             -90.00 deg.  ~>57-31-19-13-10-12- 2- 8- 6- 6 
+             -90.00 deg.  ~>38-24-12- 4- 5- 5- 1- 4- 1- 2 
+             -90.00 deg.  ~>69-42-20- 6- 9-12- 8-10- 6- 5 
+             -90.00 deg.  ~>54-30-10- 4- 6- 2- 2- 6- 8- 8 
+             -90.00 deg.  ~>87-52-31-23-20-26-13-12-12-15 
+             -90.00 deg.  ~>45-23-10-12- 8-10- 4- 4- 4- 2 
+             -90.00 deg.  ~>60-30-15-16- 8-15- 8- 4- 2- 4 
+             -90.00 deg.  ~>36-16- 6- 6- 1- 5- 5- 6- 0- 6 
+             -90.00 deg.  ~>50-30- 8-10- 5- 6- 8- 4- 0- 4 
+             -90.00 deg.  ~>64-34-15-15-12-10-10- 8- 1- 8 
+          nc1 =       73
+          nc2 =       73
           Independent levels:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
           Independent levels for angular sector   1 / class   1:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
           Independent levels for angular sector   1 / class   2:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
           Independent levels for angular sector   1 / class   3:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
           Independent levels for angular sector   1 / class   4:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
-          Independent levels for angular sector   1 / class   5:  1[1]  2[1]  3[2]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
-          Independent levels for angular sector   1 / class   6:  1[3]  3[1]  4[2]  6[2]  9[2]
-          Independent levels for angular sector   1 / class   7:  1[2]  3[1]  4[1]  5[3]  8[1]  9[2]
-          Independent levels for angular sector   1 / class   8:  1[2]  2[1]  3[1]  5[1]  6[1]  7[1]  8[1]  9[2]
-          Independent levels for angular sector   1 / class   9:  1[1]  2[2]  3[1]  4[1]  5[1]  7[1]  8[1]  9[2]
-          Independent levels for angular sector   1 / class  10:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[2]  9[1]
-                Level:   1 ~> cov. at class zero:  0.12E+01
-                Level:   2 ~> cov. at class zero:  0.85E+00
-                Level:   3 ~> cov. at class zero:  0.10E+01
-                Level:   4 ~> cov. at class zero:  0.82E+00
-                Level:   5 ~> cov. at class zero:  0.11E+01
-                Level:   6 ~> cov. at class zero:  0.78E+00
-                Level:   7 ~> cov. at class zero:  0.11E+01
-                Level:   8 ~> cov. at class zero:  0.86E+00
-                Level:   9 ~> cov. at class zero:  0.11E+01
-                Level:  10 ~> cov. at class zero:  0.11E+01
-             Block air_horizontal_streamfunction:  0.34153559E+00 for    15699 diagnostic points
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
+          Independent levels for angular sector   1 / class   6:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
+          Independent levels for angular sector   1 / class   8:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
+          Independent levels for angular sector   1 / class   9:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[2] 10[1]
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1]  3[1]  4[1]  5[1]  6[1]  7[1]  8[1]  9[1] 10[1]
+                Level:   1 ~> cov. at class zero:  0.11E+01
+                Level:   2 ~> cov. at class zero:  0.82E+00
+                Level:   3 ~> cov. at class zero:  0.97E+00
+                Level:   4 ~> cov. at class zero:  0.79E+00
+                Level:   5 ~> cov. at class zero:  0.10E+01
+                Level:   6 ~> cov. at class zero:  0.74E+00
+                Level:   7 ~> cov. at class zero:  0.10E+01
+                Level:   8 ~> cov. at class zero:  0.77E+00
+                Level:   9 ~> cov. at class zero:  0.10E+01
+                Level:  10 ~> cov. at class zero:  0.10E+01
+             Block air_horizontal_streamfunction:  0.33087967E+00 for    34569 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      4999.18 km
-                                 cor. ver. support:         5.65 vertical units
+                                 cor. hor. support:      3935.33 km
+                                 cor. ver. support:         5.80 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      6033.55 km
-                                 cor. ver. support:         6.73 vertical units
+                                 cor. hor. support:      3868.57 km
+                                 cor. ver. support:         6.91 vertical units
                    Level:   3 ~> amplitude:        1.00
-                                 cor. hor. support:      4895.14 km
-                                 cor. ver. support:         5.21 vertical units
+                                 cor. hor. support:      4397.41 km
+                                 cor. ver. support:         5.39 vertical units
                    Level:   4 ~> amplitude:        1.00
-                                 cor. hor. support:      4986.36 km
-                                 cor. ver. support:         6.34 vertical units
+                                 cor. hor. support:      5000.17 km
+                                 cor. ver. support:         6.74 vertical units
                    Level:   5 ~> amplitude:        1.00
-                                 cor. hor. support:      4223.86 km
-                                 cor. ver. support:         5.48 vertical units
+                                 cor. hor. support:      4604.71 km
+                                 cor. ver. support:         5.33 vertical units
                    Level:   6 ~> amplitude:        1.00
-                                 cor. hor. support:      4797.03 km
-                                 cor. ver. support:         6.10 vertical units
+                                 cor. hor. support:      4531.72 km
+                                 cor. ver. support:         6.73 vertical units
                    Level:   7 ~> amplitude:        1.00
-                                 cor. hor. support:      5234.42 km
-                                 cor. ver. support:         5.09 vertical units
+                                 cor. hor. support:      4070.12 km
+                                 cor. ver. support:         5.27 vertical units
                    Level:   8 ~> amplitude:        1.00
-                                 cor. hor. support:      5693.45 km
-                                 cor. ver. support:         6.46 vertical units
+                                 cor. hor. support:      5215.52 km
+                                 cor. ver. support:         6.55 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 cor. hor. support:      4376.67 km
-                                 cor. ver. support:         5.38 vertical units
+                                 cor. hor. support:      5703.25 km
+                                 cor. ver. support:         6.34 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 cor. hor. support:      4156.69 km
-                                 cor. ver. support:         6.99 vertical units
-             Block air_horizontal_streamfunction:  0.25514138E+00 for    35000 diagnostic points
+                                 cor. hor. support:      4951.16 km
+                                 cor. ver. support:         6.44 vertical units
+             Block air_horizontal_streamfunction:  0.24235349E+00 for    51800 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                 Level:   3 ~> loc. at class zero:       0.92
@@ -136,34 +136,34 @@ Norm of input parameter sampling_mask_field - 1: 8.9728039154758349e+01
                 Level:   9 ~> loc. at class zero:       0.92
                 Level:  10 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      6589.11 km
-                                 loc. ver. support:         8.20 vertical units
+                                 loc. hor. support:      5164.25 km
+                                 loc. ver. support:         8.72 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      7986.86 km
-                                 loc. ver. support:         7.96 vertical units
+                                 loc. hor. support:      5074.28 km
+                                 loc. ver. support:         8.20 vertical units
                    Level:   3 ~> amplitude:        1.00
-                                 loc. hor. support:      6446.18 km
-                                 loc. ver. support:         8.01 vertical units
+                                 loc. hor. support:      5803.76 km
+                                 loc. ver. support:         8.86 vertical units
                    Level:   4 ~> amplitude:        1.00
-                                 loc. hor. support:      6576.50 km
-                                 loc. ver. support:         9.60 vertical units
+                                 loc. hor. support:      6590.10 km
+                                 loc. ver. support:        10.50 vertical units
                    Level:   5 ~> amplitude:        1.00
-                                 loc. hor. support:      5555.85 km
-                                 loc. ver. support:         9.22 vertical units
+                                 loc. hor. support:      6073.97 km
+                                 loc. ver. support:         9.91 vertical units
                    Level:   6 ~> amplitude:        1.00
-                                 loc. hor. support:      6342.03 km
-                                 loc. ver. support:         8.79 vertical units
+                                 loc. hor. support:      5976.38 km
+                                 loc. ver. support:        10.23 vertical units
                    Level:   7 ~> amplitude:        1.00
-                                 loc. hor. support:      6899.02 km
-                                 loc. ver. support:         9.85 vertical units
+                                 loc. hor. support:      5360.44 km
+                                 loc. ver. support:        10.42 vertical units
                    Level:   8 ~> amplitude:        1.00
-                                 loc. hor. support:      7493.84 km
-                                 loc. ver. support:         8.09 vertical units
+                                 loc. hor. support:      6890.19 km
+                                 loc. ver. support:         8.50 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 loc. hor. support:      5765.38 km
-                                 loc. ver. support:         7.44 vertical units
+                                 loc. hor. support:      7508.84 km
+                                 loc. ver. support:         8.32 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 loc. hor. support:      5496.95 km
-                                 loc. ver. support:         8.34 vertical units
-Norm of output parameter cor_rh - 1: 4.8762013515186220e+08
-Norm of output parameter cor_rv - 1: 5.3943858722125958e+02
+                                 loc. hor. support:      6516.02 km
+                                 loc. ver. support:         8.49 vertical units
+Norm of output parameter cor_rh - 1: 4.2101809022582084e+08
+Norm of output parameter cor_rv - 1: 5.3564881971352611e+02

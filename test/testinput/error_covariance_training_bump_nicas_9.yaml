@@ -34,7 +34,7 @@ background error:
       ensemble sizes:
         total ensemble size: 50
       nicas:
-        resolution: 5
+        resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:
@@ -48,6 +48,10 @@ background error:
           - air_horizontal_streamfunction
           - air_horizontal_velocity_potential
           value: 3.0
+        interpolation type:
+        - groups:
+          - air_horizontal_streamfunction
+          type: si
         normalization randomization size: 100
       dirac:
       - longitude: 0.0

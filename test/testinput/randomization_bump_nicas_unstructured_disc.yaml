@@ -420,7 +420,7 @@ background error:
         multivariate strategy: univariate
         compute nicas: true
       nicas:
-        resolution: 5
+        resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:

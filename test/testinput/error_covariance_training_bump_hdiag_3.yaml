@@ -52,7 +52,6 @@ background error:
         reduced levels: 2
         local diagnostic: true
         averaging latitude width: 15.0
-        interpolation type: si
       diagnostics:
         target ensemble size: 25
         gaussian approximation: true

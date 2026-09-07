@@ -56,7 +56,7 @@ background error:
       fit:
         number of components: 3
       nicas:
-        resolution: 5
+        resolution: 4.0
         interpolation type:
         - groups:
           - air_horizontal_streamfunction

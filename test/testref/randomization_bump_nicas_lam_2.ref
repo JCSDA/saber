@@ -4,15 +4,15 @@ Member 0:
   Geometry: structured [3763]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -3.0651524544522282e+00
-    + max    = 2.6985940683226559e+00
-    + mean   = -2.3270647267345484e-01
-    + stddev = 1.2472758585645090e+00
+    + min    = -2.1307734207931901e+00
+    + max    = 2.4093092964259624e+00
+    + mean   = 6.9542670791844369e-02
+    + stddev = 9.3631552230912563e-01
   - air_horizontal_velocity_potential (10 levels):
-    + min    = -1.8053744310241040e+00
-    + max    = 1.7640225266720648e+00
-    + mean   = 2.0906677624572995e-01
-    + stddev = 7.0119232092199701e-01
+    + min    = -1.6673071784759941e+00
+    + max    = 3.6550123861040555e+00
+    + mean   = 7.9307869096468497e-01
+    + stddev = 9.6895667834344601e-01
   - air_pressure_at_surface (1 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
@@ -21,15 +21,15 @@ Member 1:
   Geometry: structured [3763]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.6267679380132840e+00
-    + max    = 1.9397159337202523e+00
-    + mean   = -5.6190688715657178e-01
-    + stddev = 7.6501252857088509e-01
+    + min    = -2.7162438942525502e+00
+    + max    = 2.3704570381906915e+00
+    + mean   = -1.7841779787193085e-01
+    + stddev = 9.8466965737998646e-01
   - air_horizontal_velocity_potential (10 levels):
-    + min    = -3.3388600026588819e+00
-    + max    = 1.4382884381716683e+00
-    + mean   = -7.6327339032875630e-01
-    + stddev = 9.2775776646989538e-01
+    + min    = -2.6229985521215129e+00
+    + max    = 2.4939678811367996e+00
+    + mean   = 2.6136269048057359e-01
+    + stddev = 8.8642560781083790e-01
   - air_pressure_at_surface (1 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00

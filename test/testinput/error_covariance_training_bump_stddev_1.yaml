@@ -47,10 +47,9 @@ background error:
         normalization test: 50
       diagnostics:
         target ensemble size: 20
-        gaussian approximation: true
       variance:
         objective filtering: true
-        filtering iterations: 3
+        filtering iterations: 4
         initial length-scale:
         - variables:
           - air_horizontal_streamfunction

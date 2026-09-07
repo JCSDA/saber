@@ -58,14 +58,8 @@ background error:
       fit:
         number of components: 2
       nicas:
-        resolution: 5
-        interpolation type:
-        - groups:
-          - air_horizontal_streamfunction
-          - air_horizontal_velocity_potential
-          - air_temperature
-          - air_pressure_at_surface
-          type: si
+        resolution: 4.0
+        default interpolation type: si
         interpolation in global file: true
       dirac:
       - longitude: 0.0

@@ -13,16 +13,16 @@ Input Dirac increment:
              Level   1 ~> 100.0%
              Level   1 ~>  0.444E-01 vert. coord.
              Effective levels:   1 
-                   Requested distance between points (min/max/avg):  0.120E+04 km /  0.120E+04 km /  0.120E+04 km
-                   Regular sampling grid size:      208 points
-                   Nearest neighbor distance (min/max/avg):  0.556E+03 km /  0.123E+04 km /  0.104E+04 km
-                   Effective resolution (min/max/avg):  4.88 / 10.78 /  6.28
-                   Subgrid hash:  -2117861176
-                Subgrid size:      208
-             nc1(  1) =                        208
-             ns =                              208
+                   Requested distance between points (min/max/avg):  0.600E+03 km /  0.600E+03 km /  0.600E+03 km
+                   Regular sampling grid size:     1008 points
+                   Nearest neighbor distance (min/max/avg):  0.195E+03 km /  0.699E+03 km /  0.620E+03 km
+                   Effective resolution (min/max/avg):  8.59 / 30.72 / 10.46
+                   Subgrid hash:    682755028
+                Subgrid size:     1008
+             nc1(  1) =                       1008
+             ns =                             1008
              v%n_s =                             1
-             c%n_s[global] =                  2536
+             c%n_s[global] =                 53560
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -39,6 +39,6 @@ Covariance(SABER) * Increment:
   Fields:
   - snow_depth (1 levels):
     + min close to zero
-    + max    = 9.9999999999999967e-01
-    + mean   = 1.1372355303587423e-02
-    + stddev = 7.8460196564529336e-02
+    + max    = 1.0000000000000002e+00
+    + mean   = 1.0659326595578753e-02
+    + stddev = 8.1192018008363578e-02

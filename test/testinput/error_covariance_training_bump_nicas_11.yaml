@@ -34,7 +34,7 @@ background error:
         internal dirac test: true
         normalization test: 50
       nicas:
-        resolution: 5
+        resolution: 6.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:

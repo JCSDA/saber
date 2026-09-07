@@ -653,7 +653,7 @@ do imga=1,geom%nmga
    end if
 end do
 call mpl%f_comm%allreduce(maxdist,fckit_mpi_max())
-geom%global = supeq(maxdist,pi)
+geom%global = supeq(maxdist,half*pi)
 
 ! Release memory
 call afield%final()

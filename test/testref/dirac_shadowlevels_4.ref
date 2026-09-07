@@ -35,16 +35,16 @@ Norm of output parameter weight: 8.4154619599865256e+01
              Level  10 ~>  0.100E+02 vert. coord.
              Level  11 ~>  0.110E+02 vert. coord.
              Effective levels:   1 
-                   Requested distance between points (min/max/avg):  0.120E+04 km /  0.120E+04 km /  0.120E+04 km
-                   Regular sampling grid size:      208 points
-                   Nearest neighbor distance (min/max/avg):  0.556E+03 km /  0.123E+04 km /  0.104E+04 km
-                   Effective resolution (min/max/avg):  4.88 / 10.78 /  6.28
-                   Subgrid hash:  -2117861176
-                Subgrid size:      208
-             nc1(  1) =                        208
-             ns =                              208
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             ns =                               88
              v%n_s =                             1
-             c%n_s[global] =                  2656
+             c%n_s[global] =                   424
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -61,5 +61,5 @@ Covariance(SABER) * Increment:
   - snow_depth (1 levels):
     + min close to zero
     + max    = 1.0000000000000002e+00
-    + mean   = 1.0240127619533657e-02
-    + stddev = 7.7578716954688168e-02
+    + mean   = 1.0872107299997888e-02
+    + stddev = 7.9407807040104084e-02

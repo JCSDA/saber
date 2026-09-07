@@ -5,52 +5,12 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of air_horizontal_streamfunction:  0.34890634E+02
-          Norm of air_horizontal_velocity_potential:  0.41573572E+02
-          Norm of air_horizontal_streamfunction:  0.38534971E+02
-          Norm of air_horizontal_velocity_potential:  0.35105441E+02
-          Norm of air_horizontal_streamfunction:  0.35421821E+02
-          Norm of air_horizontal_velocity_potential:  0.39869493E+02
-          Norm of air_horizontal_streamfunction:  0.44860594E+02
-          Norm of air_horizontal_velocity_potential:  0.36793345E+02
-          Norm of air_horizontal_streamfunction:  0.38955643E+02
-          Norm of air_horizontal_velocity_potential:  0.33472942E+02
-          Norm of air_horizontal_streamfunction:  0.37209447E+02
-          Norm of air_horizontal_velocity_potential:  0.37325430E+02
-          Norm of air_horizontal_streamfunction:  0.39058605E+02
-          Norm of air_horizontal_velocity_potential:  0.39643775E+02
-          Norm of air_horizontal_streamfunction:  0.44091670E+02
-          Norm of air_horizontal_velocity_potential:  0.40248955E+02
-          Norm of air_horizontal_streamfunction:  0.36876807E+02
-          Norm of air_horizontal_velocity_potential:  0.40955970E+02
-          Norm of air_horizontal_streamfunction:  0.41074181E+02
-          Norm of air_horizontal_velocity_potential:  0.39054483E+02
-          Norm of air_horizontal_streamfunction:  0.42849305E+02
-          Norm of air_horizontal_velocity_potential:  0.37185118E+02
-          Norm of air_horizontal_streamfunction:  0.29266116E+02
-          Norm of air_horizontal_velocity_potential:  0.35733945E+02
-          Norm of air_horizontal_streamfunction:  0.39662694E+02
-          Norm of air_horizontal_velocity_potential:  0.38218590E+02
-          Norm of air_horizontal_streamfunction:  0.37743569E+02
-          Norm of air_horizontal_velocity_potential:  0.39826153E+02
-          Norm of air_horizontal_streamfunction:  0.40012135E+02
-          Norm of air_horizontal_velocity_potential:  0.38434860E+02
-          Norm of air_horizontal_streamfunction:  0.38285539E+02
-          Norm of air_horizontal_velocity_potential:  0.38367101E+02
-          Norm of air_horizontal_streamfunction:  0.36891853E+02
-          Norm of air_horizontal_velocity_potential:  0.38557935E+02
-          Norm of air_horizontal_streamfunction:  0.37878114E+02
-          Norm of air_horizontal_velocity_potential:  0.40832223E+02
-          Norm of air_horizontal_streamfunction:  0.38799246E+02
-          Norm of air_horizontal_velocity_potential:  0.40290574E+02
-          Norm of air_horizontal_streamfunction:  0.37601941E+02
-          Norm of air_horizontal_velocity_potential:  0.41879662E+02
-                Level   1:  3 x    5000.00km, rel. diff. =  0.78035E-02
-                Level   2:  3 x    5000.00km, rel. diff. =  0.23025E-01
-                Level   1:  3 x    4000.00km, rel. diff. =  0.60984E-02
-                Level   2:  3 x    4000.00km, rel. diff. =  0.34749E-01
-             Level   1 ~>  0.10331E+01 /  0.10331E+01
-             Level   2 ~>  0.10294E+01 /  0.10294E+01
-             Level   1 ~>  0.10132E+01 /  0.10132E+01
-             Level   2 ~>  0.10588E+01 /  0.10588E+01
-Norm of output parameter stddev - 1: 5.6129155337454129e+01
+                Level   1:  3 x    1000.00km, rel. diff. =  0.86514E-03
+                Level   2:  2 x    1000.00km, rel. diff. = -0.76524E-02
+                Level   1:  3 x    1200.00km, rel. diff. =  0.24877E-01
+                Level   2:  2 x    1200.00km, rel. diff. =  0.39348E-02
+             Level   1 ~>  0.10012E+01 /  0.10012E+01
+             Level   2 ~>  0.97111E+00 /  0.97111E+00
+             Level   1 ~>  0.99925E+00 /  0.99925E+00
+             Level   2 ~>  0.10035E+01 /  0.10035E+01
+Norm of output parameter stddev - 1: 5.5024064041230851e+01

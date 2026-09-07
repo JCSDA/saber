@@ -45,7 +45,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      280
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.8030999898443227e+01
+Norm of input parameter StdDev: 5.6856865849524148e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -62,7 +62,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter stddev - 1: 5.5271073069144208e+01
+Norm of input parameter stddev - 1: 5.4152780278663833e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -93,15 +93,15 @@ Covariance(SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.9001693665413995e-02
-    + max    = 1.0220272831826811e+00
-    + mean   = 5.7057919834451534e-03
-    + stddev = 4.9523857282463092e-02
+    + min    = -1.1407736976885156e-01
+    + max    = 1.2582126115256638e+00
+    + mean   = 5.3538625769643739e-03
+    + stddev = 5.7612282209273502e-02
   - northward_wind (2 levels):
-    + min    = -1.2559752888816542e-01
-    + max    = 1.9108155081116437e-01
-    + mean   = 7.1964150034413421e-04
-    + stddev = 1.1657751917652791e-02
+    + min    = -9.8533492688363408e-02
+    + max    = 1.0717453453926608e-01
+    + mean   = 5.5141679603631661e-04
+    + stddev = 8.9912899273198506e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -137,7 +137,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      280
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.8030999898443227e+01
+Norm of input parameter StdDev: 5.6856865849524148e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -154,7 +154,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter stddev - 1: 5.5271073069144208e+01
+Norm of input parameter stddev - 1: 5.4152780278663833e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -170,15 +170,15 @@ Covariance(SABER1_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -4.2272882413303675e-13
-    + max    = 1.3245077672571633e-12
-    + mean   = -2.6547474822106584e-16
-    + stddev = 8.7991326244855622e-14
+    + min    = -4.0471097176962131e-13
+    + max    = 1.2543201861364739e-12
+    + mean   = -2.3751444973962613e-16
+    + stddev = 8.5616783756572069e-14
   - northward_wind (2 levels):
-    + min    = -2.6850642577848529e-13
-    + max    = 2.4184293562979440e-13
-    + mean   = -5.3724378546260834e-17
-    + stddev = 3.2362097461740333e-14
+    + min    = -2.7391199479373096e-13
+    + max    = 2.4972858387549143e-13
+    + mean   = -4.7487972177229965e-17
+    + stddev = 3.3890064159446399e-14
 Norm of input parameter inflation: 6.9558608381710329e+01
 Norm of input parameter StdDev: 1.6562608490210712e+02
 Adjoint test for block StdDev passed
@@ -199,12 +199,12 @@ Covariance(SABER2_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -3.8003387330691689e-02
-    + max    = 2.0440545663640366e+00
-    + mean   = 1.1411583966890586e-02
-    + stddev = 9.9047714564857031e-02
+    + min    = -2.2815473953759274e-01
+    + max    = 2.5164252230500734e+00
+    + mean   = 1.0707725153928985e-02
+    + stddev = 1.1522456441847820e-01
   - northward_wind (2 levels):
-    + min    = -2.5119505777613782e-01
-    + max    = 3.8216310162246558e-01
-    + mean   = 1.4392830006883222e-03
-    + stddev = 2.3315503835310784e-02
+    + min    = -1.9706698537669004e-01
+    + max    = 2.1434906907851756e-01
+    + mean   = 1.1028335920726814e-03
+    + stddev = 1.7982579854638366e-02

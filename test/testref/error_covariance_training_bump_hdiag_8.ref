@@ -5,16 +5,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of air_horizontal_streamfunction:  0.46640022E+02
-          Norm of air_horizontal_streamfunction:  0.44800579E+02
-          Norm of air_horizontal_streamfunction:  0.49257910E+02
-          Norm of air_horizontal_streamfunction:  0.43232722E+02
-          Norm of air_horizontal_streamfunction:  0.43688330E+02
-          Norm of air_horizontal_streamfunction:  0.39461909E+02
-          Norm of air_horizontal_streamfunction:  0.41828911E+02
-          Norm of air_horizontal_streamfunction:  0.46594695E+02
-          Norm of air_horizontal_streamfunction:  0.40989816E+02
-          Norm of air_horizontal_streamfunction:  0.47144763E+02
+          Norm of air_horizontal_streamfunction:  0.43925593E+02
+          Norm of air_horizontal_streamfunction:  0.46718846E+02
+          Norm of air_horizontal_streamfunction:  0.42966115E+02
+          Norm of air_horizontal_streamfunction:  0.43388620E+02
+          Norm of air_horizontal_streamfunction:  0.43836557E+02
+          Norm of air_horizontal_streamfunction:  0.42905240E+02
+          Norm of air_horizontal_streamfunction:  0.46499061E+02
+          Norm of air_horizontal_streamfunction:  0.40902685E+02
+          Norm of air_horizontal_streamfunction:  0.38174966E+02
+          Norm of air_horizontal_streamfunction:  0.43706944E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Subgrid hash:  -1366971213
@@ -38,26 +38,26 @@
           Independent levels for angular sector   1 / class  14:  1[2]
           Independent levels for angular sector   1 / class  15:  1[2]
                 Level:   1 ~> cov. at class zero:  0.96E+00
-                Level:   2 ~> cov. at class zero:  0.95E+00
-             Block air_horizontal_streamfunction:  0.16395978E+00 for       60 diagnostic points
+                Level:   2 ~> cov. at class zero:  0.96E+00
+             Block air_horizontal_streamfunction:  0.17377978E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      4512.14 km
-                                 cor. ver. support:         3.12 vertical units
+                                 cor. hor. support:      4301.19 km
+                                 cor. ver. support:         3.09 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      4320.11 km
-                                 cor. ver. support:         3.12 vertical units
-             Block air_horizontal_streamfunction:  0.21807315E+00 for       40 diagnostic points
+                                 cor. hor. support:      4367.78 km
+                                 cor. ver. support:         3.09 vertical units
+             Block air_horizontal_streamfunction:  0.24508699E+00 for       38 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
-                Level:   2 ~> loc. at class zero:       0.83
+                Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5776.56 km
-                                 loc. ver. support:         4.17 vertical units
+                                 loc. hor. support:      5096.09 km
+                                 loc. ver. support:         4.08 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5433.35 km
-                                 loc. ver. support:         4.17 vertical units
-                Level:   1 ~> hybrid coefficients: 0.59 / 0.39
-                Level:   2 ~> hybrid coefficients: 0.58 / 0.42
-Norm of output parameter loc_rh - 1: 2.6373529638225096e+08
-Norm of output parameter loc_rv - 1: 1.9605475146722972e+02
-Norm of output parameter hyb_coef_1 - 1: 2.7508384443095572e+01
-Norm of output parameter hyb_coef_2 - 1: 1.9045718046702543e+01
+                                 loc. hor. support:      5135.41 km
+                                 loc. ver. support:         4.08 vertical units
+                Level:   1 ~> hybrid coefficients: 0.55 / 0.46
+                Level:   2 ~> hybrid coefficients: 0.52 / 0.44
+Norm of output parameter loc_rh - 1: 2.4060515811831075e+08
+Norm of output parameter loc_rv - 1: 1.9191152674084825e+02
+Norm of output parameter hyb_coef_1 - 1: 2.5370681788583269e+01
+Norm of output parameter hyb_coef_2 - 1: 2.1090405100126404e+01
