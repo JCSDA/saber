@@ -8,6 +8,10 @@ list(APPEND generic_src_files_list
 DuplicateVariables.cc
 DuplicateVariables.h
 
+# Geographical mask
+GeographicalMask.cc
+GeographicalMask.h
+
 # ID block
 ID.h
 ID.cc

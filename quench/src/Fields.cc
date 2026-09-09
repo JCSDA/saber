@@ -28,6 +28,7 @@
 #include "eckit/mpi/Comm.h"
 
 #include "oops/util/ConfigFunctions.h"
+#include "oops/util/ConfigHelpers.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/FloatCompare.h"
@@ -858,8 +859,8 @@ void Fields::diff(const Fields & x1,
   oops::Log::trace() << classname() << "::diff starting" << std::endl;
 
   // Check that fields are compatible
-  ASSERT(checkFieldsCompatible(x1));
-  ASSERT(checkFieldsCompatible(x2));
+  ASSERT(checkFieldsCompatible(x1, false));
+  ASSERT(checkFieldsCompatible(x2, false));
 
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
@@ -950,13 +951,7 @@ void Fields::read(const eckit::Configuration & config) {
   // Update variables names
   oops::Variables vars_in_file;
   for (const auto & var : vars_) {
-    std::string newVar = var.name();
-    for (const auto & item : geom_.alias()) {
-      if (item.getString("in code") == var.name()) {
-        newVar = item.getString("in file");
-      }
-    }
-    vars_in_file.push_back({newVar, var.metaData(), var.getLevels()});
+    vars_in_file.push_back({geom_.params().fileAlias(var.name()), var.metaData(), var.getLevels()});
   }
 
   // Get input format
@@ -979,11 +974,7 @@ void Fields::read(const eckit::Configuration & config) {
 
   // Rename fields
   for (auto & field : fset_) {
-    for (const auto & item : geom_.alias()) {
-      if (item.getString("in file") == field.name()) {
-        field.rename(item.getString("in code"));
-      }
-    }
+    field.rename(geom_.params().codeAlias(field.name()));
   }
 
   // Set fields metadata
@@ -1034,13 +1025,14 @@ void Fields::write(const eckit::Configuration & config) const {
     }
   }
 
+  // Update member template
+  if (updatedConfig.has("member")) {
+    util::setMember(updatedConfig, updatedConfig.getInt("member"));
+  }
+
   // Rename fields
   for (auto & field : fset_) {
-    for (const auto & item : geom_.alias()) {
-      if (item.getString("in code") == field.name()) {
-        field.rename(item.getString("in file"));
-      }
-    }
+    field.rename(geom_.params().fileAlias(field.name()));
   }
 
   // Get output formats
@@ -1066,11 +1058,7 @@ void Fields::write(const eckit::Configuration & config) const {
 
   // Rename fields
   for (auto & field : fset_) {
-    for (const auto & item : geom_.alias()) {
-      if (item.getString("in file") == field.name()) {
-        field.rename(item.getString("in code"));
-      }
-    }
+    field.rename(geom_.params().codeAlias(field.name()));
   }
 
   // Wait
@@ -1146,6 +1134,70 @@ void Fields::deserialize(const std::vector<double> & vect,
   time_.deserialize(vect, index);
 
   oops::Log::trace() << classname() << "::deserialize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Fields::resetDuplicatePoints() {
+  oops::Log::trace() << classname() << "::resetDuplicatePoints starting" << std::endl;
+
+  if (geom_.duplicatePoints()) {
+    if ((geom_.gridType() == "structured") || (geom_.gridType() == "regular_lonlat")) {
+      // Deal with poles
+      for (auto field_internal : fset_) {
+        // Get first longitude value
+        atlas::functionspace::StructuredColumns fs(field_internal.functionspace());
+        atlas::StructuredGrid grid = fs.grid();
+        auto view = atlas::array::make_view<double, 2>(field_internal);
+        auto view_i = atlas::array::make_indexview<int, 1>(fs.index_i());
+        auto view_j = atlas::array::make_indexview<int, 1>(fs.index_j());
+        std::vector<double> north(field_internal.shape(1), 0.0);
+        std::vector<double> south(field_internal.shape(1), 0.0);
+        for (atlas::idx_t j = fs.j_begin(); j < fs.j_end(); ++j) {
+          for (atlas::idx_t i = fs.i_begin(j); i < fs.i_end(j); ++i) {
+            atlas::idx_t jnode = fs.index(i, j);
+            if (view_i(jnode) == 0) {
+              if (view_j(jnode) == 0) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
+                  north[jlevel] = view(jnode, jlevel);
+                }
+              }
+              if (view_j(jnode) == grid.ny()-1) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
+                  south[jlevel] = view(jnode, jlevel);
+                }
+              }
+            }
+          }
+        }
+
+        // Reduce
+        geom_.getComm().allReduceInPlace(north.begin(), north.end(), eckit::mpi::sum());
+        geom_.getComm().allReduceInPlace(south.begin(), south.end(), eckit::mpi::sum());
+
+        // Copy value
+        for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
+          for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
+            atlas::idx_t jnode = fs.index(i, j);
+            if (view_j(jnode) == 0) {
+              for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
+                view(jnode, jlevel) = north[jlevel];
+              }
+            }
+            if (view_j(jnode) == grid.ny()-1) {
+              for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
+                view(jnode, jlevel) = south[jlevel];
+              }
+            }
+          }
+        }
+      }
+    } else {
+      throw eckit::NotImplemented("duplicate points not supported for this grid", Here());
+    }
+  }
+
+  oops::Log::trace() << classname() << "::resetDuplicatePoints done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -1257,90 +1309,41 @@ void Fields::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
-void Fields::resetDuplicatePoints() {
-  oops::Log::trace() << classname() << "::resetDuplicatePoints starting" << std::endl;
+bool Fields::checkFieldsCompatible(const Fields & other,
+                                   const bool & superset) const {
+  // Create vector of fields to check
+  std::vector<std::string> fieldsToCheck;
 
-  if (geom_.duplicatePoints()) {
-    if ((geom_.gridType() == "structured") || (geom_.gridType() == "regular_lonlat")) {
-      // Deal with poles
-      for (auto field_internal : fset_) {
-        // Get first longitude value
-        atlas::functionspace::StructuredColumns fs(field_internal.functionspace());
-        atlas::StructuredGrid grid = fs.grid();
-        auto view = atlas::array::make_view<double, 2>(field_internal);
-        auto view_i = atlas::array::make_indexview<int, 1>(fs.index_i());
-        auto view_j = atlas::array::make_indexview<int, 1>(fs.index_j());
-        std::vector<double> north(field_internal.shape(1), 0.0);
-        std::vector<double> south(field_internal.shape(1), 0.0);
-        for (atlas::idx_t j = fs.j_begin(); j < fs.j_end(); ++j) {
-          for (atlas::idx_t i = fs.i_begin(j); i < fs.i_end(j); ++i) {
-            atlas::idx_t jnode = fs.index(i, j);
-            if (view_i(jnode) == 0) {
-              if (view_j(jnode) == 0) {
-                for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
-                  north[jlevel] = view(jnode, jlevel);
-                }
-              }
-              if (view_j(jnode) == grid.ny()-1) {
-                for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
-                  south[jlevel] = view(jnode, jlevel);
-                }
-              }
-            }
-          }
-        }
-
-        // Reduce
-        geom_.getComm().allReduceInPlace(north.begin(), north.end(), eckit::mpi::sum());
-        geom_.getComm().allReduceInPlace(south.begin(), south.end(), eckit::mpi::sum());
-
-        // Copy value
-        for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
-          for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
-            atlas::idx_t jnode = fs.index(i, j);
-            if (view_j(jnode) == 0) {
-              for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
-                view(jnode, jlevel) = north[jlevel];
-              }
-            }
-            if (view_j(jnode) == grid.ny()-1) {
-              for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
-                view(jnode, jlevel) = south[jlevel];
-              }
-            }
-          }
-        }
-      }
-    } else {
-      throw eckit::NotImplemented("duplicate points not supported for this grid", Here());
-    }
-  }
-
-  oops::Log::trace() << classname() << "::resetDuplicatePoints done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-bool Fields::checkFieldsCompatible(const Fields & other) const {
-  // Number of fields check
-  if (fset_.size() < other.fset_.size()) {
-    oops::Log::warning() << "checkFieldsCompatible: Fields 1 is not a superset of Fields 2"
-      << std::endl;
-    return false;
-  }
-
-  for (const auto & otherField : other.fset_) {
+  if (superset) {
     // Variables check
-    if (!fset_.has(otherField.name())) {
-      oops::Log::warning() << "checkFieldsCompatible: Fields do not contain the same variables"
-        << std::endl;
+    if (!(other.vars_ <= vars_)) {
+        oops::Log::warning() << "checkFieldsCompatible: this Fields is not a superset of the other "
+        << "Fields" << std::endl;
       return false;
     }
 
+    // List of fields to check
+    fieldsToCheck = other.fset_.field_names();
+  } else {
+    // Variables check
+    if (!(vars_ <= other.vars_)) {
+        oops::Log::warning() << "checkFieldsCompatible: this Fields is not a subset of the other "
+        << "Fields" << std::endl;
+      return false;
+    }
+
+    // List of fields to check
+    fieldsToCheck = fset_.field_names();
+  }
+
+  // Geometry checks
+  for (const auto & fieldName : fieldsToCheck) {
     // Levels check
-    const auto field = fset_[otherField.name()];
+    const auto field = fset_[fieldName];
+    const auto otherField = other.fset_[fieldName];
     if (field.shape(1) != otherField.shape(1)) {
-      oops::Log::warning() << "checkFieldsCompatible: Fields have differing levels" << std::endl;
+      oops::Log::warning() << "checkFieldsCompatible: the variable " << otherField.name() << " has "
+        << "a different number of levels in this Fields and in the other Fields" << std::endl;
       return false;
     }
 

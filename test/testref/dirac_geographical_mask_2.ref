@@ -1,0 +1,43 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927509e-02
+Norm of input parameter weight: 2.7604347483684521e+01
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 1.0000000000000002e+00
+    + mean   = 3.8403263318356295e-03
+    + stddev = 4.3679167168104889e-02

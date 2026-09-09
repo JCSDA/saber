@@ -388,6 +388,55 @@ saber_add_test( TARGET saber_dirac_ens_noloc_4d_2-1
                 TEST_DEPENDS saber_randomization_bump_nicas_L10L2_2-1
                              saber_randomization_bump_nicas_L10L2T18_2-1 )
 
+# dirac_geographical_mask_1
+saber_add_test( TARGET saber_dirac_geographical_mask_1_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_dirac_geographical_mask_1_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+saber_add_test( TARGET saber_dirac_geographical_mask_1_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_1.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+# dirac_geographical_mask_2
+saber_add_test( TARGET saber_dirac_geographical_mask_2_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_geographical_mask_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_geographical_mask_2_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_geographical_mask_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_geographical_mask_2_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_geographical_mask_2.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_geographical_mask_1_1-2 )
+
 # dirac_localization_bump_1
 saber_add_test( TARGET saber_dirac_localization_bump_1_1-1
                 MPI 1
