@@ -667,129 +667,103 @@ saber_add_test( TARGET saber_dirac_oops_ens_noloc_4d_2-1
                 TEST_DEPENDS saber_randomization_bump_nicas_L10L2_2-1
                              saber_randomization_bump_nicas_L10L2T18_2-1 )
 
-# dirac_shadowlevels_1
-saber_add_test( TARGET saber_dirac_shadowlevels_1_1-1
+# dirac_shadow_levels_1
+saber_add_test( TARGET saber_dirac_shadow_levels_1_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_1.yaml
+                ARGS testinput/dirac_shadow_levels_1.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_1_2-1
+saber_add_test( TARGET saber_dirac_shadow_levels_1_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_1.yaml
+                ARGS testinput/dirac_shadow_levels_1.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_1_1-2
+saber_add_test( TARGET saber_dirac_shadow_levels_1_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_1.yaml
+                ARGS testinput/dirac_shadow_levels_1.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-# dirac_shadowlevels_2
-saber_add_test( TARGET saber_dirac_shadowlevels_2_1-1
+# dirac_shadow_levels_2
+saber_add_test( TARGET saber_dirac_shadow_levels_2_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_2.yaml
+                ARGS testinput/dirac_shadow_levels_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_1-1 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_1-1 )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_2_2-1
+saber_add_test( TARGET saber_dirac_shadow_levels_2_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_2.yaml
+                ARGS testinput/dirac_shadow_levels_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_2-1 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_2-1 )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_2_1-2
+saber_add_test( TARGET saber_dirac_shadow_levels_2_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_2.yaml
+                ARGS testinput/dirac_shadow_levels_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_1-2 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_1-2 )
 
-# dirac_shadowlevels_3
-saber_add_test( TARGET saber_dirac_shadowlevels_3_1-1
+# dirac_shadow_levels_3
+saber_add_test( TARGET saber_dirac_shadow_levels_3_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_3.yaml
+                ARGS testinput/dirac_shadow_levels_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_1-1 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_1-1 )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_3_2-1
+saber_add_test( TARGET saber_dirac_shadow_levels_3_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_3.yaml
+                ARGS testinput/dirac_shadow_levels_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_2-1 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_2-1 )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_3_1-2
+saber_add_test( TARGET saber_dirac_shadow_levels_3_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_3.yaml
+                ARGS testinput/dirac_shadow_levels_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_1_1-2 )
+                TEST_DEPENDS saber_dirac_shadow_levels_1_1-2 )
 
-# dirac_shadowlevels_4
-saber_add_test( TARGET saber_dirac_shadowlevels_4_1-1
+# dirac_shadow_levels_4
+saber_add_test( TARGET saber_dirac_shadow_levels_4_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_4.yaml
+                ARGS testinput/dirac_shadow_levels_4.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_4_2-1
+saber_add_test( TARGET saber_dirac_shadow_levels_4_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_4.yaml
+                ARGS testinput/dirac_shadow_levels_4.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_dirac_shadowlevels_4_1-2
+saber_add_test( TARGET saber_dirac_shadow_levels_4_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_4.yaml
+                ARGS testinput/dirac_shadow_levels_4.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
-
-# dirac_shadowlevels_5
-saber_add_test( TARGET saber_dirac_shadowlevels_5_1-1
-                MPI 1
-                OMP 1
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_5.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_4_1-1 )
-
-saber_add_test( TARGET saber_dirac_shadowlevels_5_2-1
-                MPI 2
-                OMP 1
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_5.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_4_2-1 )
-
-saber_add_test( TARGET saber_dirac_shadowlevels_5_1-2
-                MPI 1
-                OMP 2
-                LABELS   tier2
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/dirac_shadowlevels_5.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_dirac_shadowlevels_4_1-2 )
 
 # dirac_stddev_1
 saber_add_test( TARGET saber_dirac_stddev_1_1-1
