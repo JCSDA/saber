@@ -7,8 +7,8 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 1.4120304998587970e-04
     + stddev = 1.1882888957904500e-02
-Norm of input parameter weight: 8.4154619599865256e+01
-       Independent levels:  1[11]
+Norm of input parameter weight: 8.4154619599908358e+01
+       Independent levels:  1[13]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
@@ -22,6 +22,8 @@ Norm of input parameter weight: 8.4154619599865256e+01
              Level   9 ~> 100.0%
              Level  10 ~> 100.0%
              Level  11 ~> 100.0%
+             Level  12 ~> 100.0%
+             Level  13 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Level   3 ~>  0.300E+01 vert. coord.
@@ -33,6 +35,36 @@ Norm of input parameter weight: 8.4154619599865256e+01
              Level   9 ~>  0.900E+01 vert. coord.
              Level  10 ~>  0.100E+02 vert. coord.
              Level  11 ~>  0.110E+02 vert. coord.
+             Level  12 ~>  0.120E+02 vert. coord.
+             Level  13 ~>  0.130E+02 vert. coord.
+       Independent levels:  1[8]
+          Subset Sc0 size:             7082
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Level   6 ~>  0.600E+01 vert. coord.
+             Level   7 ~>  0.700E+01 vert. coord.
+             Level   8 ~>  0.800E+01 vert. coord.
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -48,6 +80,6 @@ Covariance(SABER) * Increment:
   Fields:
   - snow_depth (1 levels):
     + min close to zero
-    + max    = 1.0000000000000002e+00
-    + mean   = 9.2311123890449782e-03
-    + stddev = 7.3759108450242528e-02
+    + max    = 1.0000000000000000e+00
+    + mean   = 9.9542562360063758e-03
+    + stddev = 7.6485509296824988e-02

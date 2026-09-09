@@ -7,9 +7,8 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 1.4120304998587970e-04
     + stddev = 1.1882888957904500e-02
-Norm of output parameter rv: 5.0492771759925468e+01
-Norm of output parameter weight: 8.4154619599865256e+01
-       Independent levels:  1[11]
+Norm of input parameter weight: 8.4154619599877037e+01
+       Independent levels:  1[13]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
@@ -23,6 +22,8 @@ Norm of output parameter weight: 8.4154619599865256e+01
              Level   9 ~> 100.0%
              Level  10 ~> 100.0%
              Level  11 ~> 100.0%
+             Level  12 ~> 100.0%
+             Level  13 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Level   3 ~>  0.300E+01 vert. coord.
@@ -34,17 +35,8 @@ Norm of output parameter weight: 8.4154619599865256e+01
              Level   9 ~>  0.900E+01 vert. coord.
              Level  10 ~>  0.100E+02 vert. coord.
              Level  11 ~>  0.110E+02 vert. coord.
-             Effective levels:   1 
-                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
-                Estimated nc1 from horizontal support radius:      261
-                   Decimate full grid, at least      261 points required,    2128 valid points found
-                   Subgrid hash:   1106927872
-                Final nc1:      261
-                Effective horizontal resolution:  3.99
-             nc1(  1) =                        261
-             ns =                              261
-             v%n_s =                             1
-             c%n_s[global] =                  3569
+             Level  12 ~>  0.120E+02 vert. coord.
+             Level  13 ~>  0.130E+02 vert. coord.
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -60,6 +52,6 @@ Covariance(SABER) * Increment:
   Fields:
   - snow_depth (1 levels):
     + min close to zero
-    + max    = 1.0000000000000002e+00
-    + mean   = 9.2311123890449782e-03
-    + stddev = 7.3759108450242528e-02
+    + max    = 1.0000000000000000e+00
+    + mean   = 8.6035541864911413e-03
+    + stddev = 7.3174553261972919e-02

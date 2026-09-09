@@ -1,3 +1,4 @@
+# Reading the shadow levels weights from the file created in dirac_shadow_levels_3, results should be identical
 geometry:
   function space: StructuredColumns
   grid:
@@ -16,8 +17,11 @@ geometry:
       meridional length: 12000.0e3
       height: 1.0
   - variables:
-    - snow_depth_shadowLevels
-    levels: 11
+    - snow_depth_shadowLevels_1
+    levels: 13
+  - variables:
+    - snow_depth_shadowLevels_2
+    levels: 8
   halo: 1
 background:
   date: 2010-01-01T12:00:00Z
@@ -33,23 +37,32 @@ background error:
         universe length-scale: 10000.0e3
       io:
         data directory: testdata
-        files prefix: dirac_shadowlevels_5/_MPI_-_OMP_
-        overriding nicas file: dirac_shadowlevels_4/_MPI_-_OMP__nicas
+        files prefix: dirac_shadow_levels_4/_MPI_-_OMP_
+        overriding nicas file: dirac_shadow_levels_3/_MPI_-_OMP__nicas
       drivers:
         multivariate strategy: univariate
         read local nicas: true
         adjoints test: true
       nicas:
         same horizontal convolution: true
+      grids:
+      - model:
+          variables: [snow_depth_shadowLevels_1]
+      - model:
+          variables: [snow_depth_shadowLevels_2]
   saber outer blocks:
   - saber block name: ShadowLevels
     read:
-      number of shadow levels: 11
-      input model files:
-      - parameter: weight
-        file:
-          overriding variables: [snow_depth_shadowLevels]
-          filepath: testdata/dirac_shadowlevels_4/_MPI_-_OMP__weight
+      groups:
+      - variables: [snow_depth]
+        number of shadow levels: 13
+        suffix: _shadowLevels_1
+      - variables: [snow_depth]
+        number of shadow levels: 8
+        suffix: _shadowLevels_2
+      input weight file:
+        overriding variables: [snow_depth_shadowLevels_1, snow_depth_shadowLevels_2]
+        filepath: testdata/dirac_shadow_levels_3/_MPI_-_OMP__weight
 dirac:
   lon:
   - 180.0
@@ -60,6 +73,6 @@ dirac:
   variable:
   - snow_depth
 output dirac:
-  filepath: testdata/dirac_shadowlevels_5/_MPI_-_OMP__dirac_%id%
+  filepath: testdata/dirac_shadow_levels_4/_MPI_-_OMP__dirac_%id%
 test:
-  reference filename: testref/dirac_shadowlevels_5.ref
+  reference filename: testref/dirac_shadow_levels_4.ref
