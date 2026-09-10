@@ -227,5 +227,15 @@ void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
 }
 // -----------------------------------------------------------------------------
 
+eckit::linalg::SparseMatrix AtlasInterpWrapper::getInterpolationMatrix() const {
+#ifdef ATLAS_MAKE_SPARSE
+  return atlas::linalg::make_eckit_sparse_matrix(
+      atlas::interpolation::MatrixCache(interp_).matrix());
+#else
+  return atlas::interpolation::MatrixCache(interp_).matrix();
+#endif
+}
+
 }  // namespace interpolation
+
 }  // namespace saber
