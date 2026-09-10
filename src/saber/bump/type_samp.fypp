@@ -172,6 +172,7 @@ contains
    procedure :: compute_mpi_c0c => samp_compute_mpi_c0c
    procedure :: compute_mpi_d => samp_compute_mpi_d
    procedure :: compute_mpi_e => samp_compute_mpi_e
+   procedure :: diag_filter_setup => samp_diag_filter_setup
    procedure :: diag_filter => samp_diag_filter
    procedure :: diag_fill => samp_diag_fill
    procedure :: c1_to_c1a => samp_c1_to_c1a
@@ -182,8 +183,19 @@ contains
    procedure :: c2_to_c2u => samp_c2_to_c2u
 end type samp_type
 
+! Diagnostic filtering derived type
+type samp_flt_type
+   real(kind_real) :: rflt                                !< Filtering radius the halo was built for
+   integer :: nc2f                                        !< Number of points in subset Sc2, halo F
+   integer,allocatable :: c2u_to_c2f(:)                   !< Subset Sc2, universe, to subset Sc2, halo F
+   integer,allocatable :: c2f_to_c2(:)                    !< Subset Sc2, halo F, to subset Sc2, global
+   type(com_type) :: com_c2_AF                            !< Communication between halos A and F (filtering) on subset Sc2
+contains
+   procedure :: dealloc => samp_flt_dealloc
+end type samp_flt_type
+
 private
-public :: samp_type
+public :: samp_type,samp_flt_type
 
 contains
 
@@ -2643,7 +2655,7 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ic2,ic2a,ic2u,iproc,ildwv,ic0a,nn_index(1)
+integer :: ic2,ic2a,ic2u,iproc,ildwv,ic0a,nn_index(1),nn,nnmax
 type(tree_type) :: tree
 
 ! Set name
@@ -2698,19 +2710,33 @@ call mpl%flush
 
 ! Find nearest neighbors
 
-! Allocation
-allocate(samp%nn_c2a_index(samp%nc2u,samp%nc2a))
-allocate(samp%nn_c2a_dist(samp%nc2u,samp%nc2a))
-allocate(samp%ldwv_to_c2a(nam%nldwv))
-
 ! Setup tree
 call tree%init(mpl,samp%nc2u,samp%lon_c2u,samp%lat_c2u)
 
-! Find nearest neighbors
+! Count nearest neighbors
+nnmax = 0
+!$omp parallel do private(ic2a,nn) reduction(max:nnmax)
 do ic2a=1,samp%nc2a
-   call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),samp%nc2u,samp%nn_c2a_index(:,ic2a), &
+   call tree%count_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nam%diag_rhflt,nn)
+   nnmax = max(nn,nnmax)
+end do
+!$omp end parallel do
+
+! Add extra point in neighborhood for safety
+nnmax = min(nnmax+1,samp%nc2u)
+
+! Allocation
+allocate(samp%nn_c2a_index(nnmax,samp%nc2a))
+allocate(samp%nn_c2a_dist(nnmax,samp%nc2a))
+allocate(samp%ldwv_to_c2a(nam%nldwv))
+
+! Find nearest neighbors
+!$omp parallel do private(ic2a)
+do ic2a=1,samp%nc2a
+   call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nnmax,samp%nn_c2a_index(:,ic2a), &
  & samp%nn_c2a_dist(:,ic2a))
 end do
+!$omp end parallel do
 
 do ildwv=1,nam%nldwv
    ! Initialization
@@ -3443,86 +3469,112 @@ call mpl%flush
 end subroutine samp_compute_mpi_e
 
 !----------------------------------------------------------------------
-! Subroutine: samp_diag_filter
-!> Filter diagnostics
+! Subroutine: samp_diag_filter_setup
+!> Setup diagnostic filtering halo
 !----------------------------------------------------------------------
-subroutine samp_diag_filter(samp,mpl,filter_type,rflt,diag_c2a,val_c2a)
+subroutine samp_diag_filter_setup(samp,mpl,rflt,flt)
 
 implicit none
 
 ! Passed variables
-class(samp_type),intent(in) :: samp                       !< Sampling
-type(mpl_type),intent(inout) :: mpl                       !< MPI data
-character(len=*),intent(in) :: filter_type                !< Filter type
-real(kind_real),intent(in) :: rflt                        !< Filter support radius
-real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      !< Filtered diagnostic
-real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) !< Useful value for filtering
+class(samp_type),intent(in) :: samp      !< Sampling
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+real(kind_real),intent(in) :: rflt       !< Filter support radius
+type(samp_flt_type),intent(inout) :: flt !< Diagnostic filtering data
 
 ! Local variables
-integer :: ic2,ic2a,nc2f,ic2f,ic2u,jc2u,nc2eff,ic2eff,kc2u,kc2f
-integer :: c2u_to_c2f(samp%nc2u)
-integer,allocatable :: c2f_to_c2(:),order(:)
-real(kind_real) :: distnorm,norm,wgt
-real(kind_real),allocatable :: diag_c2f(:),diag_eff(:),diag_eff_dist(:)
-real(kind_real),allocatable :: val_c2f(:),val_eff(:)
+integer :: ic2,ic2a,ic2f,ic2u,jc2u,kc2u
 logical :: lcheck_c2f(samp%nc2u)
-type(com_type) :: com_c2_AF
 
 ! Set name
-@:set_name(samp_diag_filter)
+@:set_name(samp_diag_filter_setup)
 
-if (rflt>zero) then
+! Copy filtering radius
+flt%rflt = rflt
+
+if (flt%rflt>zero) then
    ! Define halo F
    lcheck_c2f = .false.
    do ic2a=1,samp%nc2a
       ic2u = samp%c2a_to_c2u(ic2a)
       lcheck_c2f(ic2u) = .true.
       jc2u = 1
-      do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
+      do while (inf(samp%nn_c2a_dist(jc2u,ic2a),flt%rflt))
          kc2u = samp%nn_c2a_index(jc2u,ic2a)
          lcheck_c2f(kc2u) = .true.
          jc2u = jc2u+1
          if (jc2u>samp%nc2u) exit
       end do
    end do
-   nc2f = zss_count(lcheck_c2f)
+   flt%nc2f = zss_count(lcheck_c2f)
 
    ! Allocation
-   allocate(c2f_to_c2(nc2f))
+   allocate(flt%c2f_to_c2(flt%nc2f))
+   allocate(flt%c2u_to_c2f(samp%nc2u))
 
    ! Global-local conversion for halo F
-   c2u_to_c2f = mpl%msv%vali
+   flt%c2u_to_c2f = mpl%msv%vali
    ic2f = 0
    do ic2u=1,samp%nc2u
       if (lcheck_c2f(ic2u)) then
          ic2f = ic2f+1
          ic2 = samp%c2u_to_c2(ic2u)
-         c2f_to_c2(ic2f) = ic2
-         c2u_to_c2f(ic2u) = ic2f
+         flt%c2f_to_c2(ic2f) = ic2
+         flt%c2u_to_c2f(ic2u) = ic2f
       end if
    end do
 
    ! Setup communications
-   call com_c2_AF%setup(mpl,'com_c2_AF',samp%nc2a,nc2f,samp%nc2,samp%c2a_to_c2,c2f_to_c2)
+   call flt%com_c2_AF%setup(mpl,'com_c2_AF',samp%nc2a,flt%nc2f,samp%nc2,samp%c2a_to_c2,flt%c2f_to_c2)
+end if
 
+end subroutine samp_diag_filter_setup
+
+!----------------------------------------------------------------------
+! Subroutine: samp_diag_filter
+!> Filter diagnostics
+!----------------------------------------------------------------------
+subroutine samp_diag_filter(samp,mpl,flt,filter_type,diag_c2a,val_c2a)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(in) :: samp                       !< Sampling
+type(mpl_type),intent(inout) :: mpl                       !< MPI data
+type(samp_flt_type),intent(in) :: flt                     !< Diagnostic filtering data
+character(len=*),intent(in) :: filter_type                !< Filter type
+real(kind_real),intent(inout) :: diag_c2a(samp%nc2a)      !< Filtered diagnostic
+real(kind_real),intent(in),optional :: val_c2a(samp%nc2a) !< Useful value for filtering
+
+! Local variables
+integer :: ic2a,jc2u,nc2eff,ic2eff,kc2u,kc2f
+integer,allocatable :: order(:)
+real(kind_real) :: distnorm,norm,wgt
+real(kind_real),allocatable :: diag_c2f(:),diag_eff(:),diag_eff_dist(:)
+real(kind_real),allocatable :: val_c2f(:),val_eff(:)
+
+! Set name
+@:set_name(samp_diag_filter)
+
+if (flt%rflt>zero) then
    ! Allocation
-   allocate(diag_c2f(nc2f))
-   if (present(val_c2a)) allocate(val_c2f(nc2f))
+   allocate(diag_c2f(flt%nc2f))
+   if (present(val_c2a)) allocate(val_c2f(flt%nc2f))
 
    ! Halo extension
-   call com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
-   if (present(val_c2a)) call com_c2_AF%ext(mpl,val_c2a,val_c2f)
+   call flt%com_c2_AF%ext(mpl,diag_c2a,diag_c2f)
+   if (present(val_c2a)) call flt%com_c2_AF%ext(mpl,val_c2a,val_c2f)
 
-   !!$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), & ! TODO: buggy with PGI
-   !!$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
+   !$omp parallel do schedule(static) private(ic2a,nc2eff,ic2eff,jc2u,kc2u,kc2f,distnorm,norm,wgt), &
+   !$omp&                             firstprivate(diag_eff,diag_eff_dist,val_eff,order)
    do ic2a=1,samp%nc2a
       ! Count involved points
       nc2eff = 0
       jc2u = 1
-      do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
+      do while (inf(samp%nn_c2a_dist(jc2u,ic2a),flt%rflt))
          ! Check the point validity
          kc2u = samp%nn_c2a_index(jc2u,ic2a)
-         kc2f = c2u_to_c2f(kc2u)
+         kc2f = flt%c2u_to_c2f(kc2u)
          if (mpl%msv%isnot(diag_c2f(kc2f))) nc2eff = nc2eff+1
          jc2u = jc2u+1
          if (jc2u>samp%nc2u) exit
@@ -3537,10 +3589,10 @@ if (rflt>zero) then
          ! Build diag_eff of valid points
          ic2eff = 0
          jc2u = 1
-         do while (inf(samp%nn_c2a_dist(jc2u,ic2a),rflt))
+         do while (inf(samp%nn_c2a_dist(jc2u,ic2a),flt%rflt))
             ! Check the point validity
             kc2u = samp%nn_c2a_index(jc2u,ic2a)
-            kc2f = c2u_to_c2f(kc2u)
+            kc2f = flt%c2u_to_c2f(kc2u)
             if (mpl%msv%isnot(diag_c2f(kc2f))) then
                ic2eff = ic2eff+1
                diag_eff(ic2eff) = diag_c2f(kc2f)
@@ -3561,7 +3613,7 @@ if (rflt>zero) then
             diag_c2a(ic2a) = zero
             norm = zero
             do ic2eff=1,nc2eff
-               distnorm = diag_eff_dist(ic2eff)/rflt
+               distnorm = diag_eff_dist(ic2eff)/flt%rflt
                wgt = fit_func(mpl,'hor',distnorm)
                diag_c2a(ic2a) = diag_c2a(ic2a)+wgt*diag_eff(ic2eff)
                norm = norm+wgt
@@ -3597,11 +3649,9 @@ if (rflt>zero) then
          diag_c2a(ic2a) = mpl%msv%valr
       end if
    end do
-   !!$omp end parallel do
+   !$omp end parallel do
 
    ! Release memory
-   deallocate(c2f_to_c2)
-   call com_c2_AF%dealloc
    deallocate(diag_c2f)
    if (present(val_c2a)) deallocate(val_c2f)
 end if
@@ -3622,8 +3672,11 @@ type(mpl_type),intent(inout) :: mpl                  !< MPI data
 real(kind_real),intent(inout) :: diag_c2a(samp%nc2a) !< Filtered diagnostic
 
 ! Local variables
-integer :: nmsr,ic2a,jc2u,kc2u
-real(kind_real),allocatable :: diag_c2u(:)
+integer :: nmsr,ic2a,ic2u,jc2u,kc2u,nvalid
+integer :: nn_index(1)
+integer,allocatable :: valid_to_c2u(:)
+real(kind_real),allocatable :: diag_c2u(:),lon(:),lat(:)
+type(tree_type) :: tree
 
 ! Set name
 @:set_name(samp_diag_fill)
@@ -3636,25 +3689,69 @@ else
 end if
 call mpl%f_comm%allreduce(nmsr,fckit_mpi_sum())
 
-if (nmsr==samp%nc2) then
+if (nmsr==0) then
+   ! All points are valid, do nothing
+elseif (nmsr==samp%nc2) then
    ! All points are missing, do nothing
-elseif (nmsr>0) then
+else
    ! Allocation
    allocate(diag_c2u(samp%nc2u))
 
    ! Halo extension
    call samp%com_c2_AU%ext(mpl,diag_c2a,diag_c2u)
 
-   ! Fill points
-   do ic2a=1,samp%nc2a
-      jc2u = 1
-      do while (mpl%msv%is(diag_c2a(ic2a)))
-         kc2u = samp%nn_c2a_index(jc2u,ic2a)
-         if (mpl%msv%isnot(diag_c2u(kc2u))) diag_c2a(ic2a) = diag_c2u(kc2u)
-         jc2u = jc2u+1
-         if (jc2u>samp%nc2u) exit
+   ! Count non-missing points in universe
+   nvalid = zss_count(mpl%msv%isnot(diag_c2u))
+
+   if (nvalid>0) then
+      ! Fill points with existing nn_c2a_index (in a nam%diag_rhflt radius)
+      do ic2a=1,samp%nc2a
+         jc2u = 1
+         do while (mpl%msv%is(diag_c2a(ic2a)))
+            kc2u = samp%nn_c2a_index(jc2u,ic2a)
+            if (mpl%msv%isnot(diag_c2u(kc2u))) diag_c2a(ic2a) = diag_c2u(kc2u)
+            jc2u = jc2u+1
+            if (jc2u>samp%nc2u) exit
+         end do
       end do
-   end do
+
+      ! Deal with residual missing points
+      if (zss_count(mpl%msv%is(diag_c2a))>0) then
+         ! Allocation
+         allocate(lon(nvalid))
+         allocate(lat(nvalid))
+         allocate(valid_to_c2u(nvalid))
+
+         ! Initialization
+         nvalid = 0
+         do ic2u=1,samp%nc2u
+            if (mpl%msv%isnot(diag_c2u(ic2u))) then
+               nvalid = nvalid+1
+               lon(nvalid) = samp%lon_c2u(ic2u)
+               lat(nvalid) = samp%lat_c2u(ic2u)
+               valid_to_c2u(nvalid) = ic2u
+            end if
+         end do
+
+         ! Setup tree over non-missing points in universe
+         call tree%init(mpl,nvalid,lon,lat)
+
+         ! Find nearest non-missing neighbor
+         do ic2a=1,samp%nc2a
+            call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),1,nn_index)
+            ic2u = valid_to_c2u(nn_index(1))
+            diag_c2a(ic2a) = diag_c2u(ic2u)
+         end do
+
+         ! Release memory
+         deallocate(lon)
+         deallocate(lat)
+         deallocate(valid_to_c2u)
+         call tree%dealloc
+      end if
+   else
+      ! All universe points are missing, do nothing
+   end if
 
    ! Release memory
    deallocate(diag_c2u)
@@ -3799,5 +3896,25 @@ integer :: ic2u
 ic2u = cx_to_cxu(samp%nproc,samp%proc_to_c2_offset,samp%proc_to_nc2a,samp%myuniverse,ic2)
 
 end function samp_c2_to_c2u
+
+!----------------------------------------------------------------------
+! Subroutine: samp_flt_dealloc
+!> Release diagnostic filtering data
+!----------------------------------------------------------------------
+subroutine samp_flt_dealloc(flt)
+
+implicit none
+
+! Passed variables
+class(samp_flt_type),intent(inout) :: flt !< Diagnostic filtering data
+
+! Set name
+@:set_name(samp_flt_dealloc)
+
+if (allocated(flt%c2u_to_c2f)) deallocate(flt%c2u_to_c2f)
+if (allocated(flt%c2f_to_c2)) deallocate(flt%c2f_to_c2)
+call flt%com_c2_AF%dealloc
+
+end subroutine samp_flt_dealloc
 
 end module type_samp

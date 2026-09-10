@@ -19,7 +19,7 @@ use type_diag_blk, only: diag_blk_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_samp, only: samp_type
+use type_samp, only: samp_type,samp_flt_type
 
 implicit none
 
@@ -176,6 +176,7 @@ real(kind_real) :: a_tot
 real(kind_real),allocatable :: a_c2a(:,:,:),rh_c2a(:,:,:),D11_c2a(:,:,:),D22_c2a(:,:,:),D12_c2a(:,:,:),rv_c2a(:,:,:)
 real(kind_real),allocatable :: hyb_coef_1_c2a(:,:),hyb_coef_2_c2a(:,:)
 logical :: lhyb_coef_only
+type(samp_flt_type) :: flt
 
 ! Set name
 @:set_name(diag_filter)
@@ -188,6 +189,9 @@ if (nam%local_diag) then
    ! Horizontal filtering
    write(mpl%info,'(a10,a)') '','Horizontal filtering:'
    call mpl%flush
+
+   ! Setup the filtering halo
+   call samp%diag_filter_setup(mpl,nam%diag_rhflt,flt)
 
    do ig=1,nam%ng
       write(mpl%info,'(a13,a,a)') '','Block ',trim(nam%group_names(ig))
@@ -270,27 +274,27 @@ if (nam%local_diag) then
          if (nam%diag_rhflt>zero) then
             ! Median filter to remove extreme values, average filter to smooth data
             if (lhyb_coef_only) then
-               call samp%diag_filter(mpl,'median',nam%diag_rhflt,hyb_coef_1_c2a(:,il0))
-               call samp%diag_filter(mpl,'average',nam%diag_rhflt,hyb_coef_1_c2a(:,il0))
-               call samp%diag_filter(mpl,'median',nam%diag_rhflt,hyb_coef_2_c2a(:,il0))
-               call samp%diag_filter(mpl,'average',nam%diag_rhflt,hyb_coef_2_c2a(:,il0))
+               call samp%diag_filter(mpl,flt,'median',hyb_coef_1_c2a(:,il0))
+               call samp%diag_filter(mpl,flt,'average',hyb_coef_1_c2a(:,il0))
+               call samp%diag_filter(mpl,flt,'median',hyb_coef_2_c2a(:,il0))
+               call samp%diag_filter(mpl,flt,'average',hyb_coef_2_c2a(:,il0))
             else
                do icmp=1,diag%blk(0,ig)%ncmp
-                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,a_c2a(:,il0,icmp))
-                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,a_c2a(:,il0,icmp))
+                  call samp%diag_filter(mpl,flt,'median',a_c2a(:,il0,icmp))
+                  call samp%diag_filter(mpl,flt,'average',a_c2a(:,il0,icmp))
                   if (nam%nc4==1) then
-                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,rh_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,rh_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'median',rh_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'average',rh_c2a(:,il0,icmp))
                   else
-                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D11_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D11_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D22_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D22_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'median',nam%diag_rhflt,D12_c2a(:,il0,icmp))
-                     call samp%diag_filter(mpl,'average',nam%diag_rhflt,D12_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'median',D11_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'average',D11_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'median',D22_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'average',D22_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'median',D12_c2a(:,il0,icmp))
+                     call samp%diag_filter(mpl,flt,'average',D12_c2a(:,il0,icmp))
                   end if
-                  call samp%diag_filter(mpl,'median',nam%diag_rhflt,rv_c2a(:,il0,icmp))
-                  call samp%diag_filter(mpl,'average',nam%diag_rhflt,rv_c2a(:,il0,icmp))
+                  call samp%diag_filter(mpl,flt,'median',rv_c2a(:,il0,icmp))
+                  call samp%diag_filter(mpl,flt,'average',rv_c2a(:,il0,icmp))
                end do
             end if
          end if
@@ -360,6 +364,9 @@ if (nam%local_diag) then
          deallocate(rv_c2a)
       end if
    end do
+
+   ! Release memory
+   call flt%dealloc
 end if
 
 if (nam%diag_rvflt>zero) then
@@ -915,6 +922,7 @@ do ig=1,nam%ng
    ! Initialization
    call mpl%prog_init(diag%nc2a+1)
 
+   !$omp parallel do schedule(dynamic) private(ic2a) shared(diag,avg,nam,geom,ig)
    do ic2a=0,diag%nc2a
       ! Copy correlation
       diag%blk(ic2a,ig)%raw = avg%grp(ic2a,ig)%cor
@@ -926,6 +934,7 @@ do ig=1,nam%ng
       ! Update
       call mpl%prog_print(ic2a+1)
    end do
+   !$omp end parallel do
    call mpl%prog_final
 end do
 
@@ -1052,6 +1061,7 @@ else
       ! Initialization
       call mpl%prog_init(diag%nc2a+1)
 
+      !$omp parallel do schedule(dynamic) private(ic2a) shared(diag,avg,cor,nam,geom,ne,ig)
       do ic2a=0,diag%nc2a
          ! Compute localization
          call diag%blk(ic2a,ig)%localization(mpl,nam,geom,avg%grp(ic2a,ig),cor%blk(ic2a,ig),ne)
@@ -1062,6 +1072,7 @@ else
          ! Update
          call mpl%prog_print(ic2a+1)
       end do
+      !$omp end parallel do
       call mpl%prog_final
    end do
 
