@@ -302,4 +302,112 @@ void OuterBlockChain::testLastOuterBlock(const eckit::Configuration & conf,
 
 // -----------------------------------------------------------------------------
 
+const oops::GeometryData & OuterBlockChain::innerGeometryData() const {
+  if (outerBlocks_.back().second) {
+    // Right-inverse mode
+    return outerBlocks_.back().first->outerGeometryData();
+  } else {
+    // Direct mode
+    return outerBlocks_.back().first->innerGeometryData();
+  }
+}
+
+const oops::Variables & OuterBlockChain::innerVars() const {
+  if (outerBlocks_.back().second) {
+    // Right-inverse mode
+    return outerBlocks_.back().first->outerVars();
+  } else {
+    // Direct modes
+    return outerBlocks_.back().first->innerVars();
+  }
+}
+
+void OuterBlockChain::applyOuterBlocks(oops::FieldSet3D & fset3d) const {
+  for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
+    if (it->second) {
+      // Right-inverse mode
+      it->first.get()->rightInverseMultiply(fset3d);
+    } else {
+      // Direct mode
+      it->first.get()->multiply(fset3d);
+    }
+  }
+}
+
+void OuterBlockChain::applyOuterBlocksAD(oops::FieldSet3D & fset3d) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->second) {
+      // Right-inverse mode
+      throw eckit::Exception("not implemented yet, but it should be", Here());
+    } else {
+      // Direct mode
+      it->first.get()->multiplyAD(fset3d);
+    }
+  }
+}
+
+void OuterBlockChain::applyOuterBlocks(oops::FieldSet4D & fset4d) const {
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    this->applyOuterBlocks(fset4d[jtime]);
+  }
+}
+
+void OuterBlockChain::applyOuterBlocksAD(oops::FieldSet4D & fset4d) const {
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    this->applyOuterBlocksAD(fset4d[jtime]);
+  }
+}
+
+void OuterBlockChain::leftInverseMultiply(oops::FieldSet3D & fset) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        it->first.get()->multiply(fset);
+      } else {
+        // Direct mode
+        it->first->leftInverseMultiply(fset);
+      }
+    }
+  }
+}
+
+void OuterBlockChain::rightInverseMultiply(oops::FieldSet3D & fset) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: right inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        throw eckit::Exception("no right inverse available in right inverse mode", Here());
+      } else {
+        // Direct mode
+        it->first.get()->rightInverseMultiply(fset);
+      }
+    }
+  }
+}
+
+void OuterBlockChain::leftInverseMultiplyExceptLast(oops::FieldSet3D & fset) const {
+  // Outer blocks left inverse multiplication
+  for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        it->first.get()->multiply(fset);
+      } else {
+        // Direct mode
+        it->first.get()->leftInverseMultiply(fset);
+      }
+    }
+  }
+}
+
 }  // namespace saber
