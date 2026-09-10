@@ -25,8 +25,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/interface/ModelData.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/vader/DefaultCookbook.h"
 
@@ -37,32 +37,32 @@ namespace saber {
 /// Chain of outer saber blocks (no central block). Can be used as the common
 /// outer blocks for the hybrid covariance, outer blocks for static and ensemble
 /// covariances, ensemble transform for the ensemble covariance.
-class SaberOuterBlockChain {
+class OuterBlockChain {
  public:
   /// @brief Standard constructor using MODEL geometry
   template<typename MODEL>
-  SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Variables & outerVars,
-                       oops::FieldSet4D & fset4dXb,
-                       oops::FieldSet4D & fset4dFg,
-                       const eckit::Configuration & conf,
-                       const std::vector<SaberOuterBlockParametersWrapper> & params,
-                       std::shared_ptr<oops::FieldSets> fsetEns = NULL,
-                       const bool & centralDirectCalibration = false);
+  OuterBlockChain(const oops::Geometry<MODEL> & geom,
+                  const oops::Variables & outerVars,
+                  oops::FieldSet4D & fset4dXb,
+                  oops::FieldSet4D & fset4dFg,
+                  const eckit::Configuration & conf,
+                  const std::vector<OuterBlockParametersWrapper> & params,
+                  std::shared_ptr<oops::FieldSets> fsetEns = NULL,
+                  const bool & centralDirectCalibration = false);
   /// @brief Alternative constructor using only generic GeometryData
-  SaberOuterBlockChain(const oops::GeometryData & outerGeometryData,
-                       const oops::Variables & outerVars,
-                       oops::FieldSet4D & fset4dXb,
-                       oops::FieldSet4D & fset4dFg,
-                       const eckit::Configuration & conf,
-                       const std::vector<SaberOuterBlockParametersWrapper> & params);
+  OuterBlockChain(const oops::GeometryData & outerGeometryData,
+                  const oops::Variables & outerVars,
+                  oops::FieldSet4D & fset4dXb,
+                  oops::FieldSet4D & fset4dFg,
+                  const eckit::Configuration & conf,
+                  const std::vector<OuterBlockParametersWrapper> & params);
 
-  ~SaberOuterBlockChain() = default;
+  ~OuterBlockChain() = default;
 
   // Accessors
   // TODO(AS): this should be const (currently used to add ens transform blocks
-  // to the outer blocks in SaberEnsembleBlockChain)
-  std::vector<std::pair<std::shared_ptr<SaberOuterBlockBase>, bool>> & outerBlocks()
+  // to the outer blocks in EnsembleBlockChain)
+  std::vector<std::pair<std::shared_ptr<OuterBlockBase>, bool>> & outerBlocks()
     {return outerBlocks_;}
 
   /// @brief Returns inner-most geometry data.
@@ -180,10 +180,10 @@ class SaberOuterBlockChain {
  private:
   /// @brief Initialize outer block, and return tuple of current outer variables,
   ///        saber block parameters and active variables
-  std::tuple<const SaberBlockParametersBase&,
+  std::tuple<const BlockParametersBase&,
              oops::Variables,
              oops::Variables>
-     initBlock(const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper,
+     initBlock(const OuterBlockParametersWrapper & saberOuterBlockParamWrapper,
                const eckit::Configuration & outerBlockConf,
                const oops::GeometryData & outerGeometryData,
                const oops::Variables & outerVars,
@@ -225,15 +225,14 @@ class SaberOuterBlockChain {
 
   /// @brief Interpolate fields in background and first guess if inner and outer
   ///        geometryData are different. Used in constructors.
-  void interpolateStates(
-          const SaberBlockParametersBase & saberOuterBlockParams,
-          const oops::GeometryData & outerGeometryData,
-          oops::FieldSet4D & fset4dXb,
-          oops::FieldSet4D & fset4dFg) const;
+  void interpolateStates(const BlockParametersBase & saberOuterBlockParams,
+                         const oops::GeometryData & outerGeometryData,
+                         oops::FieldSet4D & fset4dXb,
+                         oops::FieldSet4D & fset4dFg) const;
 
   /// @brief Inverse and adjoint test for last outer block. Used in constructors.
   void testLastOuterBlock(const eckit::Configuration & conf,
-                          const SaberBlockParametersBase & saberOuterBlockParams,
+                          const BlockParametersBase & saberOuterBlockParams,
                           const oops::GeometryData & outerGeometryData,
                           const oops::Variables & outerVars,
                           const oops::Variables & activeVars) const;
@@ -243,21 +242,21 @@ class SaberOuterBlockChain {
   /// - false: direct mode
   /// TODO(AS): Need to expand this to create different outer blocks for different
   /// times for the 4D with multiple times on one MPI task.
-  std::vector<std::pair<std::shared_ptr<SaberOuterBlockBase>, bool>> outerBlocks_;
+  std::vector<std::pair<std::shared_ptr<OuterBlockBase>, bool>> outerBlocks_;
 };
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Variables & outerVars,
-                       oops::FieldSet4D & fset4dXb,
-                       oops::FieldSet4D & fset4dFg,
-                       const eckit::Configuration & conf,
-                       const std::vector<saber::SaberOuterBlockParametersWrapper> & params,
-                       std::shared_ptr<oops::FieldSets> fsetEns,
-                       const bool & centralDirectCalibration) {
-  oops::Log::trace() << "SaberOuterBlockChain ctor starting" << std::endl;
+OuterBlockChain::OuterBlockChain(const oops::Geometry<MODEL> & geom,
+                                 const oops::Variables & outerVars,
+                                 oops::FieldSet4D & fset4dXb,
+                                 oops::FieldSet4D & fset4dFg,
+                                 const eckit::Configuration & conf,
+                                 const std::vector<saber::OuterBlockParametersWrapper> & params,
+                                 std::shared_ptr<oops::FieldSets> fsetEns,
+                                 const bool & centralDirectCalibration) {
+  oops::Log::trace() << "OuterBlockChain ctor starting" << std::endl;
   oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
 
   // In addition to other configuration option pass model data information for vader
@@ -269,7 +268,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
   outerBlockConf.set("vader", modelDataConf);
 
   // Copy vector of parameters
-  std::vector<SaberOuterBlockParametersWrapper> innerParams = params;
+  std::vector<OuterBlockParametersWrapper> innerParams = params;
 
   // Flag to check if the MODEL geometry is still valid
   bool validModelGeom = true;
@@ -285,11 +284,11 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                currentOuterVars,
                activeVars]
             = initBlock(params[jb],
-                          outerBlockConf,
-                          currentOuterGeometryData,
-                          outerVars,
-                          fset4dXb,
-                          fset4dFg);
+                        outerBlockConf,
+                        currentOuterGeometryData,
+                        outerVars,
+                        fset4dXb,
+                        fset4dFg);
 
     // Update MODEL geometry validity, by checking whether the inner geometry data returned by
     // the last outer block shares the same reference as its own outer geometry data
@@ -329,10 +328,10 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       // when either the central block or an inner outer block needs a direct calibration,
       // or if the final ensemble output is required
       bool applyLeftInverse = centralDirectCalibration;
-      for (const auto & innerSaberOuterBlockParamWrapper : innerParams) {
-        const SaberBlockParametersBase & innerSaberOuterBlockParams =
-          innerSaberOuterBlockParamWrapper.saberOuterBlockParameters;
-        applyLeftInverse = applyLeftInverse || innerSaberOuterBlockParams.doCalibration();
+      for (const auto & innerOuterBlockParamWrapper : innerParams) {
+        const BlockParametersBase & innerOuterBlockParams =
+          innerOuterBlockParamWrapper.saberOuterBlockParameters;
+        applyLeftInverse = applyLeftInverse || innerOuterBlockParams.doCalibration();
       }
 
       if (applyLeftInverse) {
@@ -364,20 +363,19 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        currentOuterVars,
                        activeVars);
   }
-  oops::Log::trace() << "SaberOuterBlockChain ctor done" << std::endl;
+  oops::Log::trace() << "OuterBlockChain ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SaberOuterBlockChain::calibrateBlock(
-            const eckit::Configuration & conf,
-            const oops::FieldSet4D & fset4dXb,
-            const oops::Geometry<MODEL> & geom,
-            const bool & validModelGeom,
-            const oops::Variables & outerVars,
-            const oops::Variables & currentOuterVars,
-            oops::FieldSets & fsetEns) {
+void OuterBlockChain::calibrateBlock(const eckit::Configuration & conf,
+                                     const oops::FieldSet4D & fset4dXb,
+                                     const oops::Geometry<MODEL> & geom,
+                                     const bool & validModelGeom,
+                                     const oops::Variables & outerVars,
+                                     const oops::Variables & currentOuterVars,
+                                     oops::FieldSets & fsetEns) {
   oops::Log::trace() << "calibrateBlock starting" << std::endl;
 
   if (conf.getBool("iterative ensemble loading", false)) {

@@ -20,7 +20,7 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -28,7 +28,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SuperMoistIncrOp>
+static OuterBlockMaker<SuperMoistIncrOp>
   makerSuperMoistIncrOp_("mo_super_mio");
 
 // -----------------------------------------------------------------------------
@@ -39,7 +39,7 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),

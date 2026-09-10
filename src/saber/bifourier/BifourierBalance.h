@@ -17,8 +17,8 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
@@ -89,8 +89,8 @@ class BifourierBalanceRowParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class BifourierBalanceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierBalanceParameters, SaberBlockParametersBase)
+class BifourierBalanceParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierBalanceParameters, BlockParametersBase)
 
  public:
   // Read parameters
@@ -115,7 +115,7 @@ class BifourierBalanceParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierBalance : public SaberOuterBlockBase {
+class BifourierBalance : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierBalance";}

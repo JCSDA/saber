@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
@@ -73,8 +73,8 @@ class ShadowLevelsParametersBase : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class ShadowLevelsParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParameters, SaberBlockParametersBase)
+class ShadowLevelsParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<ShadowLevelsParametersBase> read{"read", this};
@@ -85,7 +85,7 @@ class ShadowLevelsParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class ShadowLevels : public SaberOuterBlockBase {
+class ShadowLevels : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::generic::ShadowLevels";}

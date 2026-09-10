@@ -14,14 +14,14 @@
 #include "oops/base/Variable.h"
 
 #include "saber/bifourier/BifourierCovarianceImpl.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierCovarianceSqrt : public SaberOuterBlockBase {
+class BifourierCovarianceSqrt : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierCovarianceSqrt";}

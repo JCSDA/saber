@@ -23,7 +23,7 @@
 #include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/movader_covstats_interface.h"
@@ -186,7 +186,7 @@ void eval_moisture_control_traj(atlas::FieldSet & fields) {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<MoistureControl> makerMoistureControlBlock_("mo_moisture_control");
+static OuterBlockMaker<MoistureControl> makerMoistureControlBlock_("mo_moisture_control");
 
 // -----------------------------------------------------------------------------
 
@@ -196,7 +196,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

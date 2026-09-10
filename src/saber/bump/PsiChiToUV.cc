@@ -22,7 +22,7 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
+static OuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 
 // -----------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars)),
     activeVars_(createActiveVars(innerVars_, outerVars)),

@@ -17,16 +17,16 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralConverterParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierSpectralConverterParameters, SaberBlockParametersBase)
+class BifourierSpectralConverterParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierSpectralConverterParameters, BlockParametersBase)
 
  public:
   // Background variable used to define the inner grid-poind function space
@@ -52,7 +52,7 @@ class BifourierSpectralConverterParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralConverter : public SaberOuterBlockBase {
+class BifourierSpectralConverter : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierSpectralConverter";}

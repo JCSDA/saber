@@ -18,17 +18,17 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierIDParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierIDParameters, SaberBlockParametersBase)
+class BifourierIDParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierIDParameters, BlockParametersBase)
 
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}
@@ -36,7 +36,7 @@ class BifourierIDParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierID : public SaberCentralBlockBase {
+class BifourierID : public CentralBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierID";}

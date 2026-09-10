@@ -14,7 +14,7 @@
 
 #include "atlas/field.h"
 
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 #include "saber/diffusion/DiffusionImpl.h"
 #include "saber/diffusion/DiffusionParameters.h"
 
@@ -30,7 +30,7 @@ namespace saber {
 /// The diffusion based correlation/localization saber central block. Diffusion (explicit
 /// diffusion in this case) is best for small correlation lengths. If you have large
 /// lengths, you're better off using BUMP_NICAS.
-class Diffusion : public saber::SaberCentralBlockBase {
+class Diffusion : public saber::CentralBlockBase {
  public:
   static const std::string classname() { return "saber::Diffusion"; }
   typedef DiffusionParameters Parameters_;

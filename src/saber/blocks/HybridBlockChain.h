@@ -30,9 +30,9 @@
 #include "oops/util/parameters/ConfigurationParameter.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberBlockChainBase.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/BlockChainBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
@@ -71,12 +71,12 @@ class ComponentParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class SaberHybridBlockChainParameters: public ErrorCovarianceParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SaberHybridBlockChainParameters,
+class HybridBlockChainParameters: public ErrorCovarianceParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HybridBlockChainParameters,
                            ErrorCovarianceParametersBase)
  public:
   // Optional outer blocks
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
   // Vector of components
   oops::RequiredParameter<std::vector<ComponentParameters>> components{"components", this};
@@ -98,14 +98,14 @@ class SaberHybridBlockChainParameters: public ErrorCovarianceParametersBase {
 
 /// Hybrid covariance block chain implementation
 template<typename MODEL>
-class SaberHybridBlockChain : public SaberBlockChainBase {
+class HybridBlockChain : public BlockChainBase {
  public:
-  SaberHybridBlockChain(const oops::Geometry<MODEL> & geom,
-                        const oops::Variables & outerVars,
-                        oops::FieldSet4D & fset4dXb,
-                        oops::FieldSet4D & fset4dFg,
-                        const eckit::Configuration & conf);
-  ~SaberHybridBlockChain() = default;
+  HybridBlockChain(const oops::Geometry<MODEL> & geom,
+                   const oops::Variables & outerVars,
+                   oops::FieldSet4D & fset4dXb,
+                   oops::FieldSet4D & fset4dFg,
+                   const eckit::Configuration & conf);
+  ~HybridBlockChain() = default;
 
   /// @brief Randomize the increment according to this hybrid B matrix.
   void randomize(oops::FieldSet4D &) const override;
@@ -141,9 +141,9 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
   const oops::Variables outerVariables_;
 
   /// Chain of outer blocks applied to all components of hybrid covariances.
-  std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
+  std::unique_ptr<OuterBlockChain> outerBlockChain_;
   /// Vector of hybrid B components.
-  std::vector<std::unique_ptr<SaberBlockChainBase>> hybridBlockChain_;
+  std::vector<std::unique_ptr<BlockChainBase>> hybridBlockChain_;
   /// Vector of scalar weights for hybrid B components.
   std::vector<double> hybridScalarWeightSqrt_;
   /// Vector of field weights for hybrid B components.
@@ -165,19 +165,19 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Variables & outerVars,
-                       oops::FieldSet4D & fset4dXb,
-                       oops::FieldSet4D & fset4dFg,
-                       const eckit::Configuration & conf)
+HybridBlockChain<MODEL>::HybridBlockChain(const oops::Geometry<MODEL> & geom,
+                                          const oops::Variables & outerVars,
+                                          oops::FieldSet4D & fset4dXb,
+                                          oops::FieldSet4D & fset4dFg,
+                                          const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
     parallelHybrid_(false), myComponent_(0),
     redistributionMethod_{""}
 {
-  oops::Log::trace() << "SaberHybridBlockChain ctor starting" << std::endl;
+  oops::Log::trace() << "HybridBlockChain ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
-  SaberHybridBlockChainParameters params;
+  HybridBlockChainParameters params;
   params.deserialize(conf);
   eckit::LocalConfiguration fullConf;
   params.serialize(fullConf);
@@ -191,7 +191,7 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
 
   // Build common (for all hybrid components) outer blocks if they exist
   if (params.saberOuterBlocksParams.value()) {
-    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
+    outerBlockChain_ = std::make_unique<OuterBlockChain>(geom, outerVariables_,
                           fset4dXb, fset4dFg, fullConf,
                           *params.saberOuterBlocksParams.value());
     currentOuterVars = outerBlockChain_->innerVars();
@@ -342,7 +342,7 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
 
     // Add block chain
     hybridBlockChain_.push_back(
-        SaberBlockChainFactory<MODEL>::create
+        BlockChainFactory<MODEL>::create
          (*localHybridGeom_,
           cmpOuterVars,
           localFset4dXb,
@@ -392,7 +392,7 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
 
       // Add block chain
       hybridBlockChain_.push_back
-          (SaberBlockChainFactory<MODEL>::create
+          (BlockChainFactory<MODEL>::create
            (*hybridGeom,
             cmpOuterVars,
             fset4dXb,
@@ -402,15 +402,15 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
     ASSERT(hybridBlockChain_.size() > 0);
   }
 
-  oops::Log::trace() << "SaberHybridBlockChain ctor done" << std::endl;
+  oops::Log::trace() << "HybridBlockChain ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SaberHybridBlockChain<MODEL>::randomize(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "SaberHybridBlockChain::randomize starting" << std::endl;
-  util::Timer timer("SaberHybridBlockChain", "randomize");
+void HybridBlockChain<MODEL>::randomize(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "HybridBlockChain::randomize starting" << std::endl;
+  util::Timer timer("HybridBlockChain", "randomize");
 
   // Initialize FieldSet4D
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
@@ -497,15 +497,15 @@ void SaberHybridBlockChain<MODEL>::randomize(oops::FieldSet4D & fset4d) const {
 
   if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(fset4d);
 
-  oops::Log::trace() << "SaberHybridBlockChain::randomize done" << std::endl;
+  oops::Log::trace() << "HybridBlockChain::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "SaberHybridBlockChain::multiply starting" << std::endl;
-  util::Timer timer("SaberHybridBlockChain", "multiply");
+void HybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "HybridBlockChain::multiply starting" << std::endl;
+  util::Timer timer("HybridBlockChain", "multiply");
 
   // Apply outer blocks adjoint
   if (outerBlockChain_) outerBlockChain_->applyOuterBlocksAD(fset4d);
@@ -621,17 +621,17 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
 
   fset4d.deepCopy(fset4dSum);
 
-  oops::Log::trace() << "SaberHybridBlockChain::multiply done" << std::endl;
+  oops::Log::trace() << "HybridBlockChain::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-oops::FieldSet3D SaberHybridBlockChain<MODEL>::variance() const {
-  oops::Log::trace() << "SaberHybridBlockChain::variance starting" << std::endl;
+oops::FieldSet3D HybridBlockChain<MODEL>::variance() const {
+  oops::Log::trace() << "HybridBlockChain::variance starting" << std::endl;
 
   if (parallelHybrid_) {
-    throw eckit::NotImplemented("SaberHybridBlockChain::variance not implemented "
+    throw eckit::NotImplemented("HybridBlockChain::variance not implemented "
                                 "for parallel-hybrid execution", Here());
   }
 
@@ -663,7 +663,7 @@ oops::FieldSet3D SaberHybridBlockChain<MODEL>::variance() const {
     outerBlockChain_->applyBackgroundVariance(variance);
   }
 
-  oops::Log::trace() << "SaberHybridBlockChain::variance done" << std::endl;
+  oops::Log::trace() << "HybridBlockChain::variance done" << std::endl;
   return variance;
 }
 

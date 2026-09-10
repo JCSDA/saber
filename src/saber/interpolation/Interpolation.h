@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/interpolation/Geometry.h"
 
 namespace saber {
@@ -31,8 +31,8 @@ namespace interpolation {
 
 // -----------------------------------------------------------------------------
 
-class InterpolationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberBlockParametersBase)
+class InterpolationParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, BlockParametersBase)
 
  public:
   oops::Parameter<std::string> interpType{"interpolation type", "global", this};
@@ -46,7 +46,7 @@ class InterpolationParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class Interpolation : public SaberOuterBlockBase {
+class Interpolation : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::Interpolation";}
 

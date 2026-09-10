@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -36,8 +36,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class Hpm1ToHexnerExnerm1Parameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(Hpm1ToHexnerExnerm1Parameters, SaberBlockParametersBase)
+class Hpm1ToHexnerExnerm1Parameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(Hpm1ToHexnerExnerm1Parameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
@@ -74,7 +74,7 @@ class Hpm1ToHexnerExnerm1Parameters : public SaberBlockParametersBase {
 ///        dimensionless_exner_function_levels_minus_one and hydrostatic_pressure_levels into
 ///        air_pressure_levels
 
-class Hpm1ToHexnerExnerm1 : public SaberOuterBlockBase {
+class Hpm1ToHexnerExnerm1 : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::Hpm1ToHexnerExnerm1";}
 

@@ -30,7 +30,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<ShadowLevels> makerShadowLevels_("ShadowLevels");
+static OuterBlockMaker<ShadowLevels> makerShadowLevels_("ShadowLevels");
 
 // -----------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ ShadowLevels::ShadowLevels(const oops::GeometryData & outerGeometryData,
                            const Parameters_ & params,
                            const oops::FieldSet3D & xb,
                            const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     gdata_(outerGeometryData),
     comm_(gdata_.comm()),
     activeOuterVars_(params.activeVars.value().get_value_or(outerVars)),

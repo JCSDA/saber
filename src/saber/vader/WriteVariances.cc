@@ -456,7 +456,7 @@ atlas::FieldSet createEnsembleStatsFSet(const std::string & binType,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<WriteVariances>
+static OuterBlockMaker<WriteVariances>
   makerWriteVariances_("write variances");
 
 // -----------------------------------------------------------------------------
@@ -582,7 +582,7 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
                                const Parameters_ & params,
                                const oops::FieldSet3D & xb,
                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),

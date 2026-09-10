@@ -17,7 +17,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<OrographicInterp> makerOrographicInterp_("OrographicInterp");
+static OuterBlockMaker<OrographicInterp> makerOrographicInterp_("OrographicInterp");
 
 // -----------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ OrographicInterp::OrographicInterp(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     comm_(outerGeometryData.comm()),
     innerVars_(outerVars),

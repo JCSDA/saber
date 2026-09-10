@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 #include "saber/gsi/covariance/Covariance.interface.h"
 #include "saber/gsi/utils/GSIParameters.h"
 
@@ -36,8 +36,8 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class CovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberBlockParametersBase)
+class CovarianceParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, BlockParametersBase)
 
  public:
   // File containing grid and coefficients
@@ -49,7 +49,7 @@ class CovarianceParameters : public SaberBlockParametersBase {
 
 // -------------------------------------------------------------------------------------------------
 // Static GSI covariance block
-class StaticCovariance : public SaberCentralBlockBase {
+class StaticCovariance : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::StaticCovariance";}
 

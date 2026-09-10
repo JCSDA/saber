@@ -14,7 +14,7 @@
 
 #include "atlas/field.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/diffusion/DiffusionImpl.h"
 #include "saber/diffusion/DiffusionParameters.h"
 
@@ -30,7 +30,7 @@ namespace saber {
 /// The diffusion based saber outer block, used for filtering. Diffusion (explicit
 /// diffusion in this case) is best for small correlation lengths. If you have large
 /// lengths, you're better off using BUMP_NICAS.
-class DiffusionFilter : public saber::SaberOuterBlockBase {
+class DiffusionFilter : public saber::OuterBlockBase {
  public:
   static const std::string classname() { return "saber::DiffusionFilter"; }
   typedef DiffusionParameters Parameters_;

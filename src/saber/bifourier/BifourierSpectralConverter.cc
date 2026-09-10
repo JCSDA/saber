@@ -18,7 +18,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BifourierSpectralConverter>
+static OuterBlockMaker<BifourierSpectralConverter>
   makerBifourierSpectralConverter_("BifourierSpectralConverter");
 
 // -----------------------------------------------------------------------------
@@ -29,7 +29,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
                                                        const Parameters_ & params,
                                                        const oops::FieldSet3D & xb,
                                                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     comm_(outerGeometryData.comm()),
     myrank_(comm_.rank()),
     innerVars_(outerVars)

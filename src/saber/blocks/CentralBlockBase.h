@@ -25,7 +25,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 // Forward declaration
 namespace oops {
@@ -38,18 +38,18 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockBase : public util::Printable,
+class CentralBlockBase : public util::Printable,
                               private eckit::NonCopyable {
  public:
-  explicit SaberCentralBlockBase(const SaberBlockParametersBase & params,
-                                 const util::DateTime & validTime,
-                                 const oops::GeometryData & geometryData,
-                                 const oops::Variables & centralVars)
+  explicit CentralBlockBase(const BlockParametersBase & params,
+                            const util::DateTime & validTime,
+                            const oops::GeometryData & geometryData,
+                            const oops::Variables & centralVars)
     : validTime_(validTime),
       blockName_(params.saberBlockName),
       geometryData_(geometryData),
       centralVars_(centralVars) {}
-  virtual ~SaberCentralBlockBase() {}
+  virtual ~CentralBlockBase() {}
 
   // Application methods
 
@@ -150,55 +150,55 @@ class SaberCentralBlockBase : public util::Printable,
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockFactory;
+class CentralBlockFactory;
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockParametersWrapper : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(SaberCentralBlockParametersWrapper, Parameters)
+class CentralBlockParametersWrapper : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(CentralBlockParametersWrapper, Parameters)
  public:
-  oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberCentralBlockFactory>
+  oops::RequiredPolymorphicParameter<BlockParametersBase, CentralBlockFactory>
     saberCentralBlockParameters{"saber block name", this};
 
-  const SaberBlockParametersBase & blockParams() const
+  const BlockParametersBase & blockParams() const
     {return this->saberCentralBlockParameters;
   }
 };
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockFactory {
+class CentralBlockFactory {
  public:
-  static std::unique_ptr<SaberCentralBlockBase> create(const oops::GeometryData &,
-                                                       const oops::Variables &,
-                                                       const eckit::Configuration &,
-                                                       const SaberBlockParametersBase &,
-                                                       const oops::FieldSet3D &,
-                                                       const oops::FieldSet3D &);
+  static std::unique_ptr<CentralBlockBase> create(const oops::GeometryData &,
+                                                  const oops::Variables &,
+                                                  const eckit::Configuration &,
+                                                  const BlockParametersBase &,
+                                                  const oops::FieldSet3D &,
+                                                  const oops::FieldSet3D &);
 
-  static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
+  static std::unique_ptr<BlockParametersBase> createParameters(const std::string &name);
 
   static std::vector<std::string> getMakerNames() {
     return oops::keys(getMakers());
   }
 
-  virtual ~SaberCentralBlockFactory() = default;
+  virtual ~CentralBlockFactory() = default;
 
  protected:
-  explicit SaberCentralBlockFactory(const std::string &name);
+  explicit CentralBlockFactory(const std::string &name);
 
  private:
-  virtual std::unique_ptr<SaberCentralBlockBase> make(const oops::GeometryData &,
-                                                      const oops::Variables &,
-                                                      const eckit::Configuration &,
-                                                      const SaberBlockParametersBase &,
-                                                      const oops::FieldSet3D &,
-                                                      const oops::FieldSet3D &) = 0;
+  virtual std::unique_ptr<CentralBlockBase> make(const oops::GeometryData &,
+                                                 const oops::Variables &,
+                                                 const eckit::Configuration &,
+                                                 const BlockParametersBase &,
+                                                 const oops::FieldSet3D &,
+                                                 const oops::FieldSet3D &) = 0;
 
-  virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
+  virtual std::unique_ptr<BlockParametersBase> makeParameters() const = 0;
 
-  static std::map < std::string, SaberCentralBlockFactory * > & getMakers() {
-    static std::map < std::string, SaberCentralBlockFactory * > makers_;
+  static std::map < std::string, CentralBlockFactory * > & getMakers() {
+    static std::map < std::string, CentralBlockFactory * > makers_;
     return makers_;
   }
 };
@@ -206,34 +206,34 @@ class SaberCentralBlockFactory {
 // -----------------------------------------------------------------------------
 
 template<class T>
-class SaberCentralBlockMaker : public SaberCentralBlockFactory {
+class CentralBlockMaker : public CentralBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  std::unique_ptr<SaberCentralBlockBase> make(const oops::GeometryData & geometryData,
-                                              const oops::Variables & outerVars,
-                                              const eckit::Configuration & covarConf,
-                                              const SaberBlockParametersBase & params,
-                                              const oops::FieldSet3D & xb,
-                                              const oops::FieldSet3D & fg) override {
+  std::unique_ptr<CentralBlockBase> make(const oops::GeometryData & geometryData,
+                                         const oops::Variables & outerVars,
+                                         const eckit::Configuration & covarConf,
+                                         const BlockParametersBase & params,
+                                         const oops::FieldSet3D & xb,
+                                         const oops::FieldSet3D & fg) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_unique<T>(geometryData, outerVars, covarConf,
                                stronglyTypedParams, xb, fg);
   }
 
-  std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
+  std::unique_ptr<BlockParametersBase> makeParameters() const override {
     return std::make_unique<Parameters_>();
   }
 
  public:
-  explicit SaberCentralBlockMaker(const std::string & name) : SaberCentralBlockFactory(name) {}
+  explicit CentralBlockMaker(const std::string & name) : CentralBlockFactory(name) {}
 };
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlockBase::read(const oops::Geometry<MODEL> & geom,
+void CentralBlockBase::read(const oops::Geometry<MODEL> & geom,
                                  const oops::Variables & vars) {
-  oops::Log::trace() << "SaberCentralBlockBase::read starting" << std::endl;
+  oops::Log::trace() << "CentralBlockBase::read starting" << std::endl;
 
   // Read fieldsets as increments
   std::vector<oops::FieldSet3D> fsetVec;
@@ -248,14 +248,14 @@ void SaberCentralBlockBase::read(const oops::Geometry<MODEL> & geom,
   }
   this->setReadFields(fsetVec);
 
-  oops::Log::trace() << "SaberCentralBlockBase::read done" << std::endl;
+  oops::Log::trace() << "CentralBlockBase::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlockBase::write(const oops::Geometry<MODEL> & geom) const {
-  oops::Log::trace() << "SaberCentralBlockBase::write starting" << std::endl;
+void CentralBlockBase::write(const oops::Geometry<MODEL> & geom) const {
+  oops::Log::trace() << "CentralBlockBase::write starting" << std::endl;
 
   // Get vector of FieldSet/configuration pairs
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs
@@ -270,7 +270,7 @@ void SaberCentralBlockBase::write(const oops::Geometry<MODEL> & geom) const {
     dx.write(output.first);
   }
 
-  oops::Log::trace() << "SaberCentralBlockBase::write done" << std::endl;
+  oops::Log::trace() << "CentralBlockBase::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

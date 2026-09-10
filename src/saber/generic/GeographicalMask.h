@@ -24,8 +24,8 @@
 #include "oops/util/parameters/ParameterTraits.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
@@ -97,8 +97,8 @@ class GeographicalMaskParametersBase : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class GeographicalMaskParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GeographicalMaskParameters, SaberBlockParametersBase)
+class GeographicalMaskParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GeographicalMaskParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<GeographicalMaskParametersBase> read{"read", this};
@@ -109,7 +109,7 @@ class GeographicalMaskParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class GeographicalMask : public SaberOuterBlockBase {
+class GeographicalMask : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::generic::GeographicalMask";}
