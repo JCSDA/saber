@@ -17,7 +17,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/spectralb/SpectralAnalyticalImpl.h"
 
 namespace saber {
@@ -25,7 +25,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralAnalyticalFilter : public SaberOuterBlockBase {
+class SpectralAnalyticalFilter : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SpectralAnalyticalFilter";}
 

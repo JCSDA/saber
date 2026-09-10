@@ -27,10 +27,10 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
-#include "saber/blocks/SaberBlockChainBase.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
-#include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/blocks/BlockChainBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockChain.h"
+#include "saber/blocks/ParametricBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
@@ -43,7 +43,7 @@ class ScaleParameters : public oops::Parameters {
 
  public:
   // Filter outer blockchain (optional)
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>> filterParams{
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>> filterParams{
     "filter", this};
 
   // Use residual from filter
@@ -51,7 +51,7 @@ class ScaleParameters : public oops::Parameters {
     "use residual from filter", false, this};
 
   // Interpolator outer blockchain (optional)
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>> interpolatorParams{
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>> interpolatorParams{
     "interpolator", this};
 
   // Ensemble perturbations to read (optional)
@@ -85,17 +85,17 @@ class ScaleData {
     externalInterpolation_(params_.interpolatorParams.value() && !params_.locAtFullRes.value()) {}
 
   // Accessors
-  const std::unique_ptr<SaberOuterBlockChain> & filter() const
+  const std::unique_ptr<OuterBlockChain> & filter() const
     {return filter_;}
-  std::unique_ptr<SaberOuterBlockChain> & filter()
+  std::unique_ptr<OuterBlockChain> & filter()
     {return filter_;}
-  const std::unique_ptr<SaberOuterBlockChain> & interpolator() const
+  const std::unique_ptr<OuterBlockChain> & interpolator() const
     {return interpolator_;}
-  std::unique_ptr<SaberOuterBlockChain> & interpolator()
+  std::unique_ptr<OuterBlockChain> & interpolator()
     {return interpolator_;}
-  const std::unique_ptr<SaberParametricBlockChain> & localization() const
+  const std::unique_ptr<ParametricBlockChain> & localization() const
     {return localization_;}
-  std::unique_ptr<SaberParametricBlockChain> & localization()
+  std::unique_ptr<ParametricBlockChain> & localization()
     {return localization_;}
   const std::unique_ptr<oops::FieldSets> & ensemble() const
     {return ensemble_;}
@@ -110,11 +110,11 @@ class ScaleData {
 
  private:
   /// @brief Filter outer block chain.
-  std::unique_ptr<SaberOuterBlockChain> filter_;
+  std::unique_ptr<OuterBlockChain> filter_;
   /// @brief Interpolator outer block chain.
-  std::unique_ptr<SaberOuterBlockChain> interpolator_;
+  std::unique_ptr<OuterBlockChain> interpolator_;
   /// @brief Localization parametric block chain.
-  std::unique_ptr<SaberParametricBlockChain> localization_;
+  std::unique_ptr<ParametricBlockChain> localization_;
   /// @brief Ensemble used for this scale.
   std::unique_ptr<oops::FieldSets> ensemble_;
   /// @brief Scale parameters
@@ -139,13 +139,13 @@ class InflationFieldParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SaberEnsembleBlockChainParameters,
+class EnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
+  OOPS_CONCRETE_PARAMETERS(EnsembleBlockChainParameters,
                            ErrorCovarianceParametersBase)
 
  public:
   // Outer blocks
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
 
   // Localization parameters
@@ -162,7 +162,7 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   oops::OptionalParameter<std::string> strategy{"multiscale strategy", this};
 
   // Ensemble transform parameters
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     ensembleTransform{"ensemble transform", this};
 
   // Inflation fields
@@ -192,15 +192,15 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
 };
 
 /// Chain of outer (optional) and an ensemble "block".
-class SaberEnsembleBlockChain : public SaberBlockChainBase {
+class EnsembleBlockChain : public BlockChainBase {
  public:
   template<typename MODEL>
-  SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
-                          const oops::Variables & outerVars,
-                          oops::FieldSet4D & fset4dXb,
-                          oops::FieldSet4D & fset4dFg,
-                          const eckit::Configuration & conf);
-  ~SaberEnsembleBlockChain() = default;
+  EnsembleBlockChain(const oops::Geometry<MODEL> & geom,
+                     const oops::Variables & outerVars,
+                     oops::FieldSet4D & fset4dXb,
+                     oops::FieldSet4D & fset4dFg,
+                     const eckit::Configuration & conf);
+  ~EnsembleBlockChain() = default;
 
   /// @brief Randomize the increment according to this B matrix.
   void randomize(oops::FieldSet4D &) const;
@@ -235,7 +235,7 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Outer variables
   const oops::Variables outerVariables_;
   /// @brief Outer blocks (optional).
-  std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
+  std::unique_ptr<OuterBlockChain> outerBlockChain_;
   /// @brief Vector of data containers, one for each scale
   std::vector<ScaleData> scaleDataVec_;
   /// @brief Multiscales strategy
@@ -253,19 +253,19 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
-                                                 const oops::Variables & outerVars,
-                                                 oops::FieldSet4D & fset4dXb,
-                                                 oops::FieldSet4D & fset4dFg,
-                                                 const eckit::Configuration & conf)
+EnsembleBlockChain::EnsembleBlockChain(const oops::Geometry<MODEL> & geom,
+                                       const oops::Variables & outerVars,
+                                       oops::FieldSet4D & fset4dXb,
+                                       oops::FieldSet4D & fset4dFg,
+                                       const eckit::Configuration & conf)
   : comm_(geom.getComm()),
     outerFunctionSpace_(geom.functionSpace()),
     outerVariables_(outerVars),
     ctlVecSize_(0) {
-  oops::Log::trace() << "SaberEnsembleBlockChain ctor starting" << std::endl;
+  oops::Log::trace() << "EnsembleBlockChain ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
-  SaberEnsembleBlockChainParameters params;
+  EnsembleBlockChainParameters params;
   params.deserialize(conf);
   eckit::LocalConfiguration fullConf;
   params.serialize(fullConf);
@@ -284,7 +284,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
 
   // Check that there is an ensemble of at least 2 members (or no member).
   if (ensemble->ens_size() == 1) {
-    throw eckit::BadParameter("Ensemble for SaberEnsembleBlockChain has to have at least"
+    throw eckit::BadParameter("Ensemble for EnsembleBlockChain has to have at least"
                               " two members (or no member)", Here());
   }
 
@@ -325,7 +325,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
 
   // Create outer blocks if needed
   if (params.saberOuterBlocksParams.value()) {
-    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
+    outerBlockChain_ = std::make_unique<OuterBlockChain>(geom, outerVars,
                           fset4dXb, fset4dFg, fullConf,
                           *params.saberOuterBlocksParams.value());
   }
@@ -417,8 +417,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     if (params.ensembleTransform.value()) {
       const auto ensTransParams = *params.ensembleTransform.value();
       oops::Log::info() << "Info     : Found ensemble transform " << std::endl;
-      std::unique_ptr<SaberOuterBlockChain> ensTransBlockChain =
-             std::make_unique<SaberOuterBlockChain>(geom,
+      std::unique_ptr<OuterBlockChain> ensTransBlockChain =
+             std::make_unique<OuterBlockChain>(geom,
                currentOuterVars, fset4dXb, fset4dFg,
                paramsBase.toConfiguration(), ensTransParams);
 
@@ -433,7 +433,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
 
       // Add ensemble transform blocks to outer blocks
       // TODO(AS): refactor so there is no need for non-const accessor to outerBlocks
-      // in SaberOuterBlockChain.
+      // in OuterBlockChain.
       oops::Log::info() << "Info     : Add ensemble transform blocks to outer blocks"
                         << std::endl;
       if (outerBlockChain_) {
@@ -521,7 +521,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
       oops::Log::info() << "Info     : Interpolator setup" << std::endl;
 
       // Initialize interpolator outer block chain
-      scaleData.interpolator() = std::make_unique<SaberOuterBlockChain>(
+      scaleData.interpolator() = std::make_unique<OuterBlockChain>(
         interpolatorOuterGeomData,
         currentOuterVars,
         fset4dXb,
@@ -545,7 +545,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
       const ErrorCovarianceParametersBase defaultParamsBase;
 
       // Initialize filter outer block chain
-      scaleData.filter() = std::make_unique<SaberOuterBlockChain>(
+      scaleData.filter() = std::make_unique<OuterBlockChain>(
         filterOuterGeomData,
         currentOuterVars,
         fset4dXb,
@@ -587,20 +587,20 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
         // Note QUENCH could just build another geometry here and use the standard
         // constructor, but other models usually don't have this ability to create a
         // Geometry on any mesh.
-        scaleData.localization() = std::make_unique<SaberParametricBlockChain>(localizationGeomData,
-                                                                     currentOuterVars,
-                                                                     fset4dXb,
-                                                                     fset4dFg,
-                                                                     locMergedConf);
+        scaleData.localization() = std::make_unique<ParametricBlockChain>(localizationGeomData,
+                                                                          currentOuterVars,
+                                                                          fset4dXb,
+                                                                          fset4dFg,
+                                                                          locMergedConf);
       } else {
         oops::Log::info() << "Info     : Localization and ensemble are on same "
                              "functionSpaces, building localization with standard "
                              "constructor" << std::endl;
-        scaleData.localization() = std::make_unique<SaberParametricBlockChain>(geom,
-                                                                     currentOuterVars,
-                                                                     fset4dXb,
-                                                                     fset4dFg,
-                                                                     locMergedConf);
+        scaleData.localization() = std::make_unique<ParametricBlockChain>(geom,
+                                                                          currentOuterVars,
+                                                                          fset4dXb,
+                                                                          fset4dFg,
+                                                                          locMergedConf);
       }
     } else {
       // No localization, only authorized if no scales are specified
@@ -823,8 +823,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   }
 
   // Adjoint test
-  // TODO(AS): this is now a copy of the test in SaberCentralBlock; needs to be generalized.
-  // (Perhaps the adjoint[s] test can be moved to SaberBlockChainBase.
+  // TODO(AS): this is now a copy of the test in CentralBlockWrapper; needs to be generalized.
+  // (Perhaps the adjoint[s] test can be moved to BlockChainBase.
   if (fullConf.getBool("adjoint test")) {
     // Get tolerance
     const double localAdjointTolerance = params.adjointTolerance.value();
@@ -951,7 +951,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     }
   }
 
-  oops::Log::trace() << "SaberEnsembleBlockChain ctor done" << std::endl;
+  oops::Log::trace() << "EnsembleBlockChain ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

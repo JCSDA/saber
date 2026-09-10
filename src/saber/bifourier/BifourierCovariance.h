@@ -15,14 +15,14 @@
 #include "oops/base/Variable.h"
 
 #include "saber/bifourier/BifourierCovarianceImpl.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierCovariance : public SaberCentralBlockBase {
+class BifourierCovariance : public CentralBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierCovariance";}

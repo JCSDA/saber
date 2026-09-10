@@ -52,7 +52,7 @@ oops::Variables createInnerVars(
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<VaderBlock> makerVaderBlock_("vader variable change");
+static OuterBlockMaker<VaderBlock> makerVaderBlock_("vader variable change");
 
 // -----------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars, params.innerVars)),
     vader_(params.vader, outerBlockConf.getSubConfiguration("vader"))

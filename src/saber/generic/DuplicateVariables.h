@@ -15,9 +15,9 @@
 
 #include "oops/base/GeometryData.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
@@ -33,8 +33,8 @@ class VariableGroupParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class DuplicateVariablesParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(DuplicateVariablesParameters, SaberBlockParametersBase)
+class DuplicateVariablesParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DuplicateVariablesParameters, BlockParametersBase)
  public:
   oops::RequiredParameter<std::vector<VariableGroupParameters>>
    variableGroupParameters{"variable groupings", this};
@@ -54,7 +54,7 @@ class DuplicateVariablesParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class DuplicateVariables : public SaberOuterBlockBase {
+class DuplicateVariables : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::generic::DuplicateVariables";}
 

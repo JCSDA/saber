@@ -15,24 +15,24 @@
 
 #include "oops/base/GeometryData.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class IDParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberBlockParametersBase)
+class IDParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(IDParameters, BlockParametersBase)
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class IDCentral : public SaberCentralBlockBase {
+class IDCentral : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::generic::IDCentral";}
 
@@ -62,7 +62,7 @@ class IDCentral : public SaberCentralBlockBase {
 
 // -----------------------------------------------------------------------------
 
-class IDOuter : public SaberOuterBlockBase {
+class IDOuter : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::generic::IDOuter";}
 

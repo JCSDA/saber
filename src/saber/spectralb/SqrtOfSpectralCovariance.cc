@@ -27,7 +27,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SqrtOfSpectralCovariance>
+static OuterBlockMaker<SqrtOfSpectralCovariance>
     makerSqrtOfSpectralCovariance_("square root of spectral covariance");
 
 // -----------------------------------------------------------------------------
@@ -38,7 +38,7 @@ SqrtOfSpectralCovariance::SqrtOfSpectralCovariance(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params),
     activeVars_(params.getActiveVars(outerVars)),
     specFunctionSpace_(outerGeometryData.functionSpace()),

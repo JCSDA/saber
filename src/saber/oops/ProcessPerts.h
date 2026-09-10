@@ -36,7 +36,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/blocks/ParametricBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
@@ -93,7 +93,7 @@ template <typename MODEL> class FilterParameters :
     "use residual from filter", false, this};
 
   // This is a vector of outer blocks defining the filter.
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>> filter{"filter", this};
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>> filter{"filter", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -105,7 +105,7 @@ template <typename MODEL> class OutputWriteParameters :
 
  public:
   // This is a vector of outer blocks for diagnostic purposes.
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>> diagnosticOnlyBlock{
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>> diagnosticOnlyBlock{
     "diagnostic only block", this};
 
   /// Write parameters using generic oops::util::writeFieldSet writer
@@ -233,8 +233,8 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     const bool recursivePertProcessing = params.recursivePertProcessing.value();
 
     // need to create a vectors of saber block chains to use later
-    std::map<std::size_t, std::vector<SaberOuterBlockParametersWrapper>> diagBlockConfs;
-    std::map<std::size_t, std::vector<SaberOuterBlockParametersWrapper>> filterCovBlockConfs;
+    std::map<std::size_t, std::vector<OuterBlockParametersWrapper>> diagBlockConfs;
+    std::map<std::size_t, std::vector<OuterBlockParametersWrapper>> filterCovBlockConfs;
     std::map<std::size_t, eckit::LocalConfiguration> genericWriteConfs;
     std::map<std::size_t, eckit::LocalConfiguration> modelWriteConfs;
     std::vector<bool> calcComplement;
@@ -245,7 +245,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
         // Add filter for this band
         eckit::LocalConfiguration bConf = bandConf.getSubConfiguration("band");
         for (const auto & outerBlockConf : bConf.getSubConfigurations("filter")) {
-          SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
+          OuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
           cmpOuterBlockParamsWrapper.deserialize(outerBlockConf);
           filterCovBlockConfs[b].push_back(cmpOuterBlockParamsWrapper);
         }
@@ -260,7 +260,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
         eckit::LocalConfiguration oConf = bandConf.getSubConfiguration("output");
         if (oConf.has("diagnostic only block")) {
           for (const auto & outerBlockConf : oConf.getSubConfigurations("diagnostic only block")) {
-            SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
+            OuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
             cmpOuterBlockParamsWrapper.deserialize(outerBlockConf);
             diagBlockConfs[b].push_back(cmpOuterBlockParamsWrapper);
           }
@@ -277,11 +277,11 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       b++;
     }
 
-    std::vector<std::unique_ptr<SaberOuterBlockChain>> saberFilterBlocks;
+    std::vector<std::unique_ptr<OuterBlockChain>> saberFilterBlocks;
     const ErrorCovarianceParametersBase paramsBase;
     for (const auto & [key, value] : filterCovBlockConfs) {
       saberFilterBlocks.push_back(
-        std::make_unique<SaberOuterBlockChain>(geom,
+        std::make_unique<OuterBlockChain>(geom,
                                                incVars,
                                                fsetXb,
                                                fsetFg,
@@ -289,10 +289,10 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
                                                value));
     }
 
-    std::vector<std::unique_ptr<SaberOuterBlockChain>> saberDiagnosticBlocks;
+    std::vector<std::unique_ptr<OuterBlockChain>> saberDiagnosticBlocks;
     for (const auto & [key, value] : diagBlockConfs) {
       saberDiagnosticBlocks.push_back(
-        std::make_unique<SaberOuterBlockChain>(geom,
+        std::make_unique<OuterBlockChain>(geom,
                                                incVars,
                                                fsetXb,
                                                fsetFg,

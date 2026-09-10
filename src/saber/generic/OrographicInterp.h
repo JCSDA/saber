@@ -16,16 +16,16 @@
 #include "oops/base/Variables.h"
 #include "oops/util/parameters/Parameters.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class OrographicInterpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(OrographicInterpParameters, SaberBlockParametersBase)
+class OrographicInterpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(OrographicInterpParameters, BlockParametersBase)
 
  public:
   // Orographic factor
@@ -36,7 +36,7 @@ class OrographicInterpParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class OrographicInterp : public SaberOuterBlockBase {
+class OrographicInterp : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::generic::OrographicInterp";}

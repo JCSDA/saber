@@ -5,38 +5,38 @@
 
 list( APPEND blocks_src_files_list
 # SABER block parameters base
-SaberBlockParametersBase.cc
-SaberBlockParametersBase.h
+BlockParametersBase.cc
+BlockParametersBase.h
 
 # SABER central block base
-SaberCentralBlockBase.cc
-SaberCentralBlockBase.h
+CentralBlockBase.cc
+CentralBlockBase.h
 
 # SABER outer blocks base
-SaberOuterBlockBase.cc
-SaberOuterBlockBase.h
+OuterBlockBase.cc
+OuterBlockBase.h
 
 # SABER block chain base
-SaberBlockChainBase.h
+BlockChainBase.h
 
 # SABER central block wrapper
-SaberCentralBlock.cc
-SaberCentralBlock.h
+CentralBlockWrapper.cc
+CentralBlockWrapper.h
 
 # SABER ensemble block chain
-SaberEnsembleBlockChain.cc
-SaberEnsembleBlockChain.h
+EnsembleBlockChain.cc
+EnsembleBlockChain.h
 
 # SABER hybrid block chain
-SaberHybridBlockChain.h
+HybridBlockChain.h
 
 # SABER outer block chain
-SaberOuterBlockChain.cc
-SaberOuterBlockChain.h
+OuterBlockChain.cc
+OuterBlockChain.h
 
 # SABER parametric block chain
-SaberParametricBlockChain.cc
-SaberParametricBlockChain.h
+ParametricBlockChain.cc
+ParametricBlockChain.h
 
 # Factories
 instantiateBlockChainFactory.h

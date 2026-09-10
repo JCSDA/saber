@@ -50,7 +50,7 @@ eckit::LocalConfiguration createNetCDFHeaderInput(
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<SpectralCorrelation> makerSpectralCorrelation_(
+static CentralBlockMaker<SpectralCorrelation> makerSpectralCorrelation_(
   "spectral correlation");
 
 // -----------------------------------------------------------------------------
@@ -60,7 +60,7 @@ SpectralCorrelation::SpectralCorrelation(const oops::GeometryData & geometryData
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars), params_(params),
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars), params_(params),
     activeVars_(params.getActiveVars(centralVars)),
     netCDFConf_(createNetCDFHeaderInput(params, activeVars_)),
     spectralVerticalCorrelations_(),

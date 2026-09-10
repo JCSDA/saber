@@ -23,7 +23,7 @@
 #include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 using atlas::array::make_view;
@@ -37,7 +37,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<Hpm1ToHexnerExnerm1>
+static OuterBlockMaker<Hpm1ToHexnerExnerm1>
   makerHpm1ToHexnerExnerm1_("mo_hp_lvlsm1_to_hexner_lvls");
 
 // -----------------------------------------------------------------------------
@@ -48,7 +48,7 @@ Hpm1ToHexnerExnerm1::Hpm1ToHexnerExnerm1(const oops::GeometryData & outerGeometr
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

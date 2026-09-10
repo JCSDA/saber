@@ -10,7 +10,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BifourierCovarianceSqrt>
+static OuterBlockMaker<BifourierCovarianceSqrt>
   makerBifourierCovarianceSqrt_("BifourierCovarianceSqrt");
 
 // -----------------------------------------------------------------------------
@@ -21,7 +21,7 @@ BifourierCovarianceSqrt::BifourierCovarianceSqrt(const oops::GeometryData & oute
                                                  const Parameters_ & params,
                                                  const oops::FieldSet3D & xb,
                                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars)
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars)
 {
   oops::Log::trace() << classname() << "::BifourierCovarianceSqrt starting" << std::endl;
 

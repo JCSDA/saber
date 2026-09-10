@@ -17,16 +17,16 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralToGridParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierSpectralToGridParameters, SaberBlockParametersBase)
+class BifourierSpectralToGridParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierSpectralToGridParameters, BlockParametersBase)
 
  public:
   // Transform parameters
@@ -39,7 +39,7 @@ class BifourierSpectralToGridParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralToGrid : public SaberOuterBlockBase {
+class BifourierSpectralToGrid : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierSpectralToGrid";}

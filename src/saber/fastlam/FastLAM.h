@@ -21,9 +21,9 @@
 #include "oops/base/GeometryData.h"
 #include "oops/util/DateTime.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/fastlam/FastLAMParametersBase.h"
 #include "saber/fastlam/LayerBase.h"
 
@@ -32,8 +32,8 @@ namespace fastlam {
 
 // -----------------------------------------------------------------------------
 
-class FastLAMParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(FastLAMParameters, SaberBlockParametersBase)
+class FastLAMParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(FastLAMParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<FastLAMParametersBase> read{"read", this};
@@ -44,7 +44,7 @@ class FastLAMParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class FastLAM : public SaberCentralBlockBase {
+class FastLAM : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::fastlam::FastLAM";}
 

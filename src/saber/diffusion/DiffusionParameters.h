@@ -11,12 +11,12 @@
 #include <vector>
 
 #include "oops/util/parameters/ParameterTraits.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 
-class DiffusionParameters : public saber::SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(DiffusionParameters, saber::SaberBlockParametersBase)
+class DiffusionParameters : public saber::BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DiffusionParameters, saber::BlockParametersBase)
 
  public:
   // ----------------------------------------------------------------------------

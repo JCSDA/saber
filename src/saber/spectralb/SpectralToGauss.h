@@ -19,15 +19,15 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace spectralb {
 
 // -----------------------------------------------------------------------------
-class SpectralToGaussParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralToGaussParameters, SaberBlockParametersBase)
+class SpectralToGaussParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralToGaussParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
@@ -38,7 +38,7 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SpectralToGauss : public SaberOuterBlockBase {
+class SpectralToGauss : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SpectralToGauss";}
 

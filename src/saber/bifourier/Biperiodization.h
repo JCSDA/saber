@@ -17,8 +17,8 @@
 #include "oops/util/parameters/Parameters.h"
 
 #include "saber/bifourier/BiperiodizationImpl.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
@@ -43,8 +43,8 @@ class BiperiodizationReadParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class BiperiodizationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BiperiodizationParameters, SaberBlockParametersBase)
+class BiperiodizationParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BiperiodizationParameters, BlockParametersBase)
 
  public:
   // Read parameters
@@ -58,7 +58,7 @@ class BiperiodizationParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class Biperiodization : public SaberOuterBlockBase {
+class Biperiodization : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::Biperiodization";}

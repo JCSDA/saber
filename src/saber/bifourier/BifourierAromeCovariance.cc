@@ -25,7 +25,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<BifourierAromeCovariance>
+static CentralBlockMaker<BifourierAromeCovariance>
   makerBifourierAromeCovariance_("BifourierAromeCovariance");
 
 // -----------------------------------------------------------------------------

@@ -18,7 +18,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<SpectralAnalyticalCorrelation> makerSpectralAnalyticalCorrelation_(
+static CentralBlockMaker<SpectralAnalyticalCorrelation> makerSpectralAnalyticalCorrelation_(
         "spectral analytical filter");
 
 // -----------------------------------------------------------------------------
@@ -30,7 +30,7 @@ SpectralAnalyticalCorrelation::SpectralAnalyticalCorrelation(
                                                    const Parameters_ & params,
                                                    const oops::FieldSet3D & xb,
                                                    const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars)
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars)
 {
   oops::Log::trace() << classname() << "::SpectralAnalyticalCorrelation starting " << std::endl;
 

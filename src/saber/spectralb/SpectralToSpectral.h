@@ -16,21 +16,21 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace spectralb {
 
-class SpectralToSpectralParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralToSpectralParameters, SaberBlockParametersBase)
+class SpectralToSpectralParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralToSpectralParameters, BlockParametersBase)
  public:
   oops::RequiredParameter<int> inputTruncation{"input truncation", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 
-class SpectralToSpectral : public SaberOuterBlockBase {
+class SpectralToSpectral : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SpectralToSpectral";}
 

@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 #include "eckit/exception/Exceptions.h"
 
@@ -13,7 +13,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-bool SaberBlockParametersBase::doCalibration() const {
+bool BlockParametersBase::doCalibration() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
@@ -26,7 +26,7 @@ bool SaberBlockParametersBase::doCalibration() const {
 
 // -----------------------------------------------------------------------------
 
-bool SaberBlockParametersBase::doRead() const {
+bool BlockParametersBase::doRead() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
@@ -38,7 +38,7 @@ bool SaberBlockParametersBase::doRead() const {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables SaberBlockParametersBase::getActiveVars(const oops::Variables & defaultVars) const {
+oops::Variables BlockParametersBase::getActiveVars(const oops::Variables & defaultVars) const {
   oops::Variables activeVars_nomd;
   if (this->mandatoryActiveVars().size() == 0) {
     // No mandatory active variables for this block

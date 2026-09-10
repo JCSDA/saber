@@ -22,7 +22,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 using atlas::array::make_view;
@@ -33,7 +33,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DryAirDensity> makerDryAirDensity_("mo_dry_air_density");
+static OuterBlockMaker<DryAirDensity> makerDryAirDensity_("mo_dry_air_density");
 
 // -----------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

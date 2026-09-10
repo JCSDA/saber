@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "saber/blocks/SaberBlockChainBase.h"
-#include "saber/blocks/SaberEnsembleBlockChain.h"
-#include "saber/blocks/SaberHybridBlockChain.h"
-#include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/blocks/BlockChainBase.h"
+#include "saber/blocks/EnsembleBlockChain.h"
+#include "saber/blocks/HybridBlockChain.h"
+#include "saber/blocks/ParametricBlockChain.h"
 #if defined(GSIBEC_FOUND)
 #include "saber/gsi/GSIBlockChain.h"
 #endif
@@ -20,14 +20,14 @@ namespace saber {
 // -----------------------------------------------------------------------------
 template <typename MODEL>
 void instantiateBlockChainFactory() {
-  static SaberBlockChainMaker<MODEL, SaberEnsembleBlockChain>
+  static BlockChainMaker<MODEL, EnsembleBlockChain>
     makerEnsembleBlockChain_("ensemble");
-  static SaberBlockChainMaker<MODEL, SaberHybridBlockChain<MODEL>>
+  static BlockChainMaker<MODEL, HybridBlockChain<MODEL>>
     makerHybridBlockChain_("hybrid");
-  static SaberBlockChainMaker<MODEL, SaberParametricBlockChain>
+  static BlockChainMaker<MODEL, ParametricBlockChain>
     makerParametricBlockChain_("parametric");
 #if defined(GSIBEC_FOUND)
-  static SaberBlockChainMaker<MODEL, gsi::SaberGSIBlockChain>
+  static BlockChainMaker<MODEL, gsi::GSIBlockChain>
     makerGSIBlockChain_("gsi hybrid covariance");
 #endif
 }

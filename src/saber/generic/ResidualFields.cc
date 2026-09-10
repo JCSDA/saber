@@ -40,7 +40,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<ResidualFields> makerResidualFields_("residual fields");
+static OuterBlockMaker<ResidualFields> makerResidualFields_("residual fields");
 
 // -----------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ ResidualFields::ResidualFields(const oops::GeometryData & outerGeometryData,
                          const Parameters_ & params,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),

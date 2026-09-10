@@ -21,8 +21,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/interpolation/Rescaling.h"
 
@@ -30,8 +30,8 @@ namespace saber {
 namespace interpolation {
 
 // -----------------------------------------------------------------------------
-class GaussToCSParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GaussToCSParameters, SaberBlockParametersBase)
+class GaussToCSParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GaussToCSParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
@@ -67,7 +67,7 @@ struct CS2Gauss {
 
 // ------------------------------------------------------------------------------
 
-class GaussToCS : public SaberOuterBlockBase {
+class GaussToCS : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::GaussToCS";}
 

@@ -29,7 +29,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GeographicalMask> makerGeographicalMask_("GeographicalMask");
+static OuterBlockMaker<GeographicalMask> makerGeographicalMask_("GeographicalMask");
 
 // -----------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ GeographicalMask::GeographicalMask(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     activeOuterVars_(params.activeVars.value().get_value_or(outerVars)),
     params_(params.calibration.value() != boost::none ? *params.calibration.value()

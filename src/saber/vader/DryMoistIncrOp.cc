@@ -25,7 +25,7 @@
 #include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -33,7 +33,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DryMoistIncrOp>
+static OuterBlockMaker<DryMoistIncrOp>
   makerDryMoistIncrOp_("mo_dry_mio");
 
 // -----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ DryMoistIncrOp::DryMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                const Parameters_ & params,
                                const oops::FieldSet3D & xb,
                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

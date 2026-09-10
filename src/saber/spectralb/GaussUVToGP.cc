@@ -41,7 +41,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/oops/Utilities.h"
 #include "saber/util/defines.h"
@@ -488,7 +488,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GaussUVToGP>
+static OuterBlockMaker<GaussUVToGP>
    makerGaussUVToGP_("gauss winds to geostrophic pressure");
 
 
@@ -498,7 +498,7 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params),
     innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
     activeOuterVars_(params.activeOuterVars(outerVars)),

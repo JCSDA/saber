@@ -18,15 +18,15 @@
 #include "oops/base/Variables.h"
 #include "oops/util/parameters/OptionalParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralAnalyticalImplParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralAnalyticalImplParameters, SaberBlockParametersBase)
+class SpectralAnalyticalImplParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralAnalyticalImplParameters, BlockParametersBase)
 
  public:
     /// Whether to preserve variance of processed increments

@@ -7,7 +7,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/blocks/SaberCentralBlock.h"
+#include "saber/blocks/CentralBlockWrapper.h"
 
 #include <algorithm>
 
@@ -22,8 +22,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-bool SaberCentralBlockParameters::doCalibration() const {
-  oops::Log::trace() << "SaberCentralBlockParameters::doCalibration starting" << std::endl;
+bool CentralBlockWrapperParameters::doCalibration() const {
+  oops::Log::trace() << "CentralBlockWrapperParameters::doCalibration starting" << std::endl;
 
   if (this->singleBlock.value()) {
     // Single block
@@ -42,8 +42,8 @@ bool SaberCentralBlockParameters::doCalibration() const {
 
 // -----------------------------------------------------------------------------
 
-bool SaberCentralBlockParameters::doRead() const {
-  oops::Log::trace() << "SaberCentralBlockParameters::doRead starting" << std::endl;
+bool CentralBlockWrapperParameters::doRead() const {
+  oops::Log::trace() << "CentralBlockWrapperParameters::doRead starting" << std::endl;
 
   if (this->singleBlock.value()) {
     // Single block
@@ -63,13 +63,13 @@ bool SaberCentralBlockParameters::doRead() const {
 // -----------------------------------------------------------------------------
 // TODO(anyone): needs cleanup
 
-oops::Variables SaberCentralBlockParameters::getActiveVars(
+oops::Variables CentralBlockWrapperParameters::getActiveVars(
   const oops::Variables & defaultVars) const {
   // Get groups configurations
 
   if (this->singleBlock.value()) {
     // Single block
-    SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
+    CentralBlockParametersWrapper saberCentralBlockParamsWrapper;
     saberCentralBlockParamsWrapper.deserialize(this->toConfiguration());
     return saberCentralBlockParamsWrapper.blockParams().getActiveVars(defaultVars);
   } else {
@@ -104,15 +104,15 @@ oops::Variables SaberCentralBlockParameters::getActiveVars(
 
 // -----------------------------------------------------------------------------
 
-SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
-                                     const oops::Variables & outerVars,
-                                     const eckit::Configuration & covarConf,
-                                     const SaberCentralBlockParameters & params,
-                                     const oops::FieldSet3D & xb,
-                                     const oops::FieldSet3D & fg)
+CentralBlockWrapper::CentralBlockWrapper(const oops::GeometryData & outerGeom,
+                                         const oops::Variables & outerVars,
+                                         const eckit::Configuration & covarConf,
+                                         const CentralBlockWrapperParameters & params,
+                                         const oops::FieldSet3D & xb,
+                                         const oops::FieldSet3D & fg)
   : geometryData_(outerGeom), outerVars_(outerVars), validTime_(xb.validTime()), params_(params),
     strategy_(params.strategy) {
-  oops::Log::trace() << "SaberCentralBlock constructor starting" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper constructor starting" << std::endl;
 
   // Check multivariate strategy:
   // - Univariate: localization of each group is applied to each variable of the group.
@@ -129,20 +129,20 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
          strategy_ == "duplicated and weighted" ||
          strategy_ == "crossed");
 
-  oops::Log::info() << "Info     : SaberCentralBlock using multivariate strategy: "
+  oops::Log::info() << "Info     : CentralBlockWrapper using multivariate strategy: "
                     << strategy_ << std::endl;
   // Check if it's a single group
   if (params.singleBlock.value() && (strategy_ != "single")) {
-    throw eckit::UserError("SaberCentralBlock: single block can only be used with the "
+    throw eckit::UserError("CentralBlockWrapper: single block can only be used with the "
                            "'single' strategy.", Here());
   }
   if (strategy_ == "single" && params.groups.value() &&
              (params.groups.value().get().size() > 1)) {
-    throw eckit::UserError("SaberCentralBlock: 'single' strategy can only be used with "
+    throw eckit::UserError("CentralBlockWrapper: 'single' strategy can only be used with "
                            "a single block.", Here());
   }
   if (params.singleBlock.value() && params.groups.value()) {
-    throw eckit::UserError("SaberCentralBlock: please specify either a single block or multiple "
+    throw eckit::UserError("CentralBlockWrapper: please specify either a single block or multiple "
                            "groups, not both.", Here());
   }
 
@@ -162,11 +162,11 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
     forceWrite_.push_back(params.singleBlock.value()->forceWrite.value());
 
     // Append empty outer block chain
-    std::unique_ptr<SaberOuterBlockChain> emptyOuterBlockChainPtr;
+    std::unique_ptr<OuterBlockChain> emptyOuterBlockChainPtr;
     groupOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
 
     // Append group central block
-    groupCentralBlocks_.push_back(SaberCentralBlockFactory::create(outerGeom,
+    groupCentralBlocks_.push_back(CentralBlockFactory::create(outerGeom,
                                                        groupInnerVars_.back(),
                                                        covarConf,
                                                        *(params.singleBlock.value()),
@@ -287,7 +287,7 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
         // Append group outer block chain
         oops::FieldSet4D fset4dXb(xb);
         oops::FieldSet4D fset4dFg(fg);
-        groupOuterBlockChains_.push_back(std::make_unique<SaberOuterBlockChain>(outerGeom,
+        groupOuterBlockChains_.push_back(std::make_unique<OuterBlockChain>(outerGeom,
             groupInnerVars_.back(),
             fset4dXb,
             fset4dFg,
@@ -295,7 +295,7 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
             *groupParams.outerBlocks.value()));
       } else {
         // Append empty outer block chain
-        std::unique_ptr<SaberOuterBlockChain> emptyOuterBlockChainPtr;
+        std::unique_ptr<OuterBlockChain> emptyOuterBlockChainPtr;
         groupOuterBlockChains_.push_back(std::move(emptyOuterBlockChainPtr));
       }
 
@@ -308,7 +308,7 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
                              groupOuterBlockChains_.back()->innerVars() : groupInnerVars_.back();
 
       // Append group central block
-      groupCentralBlocks_.push_back(SaberCentralBlockFactory::create(currentOuterGeom,
+      groupCentralBlocks_.push_back(CentralBlockFactory::create(currentOuterGeom,
                                                          currentOuterVars,
                                                          covarConf,
                                                          groupParams.centralBlockParams(),
@@ -369,13 +369,13 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
     }
   }
 
-  oops::Log::trace() << "SaberCentralBlock::SaberCentralBlock done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::CentralBlockWrapper done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
-  oops::Log::trace() << "SaberCentralBlock::multiply starting" << std::endl;
+void CentralBlockWrapper::multiply(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "CentralBlockWrapper::multiply starting" << std::endl;
 
   if (strategy_ == "single") {
     // Single mode
@@ -525,13 +525,13 @@ void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
     throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
-  oops::Log::trace() << "SaberCentralBlock::multiply done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-oops::FieldSet3D SaberCentralBlock::variance() const {
-  oops::Log::trace() << "SaberCentralBlock::variance starting" << std::endl;
+oops::FieldSet3D CentralBlockWrapper::variance() const {
+  oops::Log::trace() << "CentralBlockWrapper::variance starting" << std::endl;
 
   if (strategy_ == "single") {
     // Single mode: a single underlying central block carries the variance.
@@ -540,15 +540,15 @@ oops::FieldSet3D SaberCentralBlock::variance() const {
     // Multivariate strategies are not yet supported because the variance
     // composition across groups depends on the strategy. Add coverage as
     // needed.
-    throw eckit::NotImplemented("SaberCentralBlock::variance not implemented "
+    throw eckit::NotImplemented("CentralBlockWrapper::variance not implemented "
                                 "for multivariate strategy '" + strategy_ + "'", Here());
   }
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::randomize(oops::FieldSet3D & fset3d) const {
-  oops::Log::trace() << "SaberCentralBlock::randomize starting" << std::endl;
+void CentralBlockWrapper::randomize(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "CentralBlockWrapper::randomize starting" << std::endl;
 
   if (strategy_ == "single") {
     // Single mode
@@ -655,12 +655,12 @@ void SaberCentralBlock::randomize(oops::FieldSet3D & fset3d) const {
     throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
-  oops::Log::trace() << "SaberCentralBlock::randomize done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::read() {
+void CentralBlockWrapper::read() {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doRead_[igroup]) {
       groupCentralBlocks_[igroup]->read();
@@ -670,7 +670,7 @@ void SaberCentralBlock::read() {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::directCalibration(const oops::FieldSets & fsets) {
+void CentralBlockWrapper::directCalibration(const oops::FieldSets & fsets) {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
       if (groupOuterBlockChains_[igroup]) {
@@ -687,7 +687,7 @@ void SaberCentralBlock::directCalibration(const oops::FieldSets & fsets) {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::iterativeCalibrationInit() {
+void CentralBlockWrapper::iterativeCalibrationInit() {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
       ASSERT(!groupOuterBlockChains_[igroup]);
@@ -698,7 +698,7 @@ void SaberCentralBlock::iterativeCalibrationInit() {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
+void CentralBlockWrapper::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
       ASSERT(!groupOuterBlockChains_[igroup]);
@@ -709,7 +709,7 @@ void SaberCentralBlock::iterativeCalibrationUpdate(const oops::FieldSet3D & fset
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::iterativeCalibrationFinal() {
+void CentralBlockWrapper::iterativeCalibrationFinal() {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
       ASSERT(!groupOuterBlockChains_[igroup]);
@@ -720,7 +720,7 @@ void SaberCentralBlock::iterativeCalibrationFinal() {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::write() const {
+void CentralBlockWrapper::write() const {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     groupCentralBlocks_[igroup]->write();
   }
@@ -728,7 +728,7 @@ void SaberCentralBlock::write() const {
 
 // -----------------------------------------------------------------------------
 
-size_t SaberCentralBlock::ctlVecSize() const {
+size_t CentralBlockWrapper::ctlVecSize() const {
   // Initialize control vector size
   size_t ctlVecSize = 0;
 
@@ -760,9 +760,9 @@ size_t SaberCentralBlock::ctlVecSize() const {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::randomCtlVec(atlas::Field & cv,
-                                     const size_t & offset) const {
-  oops::Log::trace() << "SaberCentralBlock::randomCtlVec starting" << std::endl;
+void CentralBlockWrapper::randomCtlVec(atlas::Field & cv,
+                                       const size_t & offset) const {
+  oops::Log::trace() << "CentralBlockWrapper::randomCtlVec starting" << std::endl;
 
   // Initialize index
   size_t index = offset;
@@ -797,15 +797,15 @@ void SaberCentralBlock::randomCtlVec(atlas::Field & cv,
     throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
-  oops::Log::trace() << "SaberCentralBlock::randomCtlVec done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::randomCtlVec done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
-                                     oops::FieldSet3D & fset3d,
-                                     const size_t & offset) const {
-  oops::Log::trace() << "SaberCentralBlock::multiplySqrt starting" << std::endl;
+void CentralBlockWrapper::multiplySqrt(const atlas::Field & cv,
+                                       oops::FieldSet3D & fset3d,
+                                       const size_t & offset) const {
+  oops::Log::trace() << "CentralBlockWrapper::multiplySqrt starting" << std::endl;
 
   // Initialize index
   size_t index = offset;
@@ -908,15 +908,15 @@ void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
     throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
-  oops::Log::trace() << "SaberCentralBlock::multiplySqrt done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::multiplySqrt done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::multiplySqrtAD(const oops::FieldSet3D & fset3d,
-                                       atlas::Field & cv,
-                                       const size_t & offset) const {
-  oops::Log::trace() << "SaberCentralBlock::multiplySqrtAD starting" << std::endl;
+void CentralBlockWrapper::multiplySqrtAD(const oops::FieldSet3D & fset3d,
+                                         atlas::Field & cv,
+                                         const size_t & offset) const {
+  oops::Log::trace() << "CentralBlockWrapper::multiplySqrtAD starting" << std::endl;
 
   // Initialize index
   size_t index = offset;
@@ -1039,13 +1039,13 @@ void SaberCentralBlock::multiplySqrtAD(const oops::FieldSet3D & fset3d,
     throw eckit::Exception("invalid multivariate strategy", Here());
   }
 
-  oops::Log::trace() << "SaberCentralBlock::multiplySqrtAD done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::multiplySqrtAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
-  oops::Log::trace() << "SaberCentralBlock::calibrateBlock starting" << std::endl;
+void CentralBlockWrapper::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
+  oops::Log::trace() << "CentralBlockWrapper::calibrateBlock starting" << std::endl;
 
   // Create empty ensemble
   std::vector<util::DateTime> dates;
@@ -1056,13 +1056,13 @@ void SaberCentralBlock::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
   oops::Log::info() << "Info     : Direct calibration (without ensemble)" << std::endl;
   this->directCalibration(fsetEns);
 
-  oops::Log::trace() << "SaberCentralBlock::calibrateBlock done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::calibrateBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::adjointTest(const double & globalAdjointTolerance) const {
-  oops::Log::trace() << "SaberCentralBlock::adjointTest starting" << std::endl;
+void CentralBlockWrapper::adjointTest(const double & globalAdjointTolerance) const {
+  oops::Log::trace() << "CentralBlockWrapper::adjointTest starting" << std::endl;
 
   // Separate test for each group
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
@@ -1162,13 +1162,13 @@ void SaberCentralBlock::adjointTest(const double & globalAdjointTolerance) const
     }
   }
 
-  oops::Log::trace() << "SaberCentralBlock::adjointTest done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::adjointTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::sqrtTest(const double & globalSqrtTolerance) const {
-  oops::Log::trace() << "SaberOuterBlockBase::sqrtTest starting" << std::endl;
+void CentralBlockWrapper::sqrtTest(const double & globalSqrtTolerance) const {
+  oops::Log::trace() << "OuterBlockBase::sqrtTest starting" << std::endl;
 
   // Separate test for each group
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
@@ -1348,13 +1348,13 @@ void SaberCentralBlock::sqrtTest(const double & globalSqrtTolerance) const {
       throw eckit::Exception("Square-root test failure for the multivariate central block", Here());
     }
   }
-  oops::Log::trace() << "SaberCentralBlock::sqrtTest done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::sqrtTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::applyWeights(oops::FieldSet3D & fset3d) const {
-  oops::Log::trace() << "SaberCentralBlock::applyWeights starting" << std::endl;
+void CentralBlockWrapper::applyWeights(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "CentralBlockWrapper::applyWeights starting" << std::endl;
 
   // Check strategy
   ASSERT(strategy_ == "duplicated and weighted");
@@ -1396,13 +1396,13 @@ void SaberCentralBlock::applyWeights(oops::FieldSet3D & fset3d) const {
     }
   }
 
-  oops::Log::trace() << "SaberCentralBlock::applyWeights done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::applyWeights done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::applyWeightsAD(oops::FieldSet3D & fset3d) const {
-  oops::Log::trace() << "SaberCentralBlock::applyWeightsAD starting" << std::endl;
+void CentralBlockWrapper::applyWeightsAD(oops::FieldSet3D & fset3d) const {
+  oops::Log::trace() << "CentralBlockWrapper::applyWeightsAD starting" << std::endl;
 
   // Check strategy
   ASSERT(strategy_ == "duplicated and weighted");
@@ -1444,7 +1444,7 @@ void SaberCentralBlock::applyWeightsAD(oops::FieldSet3D & fset3d) const {
     }
   }
 
-  oops::Log::trace() << "SaberCentralBlock::applyWeightsAD done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::applyWeightsAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

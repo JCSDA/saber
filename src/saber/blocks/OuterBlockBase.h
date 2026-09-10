@@ -32,7 +32,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace oops {
   class FieldSet3D;
@@ -42,20 +42,20 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockBase : public util::Printable,
+class OuterBlockBase : public util::Printable,
                             private eckit::NonCopyable {
  public:
-  explicit SaberOuterBlockBase(const SaberBlockParametersBase & params,
-                               const util::DateTime & validTime,
-                               const oops::GeometryData & outerGeometryData,
-                               const oops::Variables & outerVars)
+  explicit OuterBlockBase(const BlockParametersBase & params,
+                          const util::DateTime & validTime,
+                          const oops::GeometryData & outerGeometryData,
+                          const oops::Variables & outerVars)
     : validTime_(validTime),
       outerGeometryData_(outerGeometryData),
       outerVars_(outerVars),
       blockName_(params.saberBlockName),
       skipInverse_(params.skipInverse)
     {}
-  virtual ~SaberOuterBlockBase() {}
+  virtual ~OuterBlockBase() {}
 
   // Accessor
 
@@ -204,51 +204,51 @@ class SaberOuterBlockBase : public util::Printable,
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockFactory;
+class OuterBlockFactory;
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockParametersWrapper : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(SaberOuterBlockParametersWrapper, Parameters)
+class OuterBlockParametersWrapper : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(OuterBlockParametersWrapper, Parameters)
  public:
-  oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberOuterBlockFactory>
+  oops::RequiredPolymorphicParameter<BlockParametersBase, OuterBlockFactory>
     saberOuterBlockParameters{"saber block name", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockFactory {
+class OuterBlockFactory {
  public:
-  static std::shared_ptr<SaberOuterBlockBase> create(const oops::GeometryData &,
-                                                     const oops::Variables &,
-                                                     const eckit::Configuration &,
-                                                     const SaberBlockParametersBase &,
-                                                     const oops::FieldSet3D &,
-                                                     const oops::FieldSet3D &);
+  static std::shared_ptr<OuterBlockBase> create(const oops::GeometryData &,
+                                                const oops::Variables &,
+                                                const eckit::Configuration &,
+                                                const BlockParametersBase &,
+                                                const oops::FieldSet3D &,
+                                                const oops::FieldSet3D &);
 
-  static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
+  static std::unique_ptr<BlockParametersBase> createParameters(const std::string &name);
 
   static std::vector<std::string> getMakerNames() {
     return oops::keys(getMakers());
   }
 
-  virtual ~SaberOuterBlockFactory() = default;
+  virtual ~OuterBlockFactory() = default;
 
  protected:
-  explicit SaberOuterBlockFactory(const std::string &name);
+  explicit OuterBlockFactory(const std::string &name);
 
  private:
-  virtual std::shared_ptr<SaberOuterBlockBase> make(const oops::GeometryData &,
-                                                    const oops::Variables &,
-                                                    const eckit::Configuration &,
-                                                    const SaberBlockParametersBase &,
-                                                    const oops::FieldSet3D &,
-                                                    const oops::FieldSet3D &) = 0;
+  virtual std::shared_ptr<OuterBlockBase> make(const oops::GeometryData &,
+                                               const oops::Variables &,
+                                               const eckit::Configuration &,
+                                               const BlockParametersBase &,
+                                               const oops::FieldSet3D &,
+                                               const oops::FieldSet3D &) = 0;
 
-  virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
+  virtual std::unique_ptr<BlockParametersBase> makeParameters() const = 0;
 
-  static std::map < std::string, SaberOuterBlockFactory * > & getMakers() {
-    static std::map < std::string, SaberOuterBlockFactory * > makers_;
+  static std::map < std::string, OuterBlockFactory * > & getMakers() {
+    static std::map < std::string, OuterBlockFactory * > makers_;
     return makers_;
   }
 };
@@ -256,35 +256,35 @@ class SaberOuterBlockFactory {
 // -----------------------------------------------------------------------------
 
 template<class T>
-class SaberOuterBlockMaker : public SaberOuterBlockFactory {
+class OuterBlockMaker : public OuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  std::shared_ptr<SaberOuterBlockBase> make(const oops::GeometryData & outerGeometryData,
-                                            const oops::Variables & outerVars,
-                                            const eckit::Configuration & covarConf,
-                                            const SaberBlockParametersBase & params,
-                                            const oops::FieldSet3D & xb,
-                                            const oops::FieldSet3D & fg) override {
+  std::shared_ptr<OuterBlockBase> make(const oops::GeometryData & outerGeometryData,
+                                       const oops::Variables & outerVars,
+                                       const eckit::Configuration & covarConf,
+                                       const BlockParametersBase & params,
+                                       const oops::FieldSet3D & xb,
+                                       const oops::FieldSet3D & fg) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_shared<T>(outerGeometryData, outerVars,
                                covarConf, stronglyTypedParams, xb, fg);
   }
 
-  std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
+  std::unique_ptr<BlockParametersBase> makeParameters() const override {
     return std::make_unique<Parameters_>();
   }
 
  public:
-  explicit SaberOuterBlockMaker(const std::string & name) : SaberOuterBlockFactory(name) {}
+  explicit OuterBlockMaker(const std::string & name) : OuterBlockFactory(name) {}
 };
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberOuterBlockBase::read(const oops::Geometry<MODEL> & geom,
-                               const bool & validModelGeom,
-                               const oops::Variables & vars) {
-  oops::Log::trace() << "SaberOuterBlockBase::read starting" << std::endl;
+void OuterBlockBase::read(const oops::Geometry<MODEL> & geom,
+                          const bool & validModelGeom,
+                          const oops::Variables & vars) {
+  oops::Log::trace() << "OuterBlockBase::read starting" << std::endl;
 
   // Cannot read files without a valid MODEL geometry
   ASSERT(validModelGeom || (this->getReadConfs().size() == 0));
@@ -312,16 +312,16 @@ void SaberOuterBlockBase::read(const oops::Geometry<MODEL> & geom,
   }
   this->setReadFields(fsetVec);
 
-  oops::Log::trace() << "SaberOuterBlockBase::read done" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberOuterBlockBase::write(const oops::Geometry<MODEL> & geom,
-                                const bool & validModelGeom,
-                                const oops::Variables & vars) const {
-  oops::Log::trace() << "SaberOuterBlockBase::write starting" << std::endl;
+void OuterBlockBase::write(const oops::Geometry<MODEL> & geom,
+                           const bool & validModelGeom,
+                           const oops::Variables & vars) const {
+  oops::Log::trace() << "OuterBlockBase::write starting" << std::endl;
 
   // Cannot write files without a valid MODEL geometry
   ASSERT(validModelGeom || (this->fieldsToWrite().size() == 0));
@@ -350,7 +350,7 @@ void SaberOuterBlockBase::write(const oops::Geometry<MODEL> & geom,
     dx.write(output.first);
   }
 
-  oops::Log::trace() << "SaberOuterBlockBase::write done" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

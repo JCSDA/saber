@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/blocks/SaberEnsembleBlockChain.h"
+#include "saber/blocks/EnsembleBlockChain.h"
 
 #include <map>
 #include <string>
@@ -56,8 +56,8 @@ oops::FieldSet3D squaredMember(const ScaleData & scaleData, const size_t ie) {
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiply starting" << std::endl;
+void EnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiply starting" << std::endl;
 
   if (strategy_ == "separated") {
     // Outer blocks adjoint multiplication
@@ -159,13 +159,13 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
     multiplySqrt(cv, fset4d, 0);
   }
 
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiply done" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::randomize starting" << std::endl;
+void EnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "saber::EnsembleBlockChain::randomize starting" << std::endl;
 
   if (strategy_ == "separated") {
     // Central block: randomization with ensemble covariance
@@ -260,14 +260,14 @@ void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
     multiplySqrt(cv, fset4d, 0);
   }
 
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::randomize done" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::randomCtlVec(atlas::Field & cv,
+void EnsembleBlockChain::randomCtlVec(atlas::Field & cv,
                                            const size_t & offset) const {
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::randomCtlVec starting" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::randomCtlVec starting" << std::endl;
 
   // Initialization
   size_t index = offset;
@@ -299,15 +299,15 @@ void SaberEnsembleBlockChain::randomCtlVec(atlas::Field & cv,
     }
   }
 
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::randomCtlVec done" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::randomCtlVec done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
+void EnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
                                            oops::FieldSet4D & fset4d,
                                            const size_t & offset) const {
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiplySqrt starting" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiplySqrt starting" << std::endl;
 
   // Initialization
   const auto & scaleData = scaleDataVec_[0];
@@ -393,15 +393,15 @@ void SaberEnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
     outerBlockChain_->applyOuterBlocks(fset4d);
   }
 
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiplySqrt done" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiplySqrt done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
+void EnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
                                              atlas::Field & cv,
                                              const size_t & offset) const {
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiplySqrtAD starting" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiplySqrtAD starting" << std::endl;
 
   // Copy input FieldSet
   oops::FieldSet4D fset4dInit = oops::copyFieldSet4D(fset4d);
@@ -504,17 +504,17 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
     }
   }
 
-  oops::Log::trace() << "saber::SaberEnsembleBlockChain::multiplySqrtAD done" << std::endl;
+  oops::Log::trace() << "saber::EnsembleBlockChain::multiplySqrtAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-oops::FieldSet3D SaberEnsembleBlockChain::variance() const {
-  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::variance starting"
+oops::FieldSet3D EnsembleBlockChain::variance() const {
+  oops::Log::trace() << "saber::generic::EnsembleBlockChain::variance starting"
                      << std::endl;
 
   if (strategy_ == "crossed") {
-    throw eckit::NotImplemented("SaberEnsembleBlockChain::variance not implemented for the "
+    throw eckit::NotImplemented("EnsembleBlockChain::variance not implemented for the "
                                 "\"crossed\" multiscale strategy", Here());
   }
 
@@ -524,7 +524,7 @@ oops::FieldSet3D SaberEnsembleBlockChain::variance() const {
   const auto scaleVariance = [this](const ScaleData & scaleData) {
     const oops::FieldSets & ensemble = *scaleData.ensemble();
     if (ensemble.local_ens_size() == 0) {
-      throw eckit::BadParameter("SaberEnsembleBlockChain::variance needs a non-empty ensemble",
+      throw eckit::BadParameter("EnsembleBlockChain::variance needs a non-empty ensemble",
                                 Here());
     }
     oops::FieldSet3D variance = squaredMember(scaleData, 0);
@@ -558,7 +558,7 @@ oops::FieldSet3D SaberEnsembleBlockChain::variance() const {
     outerBlockChain_->applyBackgroundVariance(variance);
   }
 
-  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::variance done"
+  oops::Log::trace() << "saber::generic::EnsembleBlockChain::variance done"
                      << std::endl;
   return variance;
 }

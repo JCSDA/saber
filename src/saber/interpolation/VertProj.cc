@@ -82,7 +82,7 @@ void verticalProjectionAD(atlas::FieldSet & fsetin, atlas::FieldSet & fsetout) {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<VertProj> makerVertProj_("simple vertical projection");
+static OuterBlockMaker<VertProj> makerVertProj_("simple vertical projection");
 
 // -----------------------------------------------------------------------------
 // Note that this is assumes that the variables in activevars
@@ -94,7 +94,7 @@ VertProj::VertProj(const oops::GeometryData & outerGeometryData,
                    const Parameters_ & params,
                    const oops::FieldSet3D & xb,
                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     innerVars_(createInnerVars(params.innerVerticalLevels, activeVars_, outerVars))
 {

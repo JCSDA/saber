@@ -22,7 +22,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -30,7 +30,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<HpToHexner>
+static OuterBlockMaker<HpToHexner>
   makerHpToHexner_("mo_hydrostatic_pressure_to_hydrostatic_exner");
 
 // -----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.getActiveVars(outerVars)),
     xb_(xb.validTime(), xb.commGeom())

@@ -26,7 +26,7 @@
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 
@@ -293,7 +293,7 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DryAirDensityFromExnerm1>
+static OuterBlockMaker<DryAirDensityFromExnerm1>
   makerDryAirDensityFromExnerm1_("mo_dry_air_density_from_exnerm1");
 
 // -----------------------------------------------------------------------------
@@ -304,7 +304,7 @@ DryAirDensityFromExnerm1::DryAirDensityFromExnerm1(const oops::GeometryData & ou
                                                    const Parameters_ & params,
                                                    const oops::FieldSet3D & xb,
                                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

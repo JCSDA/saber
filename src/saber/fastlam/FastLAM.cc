@@ -31,7 +31,7 @@ namespace fastlam {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<FastLAM> makerFastLAM_("FastLAM");
+static CentralBlockMaker<FastLAM> makerFastLAM_("FastLAM");
 
 // -----------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ FastLAM::FastLAM(const oops::GeometryData & geometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg) :
-    SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+    CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     comm_(geometryData.comm()),
     params_(params.calibration.value() ? *params.calibration.value()
       : *params.read.value()),

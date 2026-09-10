@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -52,8 +52,8 @@ class MoistureControlCalibrationParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class MoistureControlParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistureControlParameters, SaberBlockParametersBase)
+class MoistureControlParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistureControlParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<MoistureControlCalibrationParameters>
@@ -94,7 +94,7 @@ class MoistureControlParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class MoistureControl : public SaberOuterBlockBase {
+class MoistureControl : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::MoistureControl";}
 

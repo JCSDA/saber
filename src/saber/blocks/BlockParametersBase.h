@@ -22,8 +22,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberBlockParametersBase : public oops::Parameters {
-  OOPS_ABSTRACT_PARAMETERS(SaberBlockParametersBase, Parameters)
+class BlockParametersBase : public oops::Parameters {
+  OOPS_ABSTRACT_PARAMETERS(BlockParametersBase, Parameters)
 
  public:
   // REQUIRED

@@ -27,7 +27,7 @@ namespace interpolation {
 /// \details This class computes and applies multiplicative normalization coefficients
 ///          after interpolation in a covariance or correlation matrix. It only
 ///          works with the atlas::interpolation::AtlasInterpolationWrapper interpolation.
-///          This could have been defined as a SaberOuterBlock, but would have required
+///          This could have been defined as a OuterBlock, but would have required
 ///          recomputing an atlas interpolation and redistribution. This is best used as a
 ///          member in an interpolation class to reuse what is already computed here.
 class Rescaling{

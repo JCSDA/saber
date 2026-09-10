@@ -21,7 +21,7 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<VerticalBalance> makerVerticalBalance_("BUMP_VerticalBalance");
+static OuterBlockMaker<VerticalBalance> makerVerticalBalance_("BUMP_VerticalBalance");
 
 // -----------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     activeVars_(params.getActiveVars(outerVars)),

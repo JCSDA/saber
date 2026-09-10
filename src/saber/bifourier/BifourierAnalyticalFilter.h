@@ -21,16 +21,16 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierAnalyticalFilterParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierAnalyticalFilterParameters, SaberBlockParametersBase)
+class BifourierAnalyticalFilterParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierAnalyticalFilterParameters, BlockParametersBase)
 
  public:
     // Minimum waveband (optional)
@@ -50,7 +50,7 @@ class BifourierAnalyticalFilterParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierAnalyticalFilter : public SaberOuterBlockBase {
+class BifourierAnalyticalFilter : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::bifourier::BifourierAnalyticalFilter";}
 

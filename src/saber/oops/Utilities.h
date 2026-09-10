@@ -36,7 +36,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/ParallelFieldSetIO.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace oops {
   class FieldSet3D;
@@ -46,17 +46,17 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase & params,
+oops::Variables getActiveVars(const BlockParametersBase & params,
                               const oops::Variables & defaultVars);
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
+oops::Variables getUnionOfInnerActiveAndOuterVars(const BlockParametersBase & params,
                                                   const oops::Variables & outerVars);
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getInnerOnlyVars(const SaberBlockParametersBase & params,
+oops::Variables getInnerOnlyVars(const BlockParametersBase & params,
                                  const oops::Variables & outerVars);
 
 // -----------------------------------------------------------------------------

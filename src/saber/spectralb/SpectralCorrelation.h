@@ -15,8 +15,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 namespace saber {
@@ -24,8 +24,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCorrelationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralCorrelationParameters, SaberBlockParametersBase)
+class SpectralCorrelationParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralCorrelationParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<spectralbCalibrationVertCovParameters>
@@ -38,7 +38,7 @@ class SpectralCorrelationParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCorrelation : public SaberCentralBlockBase {
+class SpectralCorrelation : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SpectralCorrelation";}
 

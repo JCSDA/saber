@@ -16,14 +16,14 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class AirTemperatureParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberBlockParametersBase)
+class AirTemperatureParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {
@@ -59,8 +59,8 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberBlockParametersBase)
+class MoistIncrOpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, BlockParametersBase)
 
  public:
   oops::RequiredParameter<std::string> mio_file{"moisture incrementing operator file", this};
@@ -99,8 +99,8 @@ class MoistIncrOpParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SuperMoistIncrOpParameters, SaberBlockParametersBase)
+class SuperMoistIncrOpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SuperMoistIncrOpParameters, BlockParametersBase)
 
  public:
   AirTemperatureParameters airTemperature{this};

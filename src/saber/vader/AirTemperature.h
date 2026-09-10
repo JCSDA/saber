@@ -19,8 +19,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {
@@ -32,7 +32,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class AirTemperature : public SaberOuterBlockBase {
+class AirTemperature : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::AirTemperature";}
 

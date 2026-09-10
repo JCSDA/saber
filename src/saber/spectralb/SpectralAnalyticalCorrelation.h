@@ -17,7 +17,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 #include "saber/spectralb/SpectralAnalyticalImpl.h"
 
 namespace saber {
@@ -25,7 +25,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralAnalyticalCorrelation : public SaberCentralBlockBase {
+class SpectralAnalyticalCorrelation : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SpectralAnalyticalCorrelation";}
 

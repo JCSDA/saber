@@ -280,7 +280,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SpectralToGauss> makerSpectralToGauss_("spectral to gauss");
+static OuterBlockMaker<SpectralToGauss> makerSpectralToGauss_("spectral to gauss");
 
 // -----------------------------------------------------------------------------
 
@@ -290,7 +290,7 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     activeVars_(params.getActiveVars(outerVars)),
     useWindTransform_(outerVars.has("eastward_wind") && outerVars.has("northward_wind")),
     innerVars_(createInnerVars(outerVars, activeVars_, useWindTransform_)),

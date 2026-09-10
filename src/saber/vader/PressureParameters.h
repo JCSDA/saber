@@ -17,14 +17,14 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class GaussUVToGPParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, SaberBlockParametersBase)
+class GaussUVToGPParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
@@ -75,8 +75,8 @@ class GpToHpCalibrationReadParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class GpToHpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GpToHpParameters, SaberBlockParametersBase)
+class GpToHpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GpToHpParameters, BlockParametersBase)
 
  public:
   // Read parameters
@@ -113,8 +113,8 @@ class GpToHpParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class GpToHpm1Parameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GpToHpm1Parameters, SaberBlockParametersBase)
+class GpToHpm1Parameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GpToHpm1Parameters, BlockParametersBase)
 
  public:
   // Read parameters
@@ -147,8 +147,8 @@ class GpToHpm1Parameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class HydrostaticPressureParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticPressureParameters, SaberBlockParametersBase)
+class HydrostaticPressureParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydrostaticPressureParameters, BlockParametersBase)
 
  public:
   GaussUVToGPParameters gaussUVToGp{this};
@@ -196,8 +196,8 @@ class HydrostaticPressureParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class HydrostaticPressureMinusOneParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticPressureMinusOneParameters, SaberBlockParametersBase)
+class HydrostaticPressureMinusOneParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydrostaticPressureMinusOneParameters, BlockParametersBase)
 
  public:
   GaussUVToGPParameters gaussUVToGp{this};

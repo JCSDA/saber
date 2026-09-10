@@ -24,7 +24,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/blocks/ParametricBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -49,7 +49,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberParametricBlockChain> loc_;
+  std::unique_ptr<ParametricBlockChain> loc_;
 };
 
 // -----------------------------------------------------------------------------
@@ -89,7 +89,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   confUpdated.set("time covariance", "univariate");
 
   // Initialize localization blockchain
-  loc_ = std::make_unique<SaberParametricBlockChain>(geom,
+  loc_ = std::make_unique<ParametricBlockChain>(geom,
               incVars, xb4d, fg4d, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

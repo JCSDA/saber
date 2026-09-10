@@ -20,7 +20,7 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
+static CentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 
 // -----------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const Parameters_ & params,
              const oops::FieldSet3D & xb,
              const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     activeVars_(params.getActiveVars(centralVars)),
     bumpParams_(params.calibrationParams.value() != boost::none ? *params.calibrationParams.value()
       : *params.readParams.value()),

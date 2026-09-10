@@ -17,9 +17,9 @@
 #include "oops/base/FieldSet4D.h"
 #include "oops/base/FieldSets.h"
 
-#include "saber/blocks/SaberBlockChainBase.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/BlockChainBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 
 #include "saber/gsi/covariance/Covariance.h"
@@ -30,28 +30,28 @@ namespace saber {
 
 namespace gsi {
 
-class SaberGSIBlockChainParameters: public ErrorCovarianceParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SaberGSIBlockChainParameters, ErrorCovarianceParametersBase)
+class GSIBlockChainParameters: public ErrorCovarianceParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GSIBlockChainParameters, ErrorCovarianceParametersBase)
 
  public:
   // Central and outer blocks
   oops::RequiredParameter<gsi::CovarianceParameters>
     saberCentralBlockParams{"saber central block", this};
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
 };
 
 /// GSI covariance block chain with interpolation (optional). Elevated to block
 /// chain status because it handles ensemble covariance within.
-class SaberGSIBlockChain : public SaberBlockChainBase {
+class GSIBlockChain : public BlockChainBase {
  public:
   template<typename MODEL>
-  SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
-                     const oops::Variables & outerVars,
-                     oops::FieldSet4D & fset4dXb,
-                     oops::FieldSet4D & fset4dFg,
-                     const eckit::Configuration & conf);
-  ~SaberGSIBlockChain();
+  GSIBlockChain(const oops::Geometry<MODEL> & geom,
+                const oops::Variables & outerVars,
+                oops::FieldSet4D & fset4dXb,
+                oops::FieldSet4D & fset4dFg,
+                const eckit::Configuration & conf);
+  ~GSIBlockChain();
 
   /// @brief Randomize the increment according to this B matrix.
   void randomize(oops::FieldSet4D &) const;
@@ -88,7 +88,7 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
   /// @brief Outer variables
   const oops::Variables outerVariables_;
   /// Outer blocks (typically GSI interpolation, but not limited to that)
-  std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
+  std::unique_ptr<OuterBlockChain> outerBlockChain_;
 
   // Fortran LinkedList key
   CovarianceKey keySelf_;
@@ -101,16 +101,16 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Variables & outerVars,
-                       oops::FieldSet4D & fset4dXb,
-                       oops::FieldSet4D & fset4dFg,
-                       const eckit::Configuration & conf)
+GSIBlockChain::GSIBlockChain(const oops::Geometry<MODEL> & geom,
+                             const oops::Variables & outerVars,
+                             oops::FieldSet4D & fset4dXb,
+                             oops::FieldSet4D & fset4dFg,
+                             const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars) {
-  oops::Log::trace() << "SaberGSIBlockChain ctor starting" << std::endl;
+  oops::Log::trace() << "GSIBlockChain ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
-  SaberGSIBlockChainParameters params;
+  GSIBlockChainParameters params;
   params.deserialize(conf);
   eckit::LocalConfiguration fullConf;
   params.serialize(fullConf);
@@ -124,7 +124,7 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
 
   // If needed create outer block chain
   if (params.saberOuterBlocksParams.value()) {
-    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
+    outerBlockChain_ = std::make_unique<OuterBlockChain>(geom, outerVariables_,
                           fset4dXb, fset4dFg,
                           fullConf, *params.saberOuterBlocksParams.value());
   }
@@ -204,7 +204,7 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
     }
   }
 
-  oops::Log::trace() << "SaberGSIBlockChain ctor done" << std::endl;
+  oops::Log::trace() << "GSIBlockChain ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

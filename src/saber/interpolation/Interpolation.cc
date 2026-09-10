@@ -17,7 +17,7 @@ namespace interpolation {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
+static OuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
 
 // -----------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     invVars_(params.inverseVars.value())
@@ -163,7 +163,7 @@ void Interpolation::inverseMultiply(oops::FieldSet3D & fieldSet) const {
   // If specific `state variables to inverse` were requested in the yaml, apply the (inverse)
   // interpolator to those variables only. Otherwise, apply the (inverse) interpolator to the
   // whole fieldset.
-  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::inverseMultiply
+  // NOTE that in a OuterBlockChain, the logic to call Interpolation::inverseMultiply
   // includes checking for the existence of the `state variables to inverse` key. Thus, omitting
   // the yaml key is likely to skip the inverseMultiply completely.
   const oops::Variables invVars = (invVars_.size() > 0 ? invVars_ : fieldSet.variables());

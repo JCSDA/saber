@@ -10,7 +10,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<BifourierCovariance> makerBifourierCovariance_("BifourierCovariance");
+static CentralBlockMaker<BifourierCovariance> makerBifourierCovariance_("BifourierCovariance");
 
 // -----------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ BifourierCovariance::BifourierCovariance(const oops::GeometryData & geometryData
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars)
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars)
 {
   oops::Log::trace() << classname() << "::BifourierCovariance starting" << std::endl;
 

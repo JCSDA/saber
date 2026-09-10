@@ -23,7 +23,7 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 namespace bifourier {
@@ -97,8 +97,8 @@ class BifourierCovarianceImplWriteParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class BifourierCovarianceImplParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierCovarianceImplParameters, SaberBlockParametersBase)
+class BifourierCovarianceImplParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierCovarianceImplParameters, BlockParametersBase)
 
  public:
   // Read parameters

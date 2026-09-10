@@ -24,7 +24,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BifourierAromeBalance>
+static OuterBlockMaker<BifourierAromeBalance>
   makerBifourierAromeBalance_("BifourierAromeBalance");
 
 // -----------------------------------------------------------------------------

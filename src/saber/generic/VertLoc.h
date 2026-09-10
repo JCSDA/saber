@@ -25,8 +25,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -47,8 +47,8 @@ class VertLocCovarianceParameters : public oops::Parameters {
                                                           this};
 };
 
-class VertLocParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VertLocParameters, SaberBlockParametersBase)
+class VertLocParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VertLocParameters, BlockParametersBase)
  public:
   oops::RequiredParameter<VertLocCovarianceParameters>
     VertLocParams{"localization data", this};
@@ -61,7 +61,7 @@ class VertLocParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 /// \brief  This saber block applies a vertical localization to active variables
-class VertLoc : public SaberOuterBlockBase {
+class VertLoc : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::VertLoc";}
 

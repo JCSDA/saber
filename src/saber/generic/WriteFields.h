@@ -16,16 +16,16 @@
 #include "oops/base/GeometryData.h"
 #include "oops/util/ParallelFieldSetIO.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class WriteFieldsParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(WriteFieldsParameters, SaberBlockParametersBase)
+class WriteFieldsParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(WriteFieldsParameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
@@ -66,7 +66,7 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class WriteFields : public SaberOuterBlockBase {
+class WriteFields : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::generic::WriteFields";}
 

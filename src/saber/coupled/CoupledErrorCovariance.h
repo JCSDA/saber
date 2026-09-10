@@ -33,7 +33,7 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberBlockChainBase.h"
+#include "saber/blocks/BlockChainBase.h"
 #include "saber/coupled/CoupledErrorCovarianceParameters.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
@@ -80,20 +80,20 @@ class CoupledErrorCovariance
   void print(std::ostream &) const override;
 
   /// Chain of blocks (hybrid or ensemble or parametric) for each component model
-  std::unique_ptr<SaberBlockChainBase> blockChain1_;
-  std::unique_ptr<SaberBlockChainBase> blockChain2_;
+  std::unique_ptr<BlockChainBase> blockChain1_;
+  std::unique_ptr<BlockChainBase> blockChain2_;
   /// @brief  Interpolation operators to the other model's geometry (if needed)
   std::unique_ptr<oops::GlobalInterpolator> interp12_;
   std::unique_ptr<oops::GlobalInterpolator> interp21_;
   /// Variables for each component model
   const std::vector<oops::Variables> incVars_;
   /// @brief  Common outer block chains, one for each model (if needed)
-  std::unique_ptr<SaberOuterBlockChain> commonOuterBlockChain1_;
-  std::unique_ptr<SaberOuterBlockChain> commonOuterBlockChain2_;
+  std::unique_ptr<OuterBlockChain> commonOuterBlockChain1_;
+  std::unique_ptr<OuterBlockChain> commonOuterBlockChain2_;
 
   /// Helper method to create block chain for a component model
   template<typename MODEL>
-  std::unique_ptr<SaberBlockChainBase> createBlockChain(
+  std::unique_ptr<BlockChainBase> createBlockChain(
     const oops::Geometry<MODEL> & geom,
     const oops::Variables & vars,
     const ErrorCovarianceParameters & params,
@@ -188,14 +188,14 @@ CoupledErrorCovariance<MODEL1, MODEL2>::CoupledErrorCovariance(const Geometry_ &
       fset4dFg2[jt].shallowCopy(fset2fg);
     }
     // Create common outer block chains for each component model
-    commonOuterBlockChain1_ = std::make_unique<SaberOuterBlockChain>(
+    commonOuterBlockChain1_ = std::make_unique<OuterBlockChain>(
                        geom.geometry().geometry1().generic(),
                        incVars,
                        fset4dXb1,
                        fset4dFg1,
                        fullConf,
                        *params.commonOuterBlocks.value());
-    commonOuterBlockChain2_ = std::make_unique<SaberOuterBlockChain>(
+    commonOuterBlockChain2_ = std::make_unique<OuterBlockChain>(
                        geom.geometry().geometry2().generic(),
                        incVars,
                        fset4dXb2,
@@ -210,7 +210,7 @@ CoupledErrorCovariance<MODEL1, MODEL2>::CoupledErrorCovariance(const Geometry_ &
 
 template<typename MODEL1, typename MODEL2>
 template<typename MODEL>
-std::unique_ptr<SaberBlockChainBase>
+std::unique_ptr<BlockChainBase>
   CoupledErrorCovariance<MODEL1, MODEL2>::createBlockChain(
     const oops::Geometry<MODEL> & geom,
     const oops::Variables & vars,
@@ -245,7 +245,7 @@ std::unique_ptr<SaberBlockChainBase>
   }
 
   // Create block chain
-  return SaberBlockChainFactory<MODEL>::create(
+  return BlockChainFactory<MODEL>::create(
        geom,
        outerVars,
        *fset4dXb,

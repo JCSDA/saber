@@ -15,17 +15,17 @@ namespace gsi {
 
 // -----------------------------------------------------------------------------
 
-SaberGSIBlockChain::~SaberGSIBlockChain() {
-  oops::Log::trace() << "SaberGSIBlockChain::~SaberGSIBlockChain starting" << std::endl;
+GSIBlockChain::~GSIBlockChain() {
+  oops::Log::trace() << "GSIBlockChain::~GSIBlockChain starting" << std::endl;
   gsi_covariance_delete_f90(keySelf_);
-  oops::Log::trace() << "SaberGSIBlockChain::~SaberGSIBlockChain done" << std::endl;
+  oops::Log::trace() << "GSIBlockChain::~GSIBlockChain done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberGSIBlockChain::multiply(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "SaberGSIBlockChain::multiply starting" << std::endl;
-  util::Timer timer("SaberGSIBlockChain", "multiply");
+void GSIBlockChain::multiply(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "GSIBlockChain::multiply starting" << std::endl;
+  util::Timer timer("GSIBlockChain", "multiply");
 
   // Outer blocks adjoint multiplication
   if (outerBlockChain_) {
@@ -43,15 +43,15 @@ void SaberGSIBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
   }
-  oops::Log::trace() << "SaberGSIBlockChain::multiply done" << std::endl;
+  oops::Log::trace() << "GSIBlockChain::multiply done" << std::endl;
 }
 
 
 // -----------------------------------------------------------------------------
 
-void SaberGSIBlockChain::randomize(oops::FieldSet4D & fset4d) const {
-  oops::Log::trace() << "SaberGSIBlockChain::randomize starting" << std::endl;
-  util::Timer timer("SaberGSIBlockChain", "randomize");
+void GSIBlockChain::randomize(oops::FieldSet4D & fset4d) const {
+  oops::Log::trace() << "GSIBlockChain::randomize starting" << std::endl;
+  util::Timer timer("GSIBlockChain", "randomize");
 
   // Create central FieldSet4D
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
@@ -66,7 +66,7 @@ void SaberGSIBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   for (const auto & sabField : fset4d[0]) {
       // Ensure that the field name is in the variables list
       if (!centralVars_.has(sabField.name())) {
-        throw eckit::Exception("Field " + sabField.name() + " not found in the SaberGSIBlockChain" +
+        throw eckit::Exception("Field " + sabField.name() + " not found in the GSIBlockChain" +
           " variables.", Here());
       }
 
@@ -85,7 +85,7 @@ void SaberGSIBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
   }
-  oops::Log::trace() << "SaberGSIBlockChain::randomize done" << std::endl;
+  oops::Log::trace() << "GSIBlockChain::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

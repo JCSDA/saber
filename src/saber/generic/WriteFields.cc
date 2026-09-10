@@ -68,7 +68,7 @@ void makeLocalGmshOutput(const std::string& fileName,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<WriteFields> makerWriteFields_("write fields");
+static OuterBlockMaker<WriteFields> makerWriteFields_("write fields");
 
 // -----------------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
                          const Parameters_ & params,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),

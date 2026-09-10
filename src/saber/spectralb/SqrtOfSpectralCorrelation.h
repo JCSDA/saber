@@ -15,8 +15,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 namespace saber {
@@ -24,8 +24,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SqrtOfSpectralCorrelationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SqrtOfSpectralCorrelationParameters, SaberBlockParametersBase)
+class SqrtOfSpectralCorrelationParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SqrtOfSpectralCorrelationParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<spectralbReadParameters> readParams{"read", this};
@@ -34,7 +34,7 @@ class SqrtOfSpectralCorrelationParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SqrtOfSpectralCorrelation : public SaberOuterBlockBase {
+class SqrtOfSpectralCorrelation : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::SqrtOfSpectralCorrelation";}
 

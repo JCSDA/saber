@@ -27,9 +27,9 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 // Forward declarations
@@ -51,16 +51,16 @@ class OffDiagWeightParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockGroupParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(SaberCentralBlockGroupParameters, Parameters)
+class CentralBlockWrapperGroupParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(CentralBlockWrapperGroupParameters, Parameters)
 
  public:
   oops::RequiredParameter<std::string> groupName{"group name", this};
   oops::RequiredParameter<oops::Variables> variables{"variables", this};
 
-  oops::RequiredParameter<SaberCentralBlockParametersWrapper>
+  oops::RequiredParameter<CentralBlockParametersWrapper>
     centralBlock{"group central block", this};
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     outerBlocks{"group outer blocks", this};
 
   // Optional parameter specific to "duplicated"
@@ -73,22 +73,22 @@ class SaberCentralBlockGroupParameters : public oops::Parameters {
     offDiagWeights{"specific off-diagonal weights", this};
 
   // Direct access to central block parameters
-  const SaberBlockParametersBase & centralBlockParams() const
+  const BlockParametersBase & centralBlockParams() const
     {return this->centralBlock.value().blockParams();}
 };
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(SaberCentralBlockParameters, Parameters)
+class CentralBlockWrapperParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(CentralBlockWrapperParameters, Parameters)
 
  public:
   oops::Parameter<std::string> strategy{"multivariate strategy", "single", this};
   // Single block:
-  oops::OptionalPolymorphicParameter<SaberBlockParametersBase, SaberCentralBlockFactory>
+  oops::OptionalPolymorphicParameter<BlockParametersBase, CentralBlockFactory>
     singleBlock{"saber block name", this};
   // Or multiple blocks:
-  oops::OptionalParameter<std::vector<SaberCentralBlockGroupParameters>>
+  oops::OptionalParameter<std::vector<CentralBlockWrapperGroupParameters>>
     groups{"groups", this};
 
   // Type of setup
@@ -102,9 +102,9 @@ class SaberCentralBlockParameters : public oops::Parameters {
 // -----------------------------------------------------------------------------
 
 /**
- * @brief SaberCentralBlock wrapper class
+ * @brief CentralBlockWrapper wrapper class
  * 
- * This class is used in the SaberParametricBlockChain to wrap/contain either
+ * This class is used in the ParametricBlockChain to wrap/contain either
  * one or multiple central blocks to enable flexible covariance models capable
  * of containing more than one central block (e.g./i.e. Scale-Dependent Localization).
  *
@@ -112,15 +112,15 @@ class SaberCentralBlockParameters : public oops::Parameters {
  * the groupCentralBlocks_ private member variable.
  */
 
-class SaberCentralBlock : public util::Printable {
+class CentralBlockWrapper : public util::Printable {
  public:
-  SaberCentralBlock(const oops::GeometryData & geometryData,
-                    const oops::Variables & outerVars,
-                    const eckit::Configuration & covarConf,
-                    const SaberCentralBlockParameters & params,
-                    const oops::FieldSet3D & xb,
-                    const oops::FieldSet3D & fg);
-  ~SaberCentralBlock() = default;
+  CentralBlockWrapper(const oops::GeometryData & geometryData,
+                      const oops::Variables & outerVars,
+                      const eckit::Configuration & covarConf,
+                      const CentralBlockWrapperParameters & params,
+                      const oops::FieldSet3D & xb,
+                      const oops::FieldSet3D & fg);
+  ~CentralBlockWrapper() = default;
 
   // Application methods
 
@@ -174,7 +174,7 @@ class SaberCentralBlock : public util::Printable {
                       oops::FieldSet4D &,
                       oops::FieldSet4D &,
                       const eckit::Configuration &,
-                      std::shared_ptr<SaberOuterBlockChain>,
+                      std::shared_ptr<OuterBlockChain>,
                       std::shared_ptr<oops::FieldSets>);
 
   // Alternative calibrate block, without ensemble
@@ -204,7 +204,7 @@ class SaberCentralBlock : public util::Printable {
   // Valid time
   const util::DateTime validTime_;
   // Parameters
-  const SaberCentralBlockParameters params_;
+  const CentralBlockWrapperParameters params_;
 
   // Multivariate strategy
   std::string strategy_;
@@ -225,9 +225,9 @@ class SaberCentralBlock : public util::Printable {
   // Groups need to write MODEL data
   std::vector<bool> forceWrite_;
   // Group outer block chain
-  std::vector<std::unique_ptr<SaberOuterBlockChain>> groupOuterBlockChains_;
+  std::vector<std::unique_ptr<OuterBlockChain>> groupOuterBlockChains_;
   // Group central block
-  std::vector<std::unique_ptr<SaberCentralBlockBase>> groupCentralBlocks_;
+  std::vector<std::unique_ptr<CentralBlockBase>> groupCentralBlocks_;
 
   // Weights for the "duplicated and weighted" strategy
   std::vector<Eigen::MatrixXd> wgtSqrt_;
@@ -244,37 +244,37 @@ class SaberCentralBlock : public util::Printable {
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlock::read(const oops::Geometry<MODEL> & geom,
-                             const oops::Variables & vars) {
-  oops::Log::trace() << "SaberCentralBlock::read starting" << std::endl;
+void CentralBlockWrapper::read(const oops::Geometry<MODEL> & geom,
+                               const oops::Variables & vars) {
+  oops::Log::trace() << "CentralBlockWrapper::read starting" << std::endl;
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     groupCentralBlocks_[igroup]->read(geom, vars);
   }
-  oops::Log::trace() << "SaberCentralBlock::read done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlock::write(const oops::Geometry<MODEL> & geom) const {
-  oops::Log::trace() << "SaberCentralBlock::write starting" << std::endl;
+void CentralBlockWrapper::write(const oops::Geometry<MODEL> & geom) const {
+  oops::Log::trace() << "CentralBlockWrapper::write starting" << std::endl;
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     groupCentralBlocks_[igroup]->write(geom);
   }
-  oops::Log::trace() << "SaberCentralBlock::write done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void SaberCentralBlock::calibrateBlock(const oops::Geometry<MODEL> & geom,
-                                       const oops::Variables & outerVars,
-                                       oops::FieldSet4D & fset4dXb,
-                                       oops::FieldSet4D & fset4dFg,
-                                       const eckit::Configuration & conf,
-                                       std::shared_ptr<SaberOuterBlockChain> outerBlockChain,
-                                       std::shared_ptr<oops::FieldSets> fsetEns) {
-  oops::Log::trace() << "SaberCentralBlock::calibrateBlock starting" << std::endl;
+void CentralBlockWrapper::calibrateBlock(const oops::Geometry<MODEL> & geom,
+                                         const oops::Variables & outerVars,
+                                         oops::FieldSet4D & fset4dXb,
+                                         oops::FieldSet4D & fset4dFg,
+                                         const eckit::Configuration & conf,
+                                         std::shared_ptr<OuterBlockChain> outerBlockChain,
+                                         std::shared_ptr<oops::FieldSets> fsetEns) {
+  oops::Log::trace() << "CentralBlockWrapper::calibrateBlock starting" << std::endl;
 
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = conf.getBool("iterative ensemble loading");
@@ -312,7 +312,7 @@ void SaberCentralBlock::calibrateBlock(const oops::Geometry<MODEL> & geom,
     this->directCalibration(*fsetEns);
   }
 
-  oops::Log::trace() << "SaberCentralBlock::calibrateBlock done" << std::endl;
+  oops::Log::trace() << "CentralBlockWrapper::calibrateBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

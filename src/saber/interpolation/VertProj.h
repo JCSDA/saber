@@ -18,8 +18,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 // Note that this is a saber block to demonstrate proof of concept
 // When we have a fully working vertical mode to model level saber block
@@ -28,8 +28,8 @@ namespace saber {
 namespace interpolation {
 
 // -----------------------------------------------------------------------------
-class VertProjParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VertProjParameters, SaberBlockParametersBase)
+class VertProjParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VertProjParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
@@ -40,7 +40,7 @@ class VertProjParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class VertProj : public SaberOuterBlockBase {
+class VertProj : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::VertProj";}
 

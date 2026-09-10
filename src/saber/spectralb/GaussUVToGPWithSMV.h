@@ -17,8 +17,8 @@
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameters.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace spectralb {
@@ -29,8 +29,8 @@ namespace spectralb {
 // CubedSphere distribution - this only works if the region around each pole is
 // contained within a single partition.
 
-class GaussUVToGPWithSMVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GaussUVToGPWithSMVParameters, SaberBlockParametersBase)
+class GaussUVToGPWithSMVParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GaussUVToGPWithSMVParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
@@ -66,7 +66,7 @@ class GaussUVToGPWithSMVParameters : public SaberBlockParametersBase {
 /// \brief saber block that converts zonal and meridional wind to geostrophic
 ///        pressure on a Gaussian latitude mesh.
 
-class GaussUVToGPWithSMV : public SaberOuterBlockBase {
+class GaussUVToGPWithSMV : public OuterBlockBase {
  public:
   static const std::string classname() {
     return "saber::spectralb::GaussUVToGP";
