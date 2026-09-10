@@ -561,11 +561,6 @@ void Geometry::setupMask(groupData & group) {
       if ((retval = nc_get_var_float(ncid, lsm_id, zlsm.data()))) ERR(retval, "landseamask");
 
       // Process data
-      for (size_t ilon = 0; ilon < nlon; ++ilon) {
-        if (lon[ilon] > 180.0) {
-          lon[ilon] -= 360.0;
-        }
-      }
       for (size_t ilat = 0; ilat < nlat; ++ilat) {
        for (size_t ilon = 0; ilon < nlon; ++ilon) {
           lsm[ilat*nlon+ilon] = static_cast<double>(zlsm[ilat*nlon+ilon]);

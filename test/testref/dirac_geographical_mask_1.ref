@@ -5,12 +5,12 @@ Input Dirac increment:
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 8.5763293310463120e-04
-    + stddev = 2.9285370632871233e-02
-Norm of input parameter mask: 2.4145392935299274e+01
-Mask norm: 2.4939927826679853e+01
-Mask _land at level 0: inside/outside = 218/622
-Mask _sea at level 0: inside/outside = 622/218
+    + mean   = 1.0351966873706005e-03
+    + stddev = 3.2174472604389409e-02
+Norm of input parameter mask: 2.1977260975835911e+01
+Mask norm: 2.2847319317591726e+01
+Mask _land at level 0: inside/outside = 318/522
+Mask _sea at level 0: inside/outside = 522/318
 Norm of output parameter : 2.7604347483684521e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -67,5 +67,5 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000004e+00
-    + mean   = 5.4723310509181200e-03
-    + stddev = 5.3671036345289712e-02
+    + mean   = 6.6053188461392626e-03
+    + stddev = 5.8907555288233840e-02
