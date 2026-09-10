@@ -118,6 +118,7 @@ type samp_type
    ! Local data
    logical,allocatable :: vbal_mask(:,:)                  !< Vertical balance mask
    logical,allocatable :: local_mask(:,:)                 !< Local mask
+   integer :: nc2ur                                       !< Number of points in subset Sc2, universe, within the filtering radius
    integer,allocatable :: nn_c2a_index(:,:)               !< Nearest diagnostic neighbors from diagnostic points
    real(kind_real),allocatable :: nn_c2a_dist(:,:)        !< Nearest diagnostic neighbors distance from diagnostic points
 
@@ -2723,17 +2724,17 @@ end do
 !$omp end parallel do
 
 ! Add extra point in neighborhood for safety
-nnmax = min(nnmax+1,samp%nc2u)
+samp%nc2ur = min(nnmax+1,samp%nc2u)
 
 ! Allocation
-allocate(samp%nn_c2a_index(nnmax,samp%nc2a))
-allocate(samp%nn_c2a_dist(nnmax,samp%nc2a))
+allocate(samp%nn_c2a_index(samp%nc2ur,samp%nc2a))
+allocate(samp%nn_c2a_dist(samp%nc2ur,samp%nc2a))
 allocate(samp%ldwv_to_c2a(nam%nldwv))
 
 ! Find nearest neighbors
 !$omp parallel do private(ic2a)
 do ic2a=1,samp%nc2a
-   call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nnmax,samp%nn_c2a_index(:,ic2a), &
+   call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),samp%nc2ur,samp%nn_c2a_index(:,ic2a), &
  & samp%nn_c2a_dist(:,ic2a))
 end do
 !$omp end parallel do
@@ -3503,7 +3504,7 @@ if (flt%rflt>zero) then
          kc2u = samp%nn_c2a_index(jc2u,ic2a)
          lcheck_c2f(kc2u) = .true.
          jc2u = jc2u+1
-         if (jc2u>samp%nc2u) exit
+         if (jc2u>samp%nc2ur) exit
       end do
    end do
    flt%nc2f = zss_count(lcheck_c2f)
@@ -3577,7 +3578,7 @@ if (flt%rflt>zero) then
          kc2f = flt%c2u_to_c2f(kc2u)
          if (mpl%msv%isnot(diag_c2f(kc2f))) nc2eff = nc2eff+1
          jc2u = jc2u+1
-         if (jc2u>samp%nc2u) exit
+         if (jc2u>samp%nc2ur) exit
       end do
 
       if (nc2eff>0) then
@@ -3600,7 +3601,7 @@ if (flt%rflt>zero) then
                if (present(val_c2a)) val_eff(ic2eff) = val_c2f(kc2f)
             end if
             jc2u = jc2u+1
-            if (jc2u>samp%nc2u) exit
+            if (jc2u>samp%nc2ur) exit
          end do
 
          ! Apply filter
@@ -3711,7 +3712,7 @@ else
             kc2u = samp%nn_c2a_index(jc2u,ic2a)
             if (mpl%msv%isnot(diag_c2u(kc2u))) diag_c2a(ic2a) = diag_c2u(kc2u)
             jc2u = jc2u+1
-            if (jc2u>samp%nc2u) exit
+            if (jc2u>samp%nc2ur) exit
          end do
       end do
 
