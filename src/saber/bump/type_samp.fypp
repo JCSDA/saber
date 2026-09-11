@@ -1669,23 +1669,11 @@ if (nam%load_samp_local) then
    write(mpl%info,'(a7,a)') '','Read local sampling'
    call mpl%flush
    call samp%read_local(mpl,nam,geom)
-
-   if (samp%sc1) then
-      ! Compute MPI distribution, subset Sc1, halo A and universe
-      write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
-      call mpl%flush
-   end if
 elseif (nam%load_samp_global) then
    ! Read global sampling
    write(mpl%info,'(a7,a)') '','Read global sampling'
    call mpl%flush
    call samp%read_global(mpl,nam,geom)
-
-   if (samp%sc1) then
-      ! Compute MPI distribution, subset Sc1, halo A and universe
-      write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
-      call mpl%flush
-   end if
 else
    ! Compute sampling mask
    if (present(ens)) then
