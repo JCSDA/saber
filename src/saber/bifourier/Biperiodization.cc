@@ -18,7 +18,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<Biperiodization> makerBiperiodization_("Biperiodization");
+static OuterBlockMaker<Biperiodization> makerBiperiodization_("Biperiodization");
 
 // -----------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ Biperiodization::Biperiodization(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     comm_(outerGeometryData.comm()),
     innerVars_(outerVars),
     params_(params)

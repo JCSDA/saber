@@ -28,7 +28,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SqrtOfSpectralCorrelation>
+static OuterBlockMaker<SqrtOfSpectralCorrelation>
     makerSqrtOfSpectralCorrelation_("square root of spectral correlation");
 
 // -----------------------------------------------------------------------------
@@ -39,7 +39,7 @@ SqrtOfSpectralCorrelation::SqrtOfSpectralCorrelation(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params),
     activeVars_(params.getActiveVars(outerVars)),
     specFunctionSpace_(outerGeometryData.functionSpace()),

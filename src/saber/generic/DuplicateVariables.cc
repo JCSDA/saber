@@ -186,7 +186,7 @@ void gatherFields(const std::vector<VariableGroupParameters> & gps,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DuplicateVariables>
+static OuterBlockMaker<DuplicateVariables>
     makerDuplicateVariables_("duplicate variables");
 
 // -----------------------------------------------------------------------------
@@ -197,7 +197,7 @@ DuplicateVariables::DuplicateVariables(const oops::GeometryData & outerGeometryD
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     groups_(params.variableGroupParameters.value()),
     activeVars_(createActiveVars(groups_, outerVars)),
     innerVars_(createInnerVars(outerVars, activeVars_, groups_)),

@@ -17,8 +17,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/interpolation/Rescaling.h"
 #include "saber/interpolation/SMVInterpWrapper.h"
@@ -34,8 +34,8 @@ namespace interpolation {
 
 
 // -----------------------------------------------------------------------------
-class GaussToCSWithSMVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GaussToCSWithSMVParameters, SaberBlockParametersBase)
+class GaussToCSWithSMVParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(GaussToCSWithSMVParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables",
@@ -64,7 +64,7 @@ class GaussToCSWithSMVParameters : public SaberBlockParametersBase {
 
 // ------------------------------------------------------------------------------
 
-class GaussToCSWithSMV : public SaberOuterBlockBase {
+class GaussToCSWithSMV : public OuterBlockBase {
  public:
   static const std::string classname() { return "saber::spectralb::GaussToCSWithSMV"; }
 

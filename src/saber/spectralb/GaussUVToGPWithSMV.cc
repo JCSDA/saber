@@ -373,7 +373,7 @@ void applyRecipNtimesNplus1SpectralScaling(
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GaussUVToGPWithSMV> makerGaussUVToGPWithSMV_(
+static OuterBlockMaker<GaussUVToGPWithSMV> makerGaussUVToGPWithSMV_(
     "gauss winds to geostrophic pressure with smv-interp");
 
 GaussUVToGPWithSMV::GaussUVToGPWithSMV(
@@ -381,7 +381,7 @@ GaussUVToGPWithSMV::GaussUVToGPWithSMV(
     const oops::Variables& outerVars, const eckit::Configuration& covarConf,
     const Parameters_& params, const oops::FieldSet3D& xb,
     const oops::FieldSet3D& fg)
-    : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+    : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
       params_(params),
       innerVars_(removeOuterOnlyVar(
           getUnionOfInnerActiveAndOuterVars(params, outerVars))),

@@ -17,16 +17,16 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierGridToSpectralParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierGridToSpectralParameters, SaberBlockParametersBase)
+class BifourierGridToSpectralParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierGridToSpectralParameters, BlockParametersBase)
 
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}
@@ -34,7 +34,7 @@ class BifourierGridToSpectralParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BifourierGridToSpectral : public SaberOuterBlockBase {
+class BifourierGridToSpectral : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierGridToSpectral";}

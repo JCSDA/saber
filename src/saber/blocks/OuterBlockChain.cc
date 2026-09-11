@@ -18,22 +18,21 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Logger.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
+#include "saber/blocks/OuterBlockChain.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-SaberOuterBlockChain::SaberOuterBlockChain(
-                     const oops::GeometryData & outerGeometryData,
-                     const oops::Variables & outerVars,
-                     oops::FieldSet4D & fset4dXb,
-                     oops::FieldSet4D & fset4dFg,
-                     const eckit::Configuration & conf,
-                     const std::vector<SaberOuterBlockParametersWrapper> & params) {
-  oops::Log::trace() << "SaberOuterBlockChain generic ctor starting" << std::endl;
+OuterBlockChain::OuterBlockChain(const oops::GeometryData & outerGeometryData,
+                                 const oops::Variables & outerVars,
+                                 oops::FieldSet4D & fset4dXb,
+                                 oops::FieldSet4D & fset4dFg,
+                                 const eckit::Configuration & conf,
+                                 const std::vector<OuterBlockParametersWrapper> & params) {
+  oops::Log::trace() << "OuterBlockChain generic ctor starting" << std::endl;
   oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
 
   // Note model data information is not passed to vader.
@@ -53,11 +52,11 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                currentOuterVars,
                activeVars]
             = initBlock(params[jb],
-                          outerBlockConf,
-                          currentOuterGeometryData,
-                          outerVars,
-                          fset4dXb,
-                          fset4dFg);
+                        outerBlockConf,
+                        currentOuterGeometryData,
+                        outerVars,
+                        fset4dXb,
+                        fset4dFg);
 
     // Check block doesn't expect model fields to be read as this is a generic ctor
     if (outerBlocks_.back().first->getReadConfs().size() != 0) {
@@ -94,21 +93,20 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                        currentOuterVars,
                        activeVars);
   }
-  oops::Log::trace() << "SaberOuterBlockChain generic ctor done" << std::endl;
+  oops::Log::trace() << "OuterBlockChain generic ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
-    SaberOuterBlockChain::initBlock(
-            const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper,
-            const eckit::Configuration & outerBlockConf,
-            const oops::GeometryData & outerGeometryData,
-            const oops::Variables & outerVars,
-            oops::FieldSet4D & fset4dXb,
-            oops::FieldSet4D & fset4dFg) {
+std::tuple<const BlockParametersBase&, oops::Variables, oops::Variables>
+    OuterBlockChain::initBlock(const OuterBlockParametersWrapper & saberOuterBlockParamWrapper,
+                               const eckit::Configuration & outerBlockConf,
+                               const oops::GeometryData & outerGeometryData,
+                               const oops::Variables & outerVars,
+                               oops::FieldSet4D & fset4dXb,
+                               oops::FieldSet4D & fset4dFg) {
   // Get outer block parameters
-  const SaberBlockParametersBase & saberOuterBlockParams =
+  const BlockParametersBase & saberOuterBlockParams =
     saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
   // Initialize current outer variables and outer geometry data
@@ -124,7 +122,7 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
                       << saberOuterBlockParams.saberBlockName.value() << std::endl;
 
     // Find the target block, while checking for its unicity
-    std::shared_ptr<SaberOuterBlockBase> targetBlock;
+    std::shared_ptr<OuterBlockBase> targetBlock;
     bool found = false;
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
       if (it->first->blockName() == saberOuterBlockParams.saberBlockName.value()) {
@@ -185,23 +183,23 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
     }
 
     // Create outer block
-    outerBlocks_.emplace_back(std::make_pair(SaberOuterBlockFactory::create(
+    outerBlocks_.emplace_back(std::make_pair(OuterBlockFactory::create(
                                                outerGeometryData,
                                                currentOuterVars,
                                                outerBlockConf,
                                                saberOuterBlockParams,
                                                fset4dXb[0],
                                                fset4dFg[0]),
-                                             saberOuterBlockParams.rightInverse.value()));
+                                               saberOuterBlockParams.rightInverse.value()));
   }
 
-  return std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>(
+  return std::tuple<const BlockParametersBase&, oops::Variables, oops::Variables>(
               saberOuterBlockParams, currentOuterVars, activeVars);
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockChain::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
+void OuterBlockChain::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
   oops::Log::trace() << "calibrateBlock starting" << std::endl;
 
   // Create empty ensemble
@@ -222,8 +220,8 @@ void SaberOuterBlockChain::calibrateBlock(const oops::FieldSet4D & fset4dXb) {
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockChain::interpolateStates(
-        const SaberBlockParametersBase & saberOuterBlockParams,
+void OuterBlockChain::interpolateStates(
+        const BlockParametersBase & saberOuterBlockParams,
         const oops::GeometryData & outerGeometryData,
         oops::FieldSet4D & fset4dXb,
         oops::FieldSet4D & fset4dFg) const {
@@ -243,12 +241,11 @@ void SaberOuterBlockChain::interpolateStates(
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockChain::testLastOuterBlock(
-                        const eckit::Configuration & conf,
-                        const SaberBlockParametersBase & saberOuterBlockParams,
-                        const oops::GeometryData & outerGeometryData,
-                        const oops::Variables & outerVars,
-                        const oops::Variables & activeVars) const {
+void OuterBlockChain::testLastOuterBlock(const eckit::Configuration & conf,
+                                         const BlockParametersBase & saberOuterBlockParams,
+                                         const oops::GeometryData & outerGeometryData,
+                                         const oops::Variables & outerVars,
+                                         const oops::Variables & activeVars) const {
   // Get intersection of active variables and outer/inner variables
   oops::Variables activeOuterVars = outerVars;
   activeOuterVars.intersection(activeVars);
@@ -292,17 +289,125 @@ void SaberOuterBlockChain::testLastOuterBlock(
 
       // Run test
       outerBlocks_.back().first->inverseTest(innerGeometryData(),
-                                       activeInnerVars,
-                                       outerGeometryData,
-                                       activeOuterVars,
-                                       innerVarsToCompare,
-                                       outerVarsToCompare,
-                                       innerInverseTolerance,
-                                       outerInverseTolerance);
+                                             activeInnerVars,
+                                             outerGeometryData,
+                                             activeOuterVars,
+                                             innerVarsToCompare,
+                                             outerVarsToCompare,
+                                             innerInverseTolerance,
+                                             outerInverseTolerance);
     }
   }
 }
 
 // -----------------------------------------------------------------------------
+
+const oops::GeometryData & OuterBlockChain::innerGeometryData() const {
+  if (outerBlocks_.back().second) {
+    // Right-inverse mode
+    return outerBlocks_.back().first->outerGeometryData();
+  } else {
+    // Direct mode
+    return outerBlocks_.back().first->innerGeometryData();
+  }
+}
+
+const oops::Variables & OuterBlockChain::innerVars() const {
+  if (outerBlocks_.back().second) {
+    // Right-inverse mode
+    return outerBlocks_.back().first->outerVars();
+  } else {
+    // Direct modes
+    return outerBlocks_.back().first->innerVars();
+  }
+}
+
+void OuterBlockChain::applyOuterBlocks(oops::FieldSet3D & fset3d) const {
+  for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
+    if (it->second) {
+      // Right-inverse mode
+      it->first.get()->rightInverseMultiply(fset3d);
+    } else {
+      // Direct mode
+      it->first.get()->multiply(fset3d);
+    }
+  }
+}
+
+void OuterBlockChain::applyOuterBlocksAD(oops::FieldSet3D & fset3d) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->second) {
+      // Right-inverse mode
+      throw eckit::Exception("not implemented yet, but it should be", Here());
+    } else {
+      // Direct mode
+      it->first.get()->multiplyAD(fset3d);
+    }
+  }
+}
+
+void OuterBlockChain::applyOuterBlocks(oops::FieldSet4D & fset4d) const {
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    this->applyOuterBlocks(fset4d[jtime]);
+  }
+}
+
+void OuterBlockChain::applyOuterBlocksAD(oops::FieldSet4D & fset4d) const {
+  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
+    this->applyOuterBlocksAD(fset4d[jtime]);
+  }
+}
+
+void OuterBlockChain::leftInverseMultiply(oops::FieldSet3D & fset) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        it->first.get()->multiply(fset);
+      } else {
+        // Direct mode
+        it->first->leftInverseMultiply(fset);
+      }
+    }
+  }
+}
+
+void OuterBlockChain::rightInverseMultiply(oops::FieldSet3D & fset) const {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: right inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        throw eckit::Exception("no right inverse available in right inverse mode", Here());
+      } else {
+        // Direct mode
+        it->first.get()->rightInverseMultiply(fset);
+      }
+    }
+  }
+}
+
+void OuterBlockChain::leftInverseMultiplyExceptLast(oops::FieldSet3D & fset) const {
+  // Outer blocks left inverse multiplication
+  for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
+    if (it->first.get()->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                        << it->first.get()->blockName() << std::endl;
+    } else {
+      if (it->second) {
+        // Right-inverse mode
+        it->first.get()->multiply(fset);
+      } else {
+        // Direct mode
+        it->first.get()->leftInverseMultiply(fset);
+      }
+    }
+  }
+}
 
 }  // namespace saber

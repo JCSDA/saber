@@ -105,15 +105,16 @@ class Fields : public util::Printable,
   void deserialize(const std::vector<double> &,
                    size_t &);
 
+  // Duplicate points
+  void resetDuplicatePoints();
+
  private:
   // Print
   void print(std::ostream &) const;
 
-  // Duplicate points
-  void resetDuplicatePoints();
-
   // Check that fields are compatible
-  bool checkFieldsCompatible(const Fields &) const;
+  bool checkFieldsCompatible(const Fields &,
+                             const bool & superset = true) const;
 
   // Geometry
   const Geometry & geom_;

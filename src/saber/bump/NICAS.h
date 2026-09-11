@@ -18,8 +18,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
 #include "saber/bump/BUMP.h"
 #include "saber/bump/BUMPParameters.h"
 
@@ -29,8 +29,8 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class NICASParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(NICASParameters, SaberBlockParametersBase)
+class NICASParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(NICASParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<BUMPParameters> readParams{"read", this};
@@ -41,7 +41,7 @@ class NICASParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class NICAS : public SaberCentralBlockBase {
+class NICAS : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::bump::NICAS";}
 

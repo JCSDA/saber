@@ -19,7 +19,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<IDCentral> makerIDCentral_("ID");
+static CentralBlockMaker<IDCentral> makerIDCentral_("ID");
 
 // -----------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg) :
-    SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+    CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     ctlVecSize_(0)
 {
   oops::Log::trace() << classname() << "::IDCentral starting" << std::endl;
@@ -121,7 +121,7 @@ void IDCentral::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<IDOuter> makerIDOuter_("ID");
+static OuterBlockMaker<IDOuter> makerIDOuter_("ID");
 
 // -----------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars)
 {

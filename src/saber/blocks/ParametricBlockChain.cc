@@ -7,29 +7,28 @@
 
 #include <tuple>
 
-#include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/blocks/ParametricBlockChain.h"
 
 #include "saber/oops/Utilities.h"
 
 namespace saber {
 
-// Generic constructor for the SaberParametricBlockChain, not templated on
+// Generic constructor for the ParametricBlockChain, not templated on
 // MODEL. This constructor is only used for localization matrices, when the
 // outer geometry cannot be a MODEL geometry.
-SaberParametricBlockChain::SaberParametricBlockChain(
-                          const oops::GeometryData & outerGeometryData,
-                          const oops::Variables & outerVars,
-                          oops::FieldSet4D & fset4dXb,
-                          oops::FieldSet4D & fset4dFg,
-                          const eckit::Configuration & conf)
+ParametricBlockChain::ParametricBlockChain(const oops::GeometryData & outerGeometryData,
+                                           const oops::Variables & outerVars,
+                                           oops::FieldSet4D & fset4dXb,
+                                           oops::FieldSet4D & fset4dFg,
+                                           const eckit::Configuration & conf)
   : outerFunctionSpace_(outerGeometryData.functionSpace()),
     outerVariables_(outerVars),
     timeComm_(fset4dXb.commTime()),
     size4D_(fset4dXb.size()) {
-  oops::Log::trace() << "SaberParametricBlockChain generic ctor starting" << std::endl;
+  oops::Log::trace() << "ParametricBlockChain generic ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
-  SaberParametricBlockChainParameters params;
+  ParametricBlockChainParameters params;
   params.deserialize(conf);
   eckit::LocalConfiguration fullConf;
   params.serialize(fullConf);
@@ -39,12 +38,12 @@ SaberParametricBlockChain::SaberParametricBlockChain(
 
   // If needed create generic outer block chain
   if (params.saberOuterBlocksParams.value()) {
-    outerBlockChain_ = std::make_shared<SaberOuterBlockChain>(outerGeometryData,
-        outerVariables_,
-        fset4dXb,
-        fset4dFg,
-        fullConf,
-        *params.saberOuterBlocksParams.value());
+    outerBlockChain_ = std::make_shared<OuterBlockChain>(outerGeometryData,
+                                                         outerVariables_,
+                                                         fset4dXb,
+                                                         fset4dFg,
+                                                         fullConf,
+                                                         *params.saberOuterBlocksParams.value());
   }
 
   // Set outer geometry data for central block
@@ -79,18 +78,18 @@ SaberParametricBlockChain::SaberParametricBlockChain(
 
   testCentralBlock(fullConf);
 
-  oops::Log::trace() << "SaberParametricBlockChain generic ctor done" << std::endl;
+  oops::Log::trace() << "ParametricBlockChain generic ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-oops::Variables SaberParametricBlockChain::initCentralBlock(
+oops::Variables ParametricBlockChain::initCentralBlock(
         const oops::GeometryData & outerGeom,
         const eckit::Configuration & conf,
-        const SaberCentralBlockParameters & saberCentralBlockParams,
+        const CentralBlockWrapperParameters & saberCentralBlockParams,
         const oops::FieldSet4D & fset4dXb,
         const oops::FieldSet4D & fset4dFg) {
-  oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock starting" << std::endl;
+  oops::Log::trace() << "ParametricBlockChain::initCentralBlock starting" << std::endl;
   // Set outer variables for central block
   const oops::Variables currentOuterVars = outerBlockChain_ ?
                              outerBlockChain_->innerVars() : outerVariables_;
@@ -107,12 +106,12 @@ oops::Variables SaberParametricBlockChain::initCentralBlock(
   }
 
   // Create central block
-  centralBlock_ = std::make_unique<SaberCentralBlock>(outerGeom,
-                                                      activeVars,
-                                                      conf,
-                                                      saberCentralBlockParams,
-                                                      fset4dXb[0],
-                                                      fset4dFg[0]);
+  centralBlock_ = std::make_unique<CentralBlockWrapper>(outerGeom,
+                                                        activeVars,
+                                                        conf,
+                                                        saberCentralBlockParams,
+                                                        fset4dXb[0],
+                                                        fset4dFg[0]);
 
   // Save central function space and variables
   centralFunctionSpace_ = outerGeom.functionSpace();
@@ -126,15 +125,14 @@ oops::Variables SaberParametricBlockChain::initCentralBlock(
     }
   }
 
-  oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock exiting..." << std::endl;
+  oops::Log::trace() << "ParametricBlockChain::initCentralBlock exiting..." << std::endl;
   return currentOuterVars;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::testCentralBlock(
-        const eckit::Configuration & conf) const {
-  oops::Log::trace() << "SaberParametricBlockChain::testCentralBlock starting" << std::endl;
+void ParametricBlockChain::testCentralBlock(const eckit::Configuration & conf) const {
+  oops::Log::trace() << "ParametricBlockChain::testCentralBlock starting" << std::endl;
   // Adjoint test
   if (conf.getBool("adjoint test")) {
     // Get tolerance (can be overridden from central block parameters)
@@ -150,12 +148,12 @@ void SaberParametricBlockChain::testCentralBlock(
     // Run test
     centralBlock_->sqrtTest(sqrtTolerance);
   }
-  oops::Log::trace() << "SaberParametricBlockChain::testCentralBlock done" << std::endl;
+  oops::Log::trace() << "ParametricBlockChain::testCentralBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
+void ParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   // Outer blocks adjoint multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocksAD(fset4d);
@@ -217,7 +215,7 @@ void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::randomize(oops::FieldSet4D & fset4d) const {
+void ParametricBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   // Create central FieldSet4D
   for (size_t jtime = 0; jtime < size4D_; ++jtime) {
     fset4d[jtime].init(centralFunctionSpace_, centralVars_);
@@ -261,7 +259,7 @@ void SaberParametricBlockChain::randomize(oops::FieldSet4D & fset4d) const {
 
 // -----------------------------------------------------------------------------
 
-size_t SaberParametricBlockChain::ctlVecSize() const {
+size_t ParametricBlockChain::ctlVecSize() const {
   if (crossTimeCov_) {
     // Duplicated cross-time covariances
     if (timeComm_.rank() == 0) {
@@ -279,8 +277,8 @@ size_t SaberParametricBlockChain::ctlVecSize() const {
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::randomCtlVec(atlas::Field & cv,
-                                             const size_t & offset) const {
+void ParametricBlockChain::randomCtlVec(atlas::Field & cv,
+                                        const size_t & offset) const {
   if (crossTimeCov_) {
     // Duplicated cross-time covariances
     if (timeComm_.rank() == 0) {
@@ -299,9 +297,9 @@ void SaberParametricBlockChain::randomCtlVec(atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::multiplySqrt(const atlas::Field & cv,
-                                             oops::FieldSet4D & fset4d,
-                                             const size_t & offset) const {
+void ParametricBlockChain::multiplySqrt(const atlas::Field & cv,
+                                        oops::FieldSet4D & fset4d,
+                                        const size_t & offset) const {
   // Create central FieldSet4D
   for (size_t jtime = 0; jtime < size4D_; ++jtime) {
     fset4d[jtime].init(centralFunctionSpace_, centralVars_);
@@ -348,8 +346,8 @@ void SaberParametricBlockChain::multiplySqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-oops::FieldSet3D SaberParametricBlockChain::variance() const {
-  oops::Log::trace() << "SaberParametricBlockChain::variance starting" << std::endl;
+oops::FieldSet3D ParametricBlockChain::variance() const {
+  oops::Log::trace() << "ParametricBlockChain::variance starting" << std::endl;
   // Start from the central block's diagonal variance
   oops::FieldSet3D variance = centralBlock_->variance();
   // Copy metadata to the new fields so that outer blocks (e.g.
@@ -364,15 +362,15 @@ oops::FieldSet3D SaberParametricBlockChain::variance() const {
   if (outerBlockChain_) {
     outerBlockChain_->applyBackgroundVariance(variance);
   }
-  oops::Log::trace() << "SaberParametricBlockChain::variance done" << std::endl;
+  oops::Log::trace() << "ParametricBlockChain::variance done" << std::endl;
   return variance;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
-                                               atlas::Field & cv,
-                                               const size_t & offset) const {
+void ParametricBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
+                                          atlas::Field & cv,
+                                          const size_t & offset) const {
   // Initialization
   oops::FieldSet4D fset4dCopy = oops::copyFieldSet4D(fset4d);
 

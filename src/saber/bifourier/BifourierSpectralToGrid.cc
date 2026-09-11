@@ -12,7 +12,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BifourierSpectralToGrid>
+static OuterBlockMaker<BifourierSpectralToGrid>
   makerBifourierSpectralToGrid_("BifourierSpectralToGrid");
 
 // -----------------------------------------------------------------------------
@@ -23,7 +23,7 @@ BifourierSpectralToGrid::BifourierSpectralToGrid(const oops::GeometryData & oute
                                                  const Parameters_ & params,
                                                  const oops::FieldSet3D & xb,
                                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
     params_(params),
     trans_(transStore_.setupTransform(outerGeometryData, innerVars_, params_.transform.value()))

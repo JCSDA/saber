@@ -21,7 +21,7 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/spectralb/GaussUVToGP.h"
 #include "saber/vader/GpToHp.h"
@@ -31,7 +31,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<HydrostaticPressure>
+static OuterBlockMaker<HydrostaticPressure>
   makerHydrostaticPressure_("mo_hydrostatic_pressure");
 
 // -----------------------------------------------------------------------------
@@ -42,7 +42,7 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),

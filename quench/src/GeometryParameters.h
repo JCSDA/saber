@@ -83,13 +83,6 @@ class AliasParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> inCode{"in code", this};
   // In model file
   oops::RequiredParameter<std::string> inFile{"in file", this};
-  // Optional parameters for States transformations
-  // Scaling factor (e.g. for units conversion)
-  oops::OptionalParameter<double> scalingFactor{"scaling factor", this};
-  // Toggle log10 transformation
-  oops::OptionalParameter<bool> logTransf{"log transform", this};
-  // Additive constant (prior to log10 transformation)
-  oops::OptionalParameter<double> addConst{"additive constant", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -138,17 +131,44 @@ class GeometryParameters : public oops::Parameters {
   oops::Parameter<eckit::LocalConfiguration> modelData{"model data", eckit::LocalConfiguration(),
     this};
 
-  // Variables name alias for model files
+  // Variable alias (different name in file and in code)
   oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
 
   // Check longitudes/latitudes from file
   oops::OptionalParameter<eckit::LocalConfiguration> checkLonLat{"check lon/lat from file", this};
+
+  // Write geometry fields to file
+  oops::OptionalParameter<eckit::LocalConfiguration> geomFieldsConf{"write geometry fields", this};
 
   // IO parameters
   oops::Parameter<eckit::LocalConfiguration> io{"io", eckit::LocalConfiguration(), this};
 
   // Interpolation parameters
   oops::OptionalParameter<InterpolationParameters> interpolation{"interpolation", this};
+
+  // Helpers
+
+  // Return variable name in model file
+  std::string fileAlias(const std::string & inCode) const {
+    for (const auto & item : alias.value()) {
+      if (item.inCode.value() == inCode) {
+        return item.inFile.value();
+      }
+    }
+    // Default value: input
+    return inCode;
+  }
+
+  // Return variable name in code
+  std::string codeAlias(const std::string & inFile) const {
+    for (const auto & item : alias.value()) {
+      if (item.inFile.value() == inFile) {
+        return item.inCode.value();
+      }
+    }
+    // Default value: input
+    return inFile;
+  }
 };
 
 // -----------------------------------------------------------------------------

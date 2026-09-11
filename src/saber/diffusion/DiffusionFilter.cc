@@ -11,7 +11,7 @@ namespace saber {
 
 // --------------------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DiffusionFilter> makerSaberDiffusionFilter_("diffusion filter");
+static OuterBlockMaker<DiffusionFilter> makerDiffusionFilter_("diffusion filter");
 
 // --------------------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ DiffusionFilter::DiffusionFilter(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : saber::SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : saber::OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params)
 {
   // Compute total number of levels

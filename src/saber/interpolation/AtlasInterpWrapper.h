@@ -60,14 +60,7 @@ class AtlasInterpWrapper {
   void executeAdjoint(atlas::FieldSet &,
                       const atlas::FieldSet &) const;
 
-  eckit::linalg::SparseMatrix getInterpolationMatrix() const {
-#ifdef ATLAS_MAKE_SPARSE
-    return atlas::linalg::make_eckit_sparse_matrix(
-                          atlas::interpolation::MatrixCache(interp_).matrix());
-#else
-    return atlas::interpolation::MatrixCache(interp_).matrix();
-#endif
-  }
+  eckit::linalg::SparseMatrix getInterpolationMatrix() const;
 
   const atlas::FunctionSpace & getIntermediateFunctionSpace() const {
     return targetFspace_;

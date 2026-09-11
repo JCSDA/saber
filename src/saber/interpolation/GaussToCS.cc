@@ -345,7 +345,7 @@ Rescaling initRescaling(const GaussToCSParameters & params,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GaussToCS> makerGaussToCS_("gauss to cubed-sphere-dual");
+static OuterBlockMaker<GaussToCS> makerGaussToCS_("gauss to cubed-sphere-dual");
 
 // -----------------------------------------------------------------------------
 // Note that this is slower than this needs to be
@@ -358,7 +358,7 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
     activeVars_(params.activeVariables.value().get_value_or(innerVars_)),
     CSFunctionSpace_(outerGeometryData.functionSpace()),

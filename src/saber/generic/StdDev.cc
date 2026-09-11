@@ -26,7 +26,7 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 #define ERR(e, msg) {std::string s(nc_strerror(e)); \
@@ -37,7 +37,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
+static OuterBlockMaker<StdDev> makerStdDev_("StdDev");
 
 // -----------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),

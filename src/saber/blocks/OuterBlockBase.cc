@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 #include <map>
 #include <memory>
@@ -27,63 +27,63 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/BlockParametersBase.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
+OuterBlockFactory::OuterBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
-    oops::Log::error() << name << " already registered in saber::SaberOuterBlockFactory."
+    oops::Log::error() << name << " already registered in saber::OuterBlockFactory."
                        << std::endl;
-    throw eckit::Exception("Element already registered in saber::SaberOuterBlockFactory.", Here());
+    throw eckit::Exception("Element already registered in saber::OuterBlockFactory.", Here());
   }
   getMakers()[name] = this;
 }
 
 // -----------------------------------------------------------------------------
 
-std::shared_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
+std::shared_ptr<OuterBlockBase> OuterBlockFactory::create(
   const oops::GeometryData & outerGeometryData,
   const oops::Variables & outerVars,
   const eckit::Configuration & covarConfig,
-  const SaberBlockParametersBase & params,
+  const BlockParametersBase & params,
   const oops::FieldSet3D & xb,
   const oops::FieldSet3D & fg) {
-  oops::Log::trace() << "SaberOuterBlockBase::create starting" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
-  typename std::map<std::string, SaberOuterBlockFactory*>::iterator jsb = getMakers().find(id);
+  typename std::map<std::string, OuterBlockFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
-    oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
-    throw eckit::UserError("Element does not exist in saber::SaberOuterBlockFactory.", Here());
+    oops::Log::error() << id << " does not exist in saber::OuterBlockFactory." << std::endl;
+    throw eckit::UserError("Element does not exist in saber::OuterBlockFactory.", Here());
   }
-  std::shared_ptr<SaberOuterBlockBase> ptr =
+  std::shared_ptr<OuterBlockBase> ptr =
     jsb->second->make(outerGeometryData, outerVars, covarConfig, params, xb, fg);
-  oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::create done" << std::endl;
   return ptr;
 }
 
 // -----------------------------------------------------------------------------
 
-std::unique_ptr<SaberBlockParametersBase>
-SaberOuterBlockFactory::createParameters(const std::string &name) {
-  typename std::map<std::string, SaberOuterBlockFactory*>::iterator it =
+std::unique_ptr<BlockParametersBase>
+OuterBlockFactory::createParameters(const std::string &name) {
+  typename std::map<std::string, OuterBlockFactory*>::iterator it =
       getMakers().find(name);
   if (it == getMakers().end()) {
-    throw std::runtime_error(name + " does not exist in saber::SaberOuterBlockFactory");
+    throw std::runtime_error(name + " does not exist in saber::OuterBlockFactory");
   }
   return it->second->makeParameters();
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryData,
-                                      const oops::Variables & outerVars,
-                                      const oops::GeometryData & innerGeometryData,
-                                      const oops::Variables & innerVars,
-                                      const double & adjointTolerance) const {
-  oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
+void OuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryData,
+                                 const oops::Variables & outerVars,
+                                 const oops::GeometryData & innerGeometryData,
+                                 const oops::Variables & innerVars,
+                                 const double & adjointTolerance) const {
+  oops::Log::trace() << "OuterBlockBase::adjointTest starting" << std::endl;
 
   // Create random inner FieldSet
   oops::FieldSet3D innerFset = oops::randomFieldSet3D(validTime_,
@@ -136,20 +136,20 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
     throw eckit::Exception("Adjoint test failure for block " + blockName_, Here());
   }
 
-  oops::Log::trace() << "SaberOuterBlockBase::adjointTest done" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::adjointTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryData,
-                                      const oops::Variables & innerVars,
-                                      const oops::GeometryData & outerGeometryData,
-                                      const oops::Variables & outerVars,
-                                      const oops::Variables & innerVarsToCompare,
-                                      const oops::Variables & outerVarsToCompare,
-                                      const double & innerInverseTolerance,
-                                      const double & outerInverseTolerance) const {
-  oops::Log::trace() << "SaberOuterBlockBase::inverseTest starting" << std::endl;
+void OuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryData,
+                                 const oops::Variables & innerVars,
+                                 const oops::GeometryData & outerGeometryData,
+                                 const oops::Variables & outerVars,
+                                 const oops::Variables & innerVarsToCompare,
+                                 const oops::Variables & outerVarsToCompare,
+                                 const double & innerInverseTolerance,
+                                 const double & outerInverseTolerance) const {
+  oops::Log::trace() << "OuterBlockBase::inverseTest starting" << std::endl;
 
   // Inner inverse test
 
@@ -237,7 +237,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
     throw eckit::Exception("Outer inverse test failure for block " + blockName_, Here());
   }
 
-  oops::Log::trace() << "SaberOuterBlockBase::inverseTest done" << std::endl;
+  oops::Log::trace() << "OuterBlockBase::inverseTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

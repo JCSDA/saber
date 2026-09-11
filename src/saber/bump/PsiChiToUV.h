@@ -17,8 +17,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/bump/BUMP.h"
 #include "saber/bump/BUMPParameters.h"
 
@@ -27,8 +27,8 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class PsiChiToUVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberBlockParametersBase)
+class PsiChiToUVParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<BUMPParameters> readParams{"read", this};
@@ -43,7 +43,7 @@ class PsiChiToUVParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class PsiChiToUV : public SaberOuterBlockBase {
+class PsiChiToUV : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::bump::PsiChiToUV";}
 
