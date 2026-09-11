@@ -15,24 +15,24 @@
 
 #include "oops/base/GeometryData.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/CentralBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class IDParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberBlockParametersBase)
+class IDParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(IDParameters, BlockParametersBase)
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class IDCentral : public SaberCentralBlockBase {
+class IDCentral : public CentralBlockBase {
  public:
   static const std::string classname() {return "saber::generic::IDCentral";}
 
@@ -49,6 +49,7 @@ class IDCentral : public SaberCentralBlockBase {
 
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
+  oops::FieldSet3D variance() const override;
 
   size_t ctlVecSize() const override {return ctlVecSize_;}
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
@@ -61,7 +62,7 @@ class IDCentral : public SaberCentralBlockBase {
 
 // -----------------------------------------------------------------------------
 
-class IDOuter : public SaberOuterBlockBase {
+class IDOuter : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::generic::IDOuter";}
 
@@ -83,6 +84,7 @@ class IDOuter : public SaberOuterBlockBase {
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
   void rightInverseMultiply(oops::FieldSet3D &) const override;
+  void variance(oops::FieldSet3D &) const override {}
 
  private:
   void print(std::ostream &) const override;

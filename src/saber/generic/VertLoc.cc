@@ -27,7 +27,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
@@ -56,7 +56,7 @@ using ConstView = atlas::array::LocalView<const double, 1>;
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<VertLoc> makerVertLoc_("mo_vertical_localization");
+static OuterBlockMaker<VertLoc> makerVertLoc_("mo_vertical_localization");
 
 // -----------------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     activeVars_(params.getActiveVars(outerVars)),
     nlevs_(activeVars_[0].getLevels()),

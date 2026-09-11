@@ -16,7 +16,7 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SpectralAnalyticalFilter> makerSpectralAnalyticalFilter_(
+static OuterBlockMaker<SpectralAnalyticalFilter> makerSpectralAnalyticalFilter_(
         "spectral analytical filter");
 
 // -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
                                                    const Parameters_ & params,
                                                    const oops::FieldSet3D & xb,
                                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), geometryData, outerVars)
+  : OuterBlockBase(params, xb.validTime(), geometryData, outerVars)
 {
   oops::Log::trace() << classname() << "::SpectralAnalyticalFilter starting " << std::endl;
 

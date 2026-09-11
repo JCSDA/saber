@@ -53,7 +53,7 @@ eckit::LocalConfiguration createNetCDFHeaderInput(
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<SpectralCovariance> makerSpectralCovariance_("spectral covariance");
+static CentralBlockMaker<SpectralCovariance> makerSpectralCovariance_("spectral covariance");
 
 // -----------------------------------------------------------------------------
 SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
@@ -62,7 +62,7 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars), params_(params),
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars), params_(params),
     activeVars_(params.getActiveVars(centralVars)),
     netCDFConf_(createNetCDFHeaderInput(params, activeVars_)),
     spectralVerticalCovariances_(),

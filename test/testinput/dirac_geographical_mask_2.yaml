@@ -1,0 +1,56 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_streamfunction_land
+    - air_horizontal_streamfunction_sea
+    levels: 2
+  - variables: [_land, _sea]
+    levels: 1
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    read:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: dirac_geographical_mask_2/_MPI_-_OMP_
+        overriding nicas file: dirac_geographical_mask_1/_MPI_-_OMP__nicas
+      drivers:
+        multivariate strategy: univariate
+        read local nicas: true
+        adjoints test: true
+  saber outer blocks:
+  - saber block name: GeographicalMask
+    read:
+      masks:
+      - suffix: _land
+      - suffix: _sea
+      input weight file:
+        overriding variables: [_land, _sea]
+        filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__weight
+dirac:
+  lon:
+  - 126.0
+  lat:
+  - 27.0
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  filepath: testdata/dirac_geographical_mask_2/_MPI_-_OMP__dirac_%id%
+test:
+  reference filename: testref/dirac_geographical_mask_2.ref

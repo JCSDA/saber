@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -36,8 +36,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class DryMoistIncrOpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(DryMoistIncrOpParameters, SaberBlockParametersBase)
+class DryMoistIncrOpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DryMoistIncrOpParameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
@@ -84,7 +84,7 @@ class DryMoistIncrOpParameters : public SaberBlockParametersBase {
 ///        dimensionless_exner_function_levels_minus_one and hydrostatic_pressure_levels into
 ///        air_pressure_levels
 
-class DryMoistIncrOp : public SaberOuterBlockBase {
+class DryMoistIncrOp : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::DryMoistIncrOp";}
 

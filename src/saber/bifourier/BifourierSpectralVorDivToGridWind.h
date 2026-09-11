@@ -18,16 +18,16 @@
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
 #include "saber/bifourier/BiperiodizationImpl.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralVorDivToGridWindParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierSpectralVorDivToGridWindParameters, SaberBlockParametersBase)
+class BifourierSpectralVorDivToGridWindParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierSpectralVorDivToGridWindParameters, BlockParametersBase)
 
  public:
   // Backward mode
@@ -64,7 +64,7 @@ class BifourierSpectralVorDivToGridWindParameters : public SaberBlockParametersB
 
 // -----------------------------------------------------------------------------
 
-class BifourierSpectralVorDivToGridWind : public SaberOuterBlockBase {
+class BifourierSpectralVorDivToGridWind : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierSpectralVorDivToGridWind";}
@@ -79,8 +79,7 @@ class BifourierSpectralVorDivToGridWind : public SaberOuterBlockBase {
                                     const oops::FieldSet3D &);
   virtual ~BifourierSpectralVorDivToGridWind() = default;
 
-  const oops::GeometryData & innerGeometryData() const override
-    {return *innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData() const override;
   const oops::Variables & innerVars() const override
     {return innerVars_;}
 

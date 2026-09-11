@@ -19,8 +19,8 @@
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameters.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/vader/PressureParameters.h"
 
 namespace saber {
@@ -30,7 +30,7 @@ namespace spectralb {
 /// \brief saber block that converts zonal and meridional wind to geostrophic
 ///        pressure on a Gaussian latitude mesh.
 
-class GaussUVToGP : public SaberOuterBlockBase {
+class GaussUVToGP : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::GaussUVToGP";}
 

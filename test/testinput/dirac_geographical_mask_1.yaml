@@ -1,0 +1,85 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_streamfunction_land
+    - air_horizontal_streamfunction_sea
+    levels: 2
+    mask type: sea
+    mask path: ../quench/data/landsea.nc
+  - variables: [gmask_0, _land, _sea]
+    levels: 1
+  halo: 1
+  write geometry fields:
+    model variables to write: [air_horizontal_streamfunction]
+    geometry fields to write: [gmask_0]
+    filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__geometry_fields
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: dirac_geographical_mask_1/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        write local nicas: true
+        adjoints test: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - air_horizontal_streamfunction_land
+          value: 6000.0e3
+        - groups:
+          - air_horizontal_streamfunction_sea
+          value: 3000.0e3
+        vertical length-scale:
+        - groups:
+          - air_horizontal_streamfunction_land
+          - air_horizontal_streamfunction_sea
+          value: 3.5
+  saber outer blocks:
+  - saber block name: GeographicalMask
+    calibration:
+      masks:
+      - suffix: _land
+        relational operator: "=="
+        threshold: 0.0
+      - suffix: _sea
+        relational operator: "=="
+        threshold: 1.0
+      mask variable: gmask_0
+      input mask file:
+        overriding variables: [gmask_0]
+        filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__geometry_fields
+      output weight file:
+        overriding variables: [_land, _sea]
+        filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__weight
+dirac:
+  lon:
+  - 126.0
+  lat:
+  - 27.0
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__dirac_%id%
+test:
+  reference filename: testref/dirac_geographical_mask_1.ref

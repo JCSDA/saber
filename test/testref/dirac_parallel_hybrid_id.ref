@@ -3,15 +3,13 @@ Input Dirac increment:
   Geometry: CS-LFR-15 [1350]
   Fields:
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 3.7037037037037035e-04
     + stddev = 1.9245008972987445e-02
-
   - mu (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
@@ -23,12 +21,10 @@ Covariance(SABER) * Increment:
   Geometry: CS-LFR-15 [1350]
   Fields:
   - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 3.9999999999999996e+00
     + mean   = 1.4814814814814814e-03
     + stddev = 7.6980035891949780e-02
-
   - mu (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-

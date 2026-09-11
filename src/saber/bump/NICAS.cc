@@ -20,7 +20,7 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
+static CentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 
 // -----------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const Parameters_ & params,
              const oops::FieldSet3D & xb,
              const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+  : CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     activeVars_(params.getActiveVars(centralVars)),
     bumpParams_(params.calibrationParams.value() != boost::none ? *params.calibrationParams.value()
       : *params.readParams.value()),
@@ -51,6 +51,18 @@ NICAS::~NICAS() {
   oops::Log::trace() << classname() << "::~NICAS starting" << std::endl;
   util::Timer timer(classname(), "~NICAS");
   oops::Log::trace() << classname() << "::~NICAS done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D NICAS::variance() const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+  // NICAS is a normalized correlation operator with unit variance on the
+  // diagonal.
+  oops::FieldSet3D variance(validTime_, geometryData().comm());
+  variance.init(geometryData().functionSpace(), activeVars_, 1.0);
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+  return variance;
 }
 
 // -----------------------------------------------------------------------------

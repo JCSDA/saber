@@ -19,7 +19,7 @@ namespace saber {
 
 // Return inner variables as outer variables + inner active variables
 // Can be used to help define innerVars_ member in SABER outer blocks
-oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
+oops::Variables getUnionOfInnerActiveAndOuterVars(const BlockParametersBase & params,
                                                   const oops::Variables & outerVars) {
   oops::Variables innerVars(outerVars);
   innerVars += params.activeInnerVars(outerVars);
@@ -29,7 +29,7 @@ oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase
 // -----------------------------------------------------------------------------
 
 // Return inner variables that are not outer variables
-oops::Variables getInnerOnlyVars(const SaberBlockParametersBase & params,
+oops::Variables getInnerOnlyVars(const BlockParametersBase & params,
                                  const oops::Variables & outerVars) {
   oops::Variables innerOnlyVars(getUnionOfInnerActiveAndOuterVars(params, outerVars));
   innerOnlyVars -= outerVars;

@@ -19,8 +19,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -31,8 +31,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class DryAirDensityParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(DryAirDensityParameters, SaberBlockParametersBase)
+class DryAirDensityParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DryAirDensityParameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
@@ -89,7 +89,7 @@ class DryAirDensityParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class DryAirDensity : public SaberOuterBlockBase {
+class DryAirDensity : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::DryAirDensity";}
 

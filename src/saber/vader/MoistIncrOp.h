@@ -18,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {
@@ -31,7 +31,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOp : public SaberOuterBlockBase {
+class MoistIncrOp : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::MoistIncrOp";}
 

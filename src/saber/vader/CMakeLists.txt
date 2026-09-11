@@ -39,6 +39,7 @@ movader_covstats_interface.F90
 movader_covstats_interface.h
 SuperMoistIncrOp.cc
 SuperMoistIncrOp.h
+PressureParameters.cc
 PressureParameters.h
 VarianceAccumulationUtils.cc
 VarianceAccumulationUtils.h

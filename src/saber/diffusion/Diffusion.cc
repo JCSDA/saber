@@ -11,7 +11,7 @@ namespace saber {
 
 // --------------------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<Diffusion> makerSaberDiffusion_("diffusion");
+static CentralBlockMaker<Diffusion> makerDiffusion_("diffusion");
 
 // --------------------------------------------------------------------------------------
 
@@ -22,7 +22,7 @@ Diffusion::Diffusion(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : saber::SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+  : saber::CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     params_(params)
 {
   // Compute total number of levels
