@@ -657,6 +657,32 @@ saber_add_test( TARGET saber_dirac_multiscale_3_1-2
                 TEST_DEPENDS saber_dirac_multiscale_1_1-2
                              saber_error_covariance_training_multiscale_2_1-2 )
 
+# dirac_multiscale_4
+saber_add_test( TARGET saber_dirac_multiscale_4_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_4.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_4_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_4.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_multiscale_4_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_multiscale_4.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_multiscale_1_1-2 )
+
 # dirac_oops_ens_noloc_4d
 saber_add_test( TARGET saber_dirac_oops_ens_noloc_4d_2-1
                 MPI 2

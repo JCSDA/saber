@@ -185,6 +185,9 @@ type nam_type
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real),allocatable :: rh(:,:)                     !< Forced horizontal support radius [in meters]
    real(kind_real),allocatable :: rv(:,:)                     !< Forced vertical support radius
+   logical :: forced_radii_sampling                           !< Force specific support radii for sampling
+   real(kind_real),allocatable :: rhs(:,:)                    !< Forced horizontal support radius for sampling [in meters]
+   real(kind_real),allocatable :: rvs(:,:)                    !< Forced vertical support radius for sampling
    real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'duplicated and weighted' strategy
    character(len=2) :: nicas_default_interp_type              !< NICAS C1B to C0A default interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    character(len=2),allocatable :: nicas_interp_type(:)       !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
@@ -867,6 +870,9 @@ if (conf%get('nicas',section)) then
    call nam%get(section,'explicit length-scales',nam%forced_radii,'forced_radii')
    call nam%get(mpl,section,'horizontal length-scale',nam%rh,'rh',one/req)
    call nam%get(mpl,section,'vertical length-scale',nam%rv,'rv')
+   call nam%get(section,'explicit length-scales for sampling',nam%forced_radii_sampling,'forced_radii_sampling')
+   call nam%get(mpl,section,'horizontal length-scale for sampling',nam%rhs,'rhs',one/req)
+   call nam%get(mpl,section,'vertical length-scale for sampling',nam%rvs,'rvs')
    if ((nam%strategy=='duplicated and weighted').and.(nam%nv>0)) then
       ! Release memory
       if (allocated(nam%loc_wgt_sqrt)) deallocate(nam%loc_wgt_sqrt)
@@ -1395,6 +1401,19 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
             end if
             if (nam%rh(il0,ig)<zero) call nam%abort(mpl,'${subr}$','*rh* should be non-negative for '//trim(nam%group_names(ig)))
             if (nam%rv(il0,ig)<zero) call nam%abort(mpl,'${subr}$','*rv* should be non-negative for '//trim(nam%group_names(ig)))
+         end do
+      end do
+   end if
+   if (nam%forced_radii_sampling) then
+      if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for forced_radii_sampling')
+      if (.not.allocated(nam%rhs)) call mpl%abort('${subr}$','rhs is missing')
+      if (.not.allocated(nam%rvs)) call mpl%abort('${subr}$','rvs is missing')
+      do ig=1,nam%ng
+         do il0=1,nam%nl0
+            if (mpl%msv%is(nam%rhs(il0,ig))) call mpl%abort('${subr}$','rhs is missing for '//trim(nam%group_names(ig)))
+            if (mpl%msv%is(nam%rvs(il0,ig))) call mpl%abort('${subr}$','rvs is missing for '//trim(nam%group_names(ig)))
+            if (nam%rhs(il0,ig)<zero) call mpl%abort('${subr}$','rhs should be non-negative for '//trim(nam%group_names(ig)))
+            if (nam%rvs(il0,ig)<zero) call mpl%abort('${subr}$','rvs should be non-negative for '//trim(nam%group_names(ig)))
          end do
       end do
    end if

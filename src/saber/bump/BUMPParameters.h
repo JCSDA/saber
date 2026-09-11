@@ -558,6 +558,14 @@ class NICASSection : public oops::Parameters {
   // Forced vertical support radius
   oops::Parameter<std::vector<GroupsValueOrProfileParameters>> rv{"vertical length-scale", {},
     this};
+  // Force specific support radii for sampling
+  oops::Parameter<bool> forced_radii_sampling{"explicit length-scales for sampling", false, this};
+  // Forced horizontal support radius for sampling [in meters]
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>>
+    rhs{"horizontal length-scale for sampling", {}, this};
+  // Forced vertical support radius for sampling
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>>
+    rvs{"vertical length-scale for sampling", {}, this};
   // Default off-diagonal weight
   oops::Parameter<double> defaultWeight{"default off-diagonal weight", 0.0, this};
   // Specific off-diagonal weights
