@@ -26,7 +26,7 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 #define ERR(e, msg) {std::string s(nc_strerror(e)); \
@@ -37,7 +37,7 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
+static OuterBlockMaker<StdDev> makerStdDev_("StdDev");
 
 // -----------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
@@ -460,6 +460,34 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> StdDev::fiel
 
 void StdDev::print(std::ostream & os) const {
   os << classname();
+}
+
+// -----------------------------------------------------------------------------
+
+void StdDev::variance(oops::FieldSet3D & variance) const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+
+  // Variance gets multiplied elementwise by sigma^2. Apply the same selection
+  // logic as multiply: stored stdDevFset_ takes precedence over scalar scaling.
+  if (stdDevFset_) {
+    variance *= *stdDevFset_;
+    variance *= *stdDevFset_;
+  } else {
+    for (auto & field : variance) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var) * scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

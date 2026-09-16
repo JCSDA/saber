@@ -18,15 +18,15 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace vader {
 
 // -----------------------------------------------------------------------------
-class VertLocInterpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VertLocInterpParameters, SaberBlockParametersBase)
+class VertLocInterpParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VertLocInterpParameters, BlockParametersBase)
 
  public:
   oops::RequiredParameter<atlas::idx_t> innerVerticalLevels{"inner vertical levels",
@@ -39,7 +39,7 @@ class VertLocInterpParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class VertLocInterp : public SaberOuterBlockBase {
+class VertLocInterp : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::spectralb::VertLocInterp";}
 

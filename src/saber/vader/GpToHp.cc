@@ -22,7 +22,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
@@ -42,7 +42,7 @@ oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GpToHp>
+static OuterBlockMaker<GpToHp>
   makerGpToHp_("mo_hydrostatic_pressure_from_geostrophic_pressure");
 
 // -----------------------------------------------------------------------------
@@ -53,7 +53,7 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
     activeOuterVars_(params.activeOuterVars(outerVars)),

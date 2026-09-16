@@ -22,11 +22,36 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace generic {
+
+// -----------------------------------------------------------------------------
+
+class GroupParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupParameters, oops::Parameters)
+
+ public:
+  // Group suffix
+  oops::Parameter<std::string> suffix{"suffix", "_shadowLevels", this};
+
+  // Group name
+  oops::OptionalParameter<std::string> name{"group name", this};
+
+  // Group variables
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+
+  // Number of shadow levels
+  oops::RequiredParameter<size_t> nz{"number of shadow levels", this};
+
+  // Vertical length-scale
+  oops::OptionalParameter<double> rv{"vertical length-scale", this};
+
+  // Component weight
+  oops::Parameter<double> cmpWgt{"component weight", 1.0, this};
+};
 
 // -----------------------------------------------------------------------------
 
@@ -34,34 +59,22 @@ class ShadowLevelsParametersBase : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ShadowLevelsParametersBase, oops::Parameters)
 
  public:
-  // Number of shadow levels
-  oops::OptionalParameter<size_t> nz{"number of shadow levels", this};
+  // Groups of variables
+  oops::RequiredParameter<std::vector<GroupParameters>> groups{"groups", this};
 
-  // Lowest shadow level
-  oops::OptionalParameter<double> lowestShadowLevel{"lowest shadow level", this};
+  // Input weight file
+  oops::OptionalParameter<eckit::LocalConfiguration> inputWgtFileConf{
+    "input weight file", this};
 
-  // Highest shadow level
-  oops::OptionalParameter<double> highestShadowLevel{"highest shadow level", this};
-
-  // Explicit shadow levels
-  oops::OptionalParameter<std::vector<double>> shadowLevels{"shadow levels", this};
-
-  // Input model files
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputModelFilesConf{
-    "input model files", this};
-
-  // Output model files
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> outputModelFilesConf{
-    "output model files", this};
-
-  // Scalar vertical support
-  oops::OptionalParameter<double> rvFromYaml{"vertical length-scale", this};
+  // Output weight file
+  oops::OptionalParameter<eckit::LocalConfiguration> outputWgtFileConf{
+    "output weight file", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class ShadowLevelsParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParameters, SaberBlockParametersBase)
+class ShadowLevelsParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParameters, BlockParametersBase)
 
  public:
   oops::OptionalParameter<ShadowLevelsParametersBase> read{"read", this};
@@ -72,7 +85,7 @@ class ShadowLevelsParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class ShadowLevels : public SaberOuterBlockBase {
+class ShadowLevels : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::generic::ShadowLevels";}
@@ -109,18 +122,31 @@ class ShadowLevels : public SaberOuterBlockBase {
  private:
   const oops::GeometryData & gdata_;
   const eckit::mpi::Comm & comm_;
-  oops::Variables activeVars_;
-  const std::string suffix_;
+  oops::Variables activeOuterVars_;
   ParametersBase_ params_;
   eckit::LocalConfiguration fieldsMetaData_;
-  size_t nz_;
   oops::Variables innerVars_;
-  std::unique_ptr<oops::FieldSet3D> rv_;
-  std::unique_ptr<oops::FieldSet3D> weight_;
 
-  // Utilities
-  eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
-                                        const eckit::Configuration &) const;
+  // Groups of variables
+  struct Group {
+    std::string suffix_;
+    std::string name_;
+    std::string varInModelFile_;
+    std::vector<std::string> variables_;
+    size_t nz_;
+    double rv_;
+    double cmpWgtSqrt_;
+  };
+  std::vector<Group> groups_;
+
+  // Factor for the GC99 function
+  const double autoConvolFactor_ = 0.52;
+  const double rv2L_ = 1.0/3.53;
+
+  // Weight
+  eckit::LocalConfiguration readConf_;
+  eckit::LocalConfiguration writeConf_;
+  std::unique_ptr<oops::FieldSet3D> wgtFset_;
 
   void print(std::ostream &) const override;
 };

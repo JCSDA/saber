@@ -17,7 +17,7 @@ namespace interpolation {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
+static OuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
 
 // -----------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     params_(params), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     invVars_(params.inverseVars.value())
@@ -98,6 +98,26 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
+void Interpolation::variance(oops::FieldSet3D & fieldSet) const {
+  oops::Log::trace() << classname() << "::variance starting" << std::endl;
+
+  // Interpolating the inner variance vector is only an approximation of the true
+  // outer-frame variance diag(T C T^t); see the WARNING in Interpolation.h for
+  // details and an example. Warn so this approximation is not silently relied on.
+  oops::Log::warning() << classname() << "::variance: interpolating a variance is "
+                       << "only approximate. The exact outer variance diag(T C T^t) "
+                       << "depends on the inner covariance correlations, not just its "
+                       << "diagonal; the interpolated variance can over- or "
+                       << "under-estimate it. See Interpolation.h for details."
+                       << std::endl;
+
+  multiply(fieldSet);
+
+  oops::Log::trace() << classname() << "::variance done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
@@ -143,7 +163,7 @@ void Interpolation::inverseMultiply(oops::FieldSet3D & fieldSet) const {
   // If specific `state variables to inverse` were requested in the yaml, apply the (inverse)
   // interpolator to those variables only. Otherwise, apply the (inverse) interpolator to the
   // whole fieldset.
-  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::inverseMultiply
+  // NOTE that in a OuterBlockChain, the logic to call Interpolation::inverseMultiply
   // includes checking for the existence of the `state variables to inverse` key. Thus, omitting
   // the yaml key is likely to skip the inverseMultiply completely.
   const oops::Variables invVars = (invVars_.size() > 0 ? invVars_ : fieldSet.variables());

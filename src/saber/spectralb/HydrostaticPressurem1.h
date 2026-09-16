@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/spectralb/GaussUVToGP.h"
 #include "saber/vader/GpToHpm1.h"
 #include "saber/vader/PressureParameters.h"
@@ -47,7 +47,7 @@ namespace spectralb {
 ///        Note also that this saber block expects the outer and inner functionspaces
 ///        to be on the same Gaussian mesh.
 ///        To do this it uses GaussUVToGp and GpToHp saber blocks
-class HydrostaticPressurem1 : public SaberOuterBlockBase {
+class HydrostaticPressurem1 : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::HydrostaticPressurem1";}
 

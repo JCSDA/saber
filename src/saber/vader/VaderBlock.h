@@ -16,8 +16,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 #include "vader/vader.h"
 
@@ -25,8 +25,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class VaderBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VaderBlockParameters, SaberBlockParametersBase)
+class VaderBlockParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VaderBlockParameters, BlockParametersBase)
 
  public:
   oops::Parameter<vader::VaderParameters> vader{"vader", {}, this};
@@ -36,7 +36,7 @@ class VaderBlockParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class VaderBlock : public SaberOuterBlockBase {
+class VaderBlock : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::VaderBlock";}
 

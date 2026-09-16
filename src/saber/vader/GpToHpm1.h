@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/vader/PressureParameters.h"
 
 namespace oops {
@@ -39,7 +39,7 @@ namespace vader {
 ///        Vertical regression is applied to "geostrophic pressure"
 ///        as part of this calculation.
 
-class GpToHpm1 : public SaberOuterBlockBase {
+class GpToHpm1 : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::GpToHpm1";}
 

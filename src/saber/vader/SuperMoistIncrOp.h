@@ -19,8 +19,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/vader/AirTemperature.h"
 #include "saber/vader/MoistIncrOp.h"
 #include "saber/vader/MoistIncrOpParameters.h"
@@ -44,7 +44,7 @@ namespace vader {
 ///        To make sure that the order of saber blocks is unaffected, this super
 ///        saber block has been created that uses the MoistIncrOp and AirTemperature
 ///        saber blocks.
-class SuperMoistIncrOp : public SaberOuterBlockBase {
+class SuperMoistIncrOp : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::SuperMoistIncrOp";}
 

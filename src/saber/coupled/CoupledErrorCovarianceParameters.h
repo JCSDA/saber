@@ -41,7 +41,7 @@ class CoupledErrorCovarianceParameters : public ErrorCovarianceParametersBase {
   oops::RequiredParameter<ErrorCovarianceParameters>
     errorCov2{MODEL2::name().c_str(), this};
 
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     commonOuterBlocks{"common outer blocks", this};
   oops::OptionalParameter<InterpolationForCoupledErrorCovarianceParameters<MODEL1, MODEL2>>
     interp{"interpolation", this};

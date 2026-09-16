@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 6.5616797900262466e-04
     + stddev = 2.5615775978927613e-02
@@ -11,7 +11,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.3123359580052493e-03
     + stddev = 3.6226177800110629e-02
@@ -215,22 +215,22 @@ Localization(hybrid1_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 9.9999999999999956e-01
     + mean   = 2.3360110528429061e-02
     + stddev = 9.8541774629410106e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 9.9999999999999956e-01
     + mean   = 2.3360110528429061e-02
     + stddev = 9.8541774629410106e-02
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 9.7663830730988169e-03
     + stddev = 7.1391149998578263e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 6.7588404393921263e-03
     + stddev = 5.4149030644156750e-02
@@ -295,22 +295,22 @@ Localization(hybrid2_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 9.9999999999999956e-01
     + mean   = 2.3360110528429061e-02
     + stddev = 9.8541774629410106e-02
   - northward_wind (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 9.9999999999999956e-01
     + mean   = 2.3360110528429061e-02
     + stddev = 9.8541774629410106e-02
   - air_pressure_at_surface (1 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 9.7663830730988169e-03
     + stddev = 7.1391149998578263e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000011e+00
     + mean   = 6.7588404393921263e-03
     + stddev = 5.4149030644156750e-02

@@ -3,88 +3,98 @@ Member 0:
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.5194390686310858e-01
-    + max    = 2.9152681617627629e-01
-    + mean   = 7.6890022029406689e-03
-    + stddev = 7.6912084460756425e-02
+    + min    = -3.7014611085291818e+00
+    + max    = 3.0212558048365610e+00
+    + mean   = 8.7502456773633691e-02
+    + stddev = 1.0306630163066413e+00
+
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.3551627999429320e-01
-    + max    = 2.2205255335867899e-01
-    + mean   = -1.2842857960562898e-02
-    + stddev = 7.1086413024974426e-02
+    + min    = -3.4010558808303055e+00
+    + max    = 2.5788191034896490e+00
+    + mean   = -1.8251836911504721e-01
+    + stddev = 9.5496984694468645e-01
+
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.2301699663019500e-01
-    + max    = 2.5325933677467383e-01
-    + mean   = 6.1717406045204409e-03
-    + stddev = 6.9826757088237310e-02
+    + min    = -3.0500984508829716e+00
+    + max    = 3.0521462146506444e+00
+    + mean   = 8.9816958872845604e-02
+    + stddev = 9.4404099129341923e-01
+
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.6833838600654025e-01
-    + max    = 2.3124716740925383e-01
-    + mean   = 2.0520811939596260e-03
-    + stddev = 6.9791354457325233e-02
+    + min    = -3.4617853465826456e+00
+    + max    = 3.0712020028781923e+00
+    + mean   = 3.1930259357789571e-02
+    + stddev = 9.4115815412273285e-01
+
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.3336510894115420e-01
-    + max    = 3.0589781420863593e-01
-    + mean   = 3.1523181756592210e-03
-    + stddev = 7.5543005434326932e-02
+    + min    = -3.3289208467798566e+00
+    + max    = 4.4714947162858509e+00
+    + mean   = 4.5148966786088630e-02
+    + stddev = 1.0215721379742499e+00
+
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.4117955387354068e-01
-    + max    = 2.2286687272956612e-01
-    + mean   = -1.8922625416178323e-02
-    + stddev = 6.9461778396752466e-02
+    + min    = -3.4494236018683808e+00
+    + max    = 3.0515205058222841e+00
+    + mean   = -2.5561354458087149e-01
+    + stddev = 9.3246328289666092e-01
+
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.3052103985426922e-01
-    + max    = 2.5920875263099957e-01
-    + mean   = 9.0462490940832491e-03
-    + stddev = 7.1101407107345679e-02
+    + min    = -2.3929569532964901e+00
+    + max    = 3.2899421200842274e+00
+    + mean   = 1.4081653008047515e-01
+    + stddev = 9.5397304425722429e-01
+
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.3038663884418048e-01
-    + max    = 2.4000115369412656e-01
-    + mean   = 7.0569950810947671e-03
-    + stddev = 6.7543461213438308e-02
+    + min    = -2.6797738746546695e+00
+    + max    = 2.9644578266118549e+00
+    + mean   = 9.3725340244502464e-02
+    + stddev = 8.9442756230085396e-01
+
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.9764150091775071e-01
-    + max    = 2.5856214341510131e-01
-    + mean   = -1.1190115275655881e-02
-    + stddev = 8.0730240546050547e-02
+    + min    = -3.6199029709653860e+00
+    + max    = 3.7608451995814374e+00
+    + mean   = -1.3795317837521376e-01
+    + stddev = 1.0865500211192920e+00
+
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
   - air_horizontal_streamfunction (10 levels):
-    + min    = -2.3116223561979271e-01
-    + max    = 2.3484030697576441e-01
-    + mean   = -6.9305437453953365e-03
-    + stddev = 6.7176361105108287e-02
+    + min    = -3.3672112618774284e+00
+    + max    = 2.7458995991670605e+00
+    + mean   = -9.0100871784723216e-02
+    + stddev = 9.0873755937645573e-01
+

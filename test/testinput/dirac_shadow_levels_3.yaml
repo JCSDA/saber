@@ -1,0 +1,110 @@
+# Creating a shadow levels block with multiple groups and writing the weights into a file
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 30
+  groups:
+  - variables:
+    - snow_depth
+    levels: 1
+    vertical coordinate:
+      profile: [0.0]
+    orography: 
+      top longitude: 180.0
+      top latitude: 0.0
+      zonal length: 6000.0e3
+      meridional length: 12000.0e3
+      height: 1.0
+  - variables:
+    - snow_depth_shadowLevels_1
+    levels: 13
+  - variables:
+    - snow_depth_shadowLevels_2
+    levels: 8
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - snow_depth
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    fields metadata:
+      snow_depth_shadowLevels_1:
+        vert_coord: vert_coord_1
+      snow_depth_shadowLevels_2:
+        vert_coord: vert_coord_2
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: dirac_shadow_levels_3/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        write local nicas: true
+        adjoints test: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        same horizontal convolution: true
+      grids:
+      - model:
+          variables: [snow_depth_shadowLevels_1]
+        nicas:
+          horizontal length-scale:
+          - groups:
+            - snow_depth_shadowLevels_1
+            value: 6000.0e3
+          vertical length-scale:
+          - groups:
+            - snow_depth_shadowLevels_1
+            value: 0.0
+      - model:
+          variables: [snow_depth_shadowLevels_2]
+        nicas:
+          horizontal length-scale:
+          - groups:
+            - snow_depth_shadowLevels_2
+            value: 6000.0e3
+          vertical length-scale:
+          - groups:
+            - snow_depth_shadowLevels_2
+            value: 0.0
+  saber outer blocks:
+  - saber block name: ShadowLevels
+    fields metadata:
+      snow_depth:
+        vert_coord: vert_coord_0
+    calibration:
+      groups:
+      - variables: [snow_depth]
+        number of shadow levels: 13
+        vertical length-scale: 0.6
+        component weight: 0.7
+        suffix: _shadowLevels_1
+      - variables: [snow_depth]
+        number of shadow levels: 8
+        vertical length-scale: 1.0
+        component weight: 0.3
+        suffix: _shadowLevels_2
+      output weight file:
+        overriding variables: [snow_depth_shadowLevels_1, snow_depth_shadowLevels_2]
+        filepath: testdata/dirac_shadow_levels_3/_MPI_-_OMP__weight
+dirac:
+  lon:
+  - 180.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - snow_depth
+output dirac:
+  filepath: testdata/dirac_shadow_levels_3/_MPI_-_OMP__dirac_%id%
+test:
+  reference filename: testref/dirac_shadow_levels_3.ref

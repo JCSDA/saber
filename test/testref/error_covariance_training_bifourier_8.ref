@@ -1,16 +1,16 @@
 Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - air_temperature (10 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 5.3720118184260007e-05
-    + stddev = 7.3293025056932037e-03
-- Regional grid size: 73x51
+    + mean   = 5.1975051975051978e-05
+    + stddev = 7.2092788291837394e-03
+- Regional grid size: 74x52
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
-- Mean latitude: 5.6289831946322792e+01 deg
-- Spectral sizes: 37x26
+- Mean latitude: 5.6289536019444682e+01 deg
+- Spectral sizes: 38x27
 - Truncation parameters MxN: 36x25
 - Maximum total wave number: 36
 - Spectral array global size: 2815
@@ -25,16 +25,16 @@ Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U 
 Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
 Covariance norms: 
 - air_temperature: 
-  + correlation square-root: 7.1544394431007285e-01
+  + correlation square-root: 4.1336454080208562e-01
   + standard-deviation:      3.1622776601683795e+00
 Adjoint test for block BifourierCovariance passed
 Square-root test for block BifourierCovariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
-  Geometry: structured [3723]
+  Geometry: structured [3848]
   Fields:
   - air_temperature (10 levels):
-    + min    = -3.8372360722991411e-02
-    + max    = 1.0000000000000375e+00
-    + mean   = 1.2912401471731493e-02
-    + stddev = 4.6599546655297974e-02
+    + min    = -1.1105713326382016e-01
+    + max    = 1.0000000000000024e+00
+    + mean   = 1.1037935444359543e-03
+    + stddev = 4.0574981759944236e-02

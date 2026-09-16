@@ -1,0 +1,71 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 1.0000000000000000e+00
+    + mean   = 9.9601593625498006e-04
+    + stddev = 3.1559720154890294e-02
+Norm of input parameter mask: 2.2405356502408079e+01
+Mask norm: 2.3259406699226016e+01
+Mask _land at level 0: inside/outside = 299/541
+Mask _sea at level 0: inside/outside = 541/299
+Norm of output parameter : 2.7604347483684521e+01
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13692
+             Effective levels:   1   2 
+                Horizontal support radius:    3000.00 km (   3000.00 km -    3000.00 km)
+                Estimated nc1 from horizontal support radius:     1047
+                   Decimate full grid, at least      762 points required,     762 valid points found
+                   Subgrid hash:   1550418632
+                Final nc1:      762
+                Effective horizontal resolution:  3.41
+             nc1(  1) =                        762
+             nc1(  2) =                        762
+             ns =                             1524
+             v%n_s =                             2
+             c%n_s[global] =                 44328
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 1.0000000000000002e+00
+    + mean   = 5.8293399698381466e-03
+    + stddev = 5.3715810414251837e-02

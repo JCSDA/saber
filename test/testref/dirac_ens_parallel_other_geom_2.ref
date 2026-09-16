@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: CS-LFR-14 [1176]
   Fields:
   - air_horizontal_streamfunction (70 levels):
-    + min    = 0.0000000000000000e+00
+    + min close to zero
     + max    = 1.0000000000000000e+00
     + mean   = 1.2147716229348883e-05
     + stddev = 3.4853574033870531e-03

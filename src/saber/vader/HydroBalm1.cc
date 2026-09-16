@@ -26,7 +26,7 @@
 
 #include "mo/constants.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -125,7 +125,7 @@ void eval_hydrobalm1_hydrostatic_exner_levels_tl(atlas::FieldSet & incFlds,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<HydroBalm1> makerHydroBalm1_("mo_hydro_bal2");
+static OuterBlockMaker<HydroBalm1> makerHydroBalm1_("mo_hydro_bal2");
 
 // -----------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ HydroBalm1::HydroBalm1(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

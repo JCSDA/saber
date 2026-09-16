@@ -23,7 +23,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -31,7 +31,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<AirTemperature> makerAirTemperature_("mo_air_temperature");
+static OuterBlockMaker<AirTemperature> makerAirTemperature_("mo_air_temperature");
 
 // -----------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
                                const Parameters_ & params,
                                const oops::FieldSet3D & xb,
                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

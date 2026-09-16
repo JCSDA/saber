@@ -13,7 +13,7 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<BifourierID> makerBifourierID_("BifourierID");
+static CentralBlockMaker<BifourierID> makerBifourierID_("BifourierID");
 
 // -----------------------------------------------------------------------------
 
@@ -23,9 +23,9 @@ BifourierID::BifourierID(const oops::GeometryData & geometryData,
                          const Parameters_ & params,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg) :
-    SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+    CentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     comm_(geometryData.comm()),
-    trans_(transStore_.retrieveTransform(geometryData))
+    trans_(transStore_.retrieveTransform(geometryData, centralVars))
 {
   oops::Log::trace() << classname() << "::BifourierID starting" << std::endl;
   oops::Log::trace() << classname() << "::BifourierID done" << std::endl;

@@ -15,8 +15,8 @@
 
 #include "oops/base/GeometryData.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/util/Calibration.h"
 #include "saber/vader/VarianceAccumulationUtils.h"
 
@@ -75,8 +75,8 @@ class varianceInstantaneousParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> outputPath{"output path", this};
 };
 
-class WriteVariancesParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(WriteVariancesParameters, SaberBlockParametersBase)
+class WriteVariancesParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(WriteVariancesParameters, BlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
@@ -116,7 +116,7 @@ class WriteVariancesParameters : public SaberBlockParametersBase {
 // In the future it will be extended to latitude bands and maybe grid-point variances
 
 
-class WriteVariances : public SaberOuterBlockBase {
+class WriteVariances : public OuterBlockBase {
  public:
   static const std::string classname() {return "saber::generic::WriteVariances";}
 

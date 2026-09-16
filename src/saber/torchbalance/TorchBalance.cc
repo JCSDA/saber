@@ -22,7 +22,7 @@ namespace saber {
 
 // --------------------------------------------------------------------------------------
 
-static saber::SaberOuterBlockMaker<TorchBalance> makerTorchBalance_("TorchBalance");
+static saber::OuterBlockMaker<TorchBalance> makerTorchBalance_("TorchBalance");
 
 // --------------------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ TorchBalance::TorchBalance(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : saber::SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : saber::OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
     innerGeometryData_(outerGeometryData),
     jac_(nullptr)

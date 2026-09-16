@@ -30,7 +30,7 @@
 #include "oops/util/missingValues.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/vader/movader_covstats_interface.h"
 
@@ -368,7 +368,7 @@ void eval_total_water_tl(atlas::FieldSet & incFlds,
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
+static OuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
 
 // -----------------------------------------------------------------------------
 
@@ -378,7 +378,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const Parameters_ & params,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     fspace_(outerGeometryData.functionSpace()),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),

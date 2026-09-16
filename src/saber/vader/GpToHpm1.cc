@@ -22,7 +22,7 @@
 #include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
@@ -244,7 +244,7 @@ void eval_hydrostatic_pressure_levels_minus_one_tl_inv(atlas::FieldSet & incFlds
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<GpToHpm1>
+static OuterBlockMaker<GpToHpm1>
   makerGpToHpm1_("mo_hydrostatic_pressure_levels_minus_one_from_geostrophic_pressure");
 
 // -----------------------------------------------------------------------------
@@ -255,7 +255,7 @@ GpToHpm1::GpToHpm1(const oops::GeometryData & outerGeometryData,
                    const Parameters_ & params,
                    const oops::FieldSet3D & xb,
                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+  : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
     activeOuterVars_(params.activeOuterVars(outerVars)),

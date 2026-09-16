@@ -1,0 +1,358 @@
+/*
+ * (C) Copyright 2021 UCAR
+ *
+ * This software is licensed under the terms of the Apache Licence Version 2.0
+ * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ */
+
+#pragma once
+
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "eckit/exception/Exceptions.h"
+#include "eckit/memory/NonCopyable.h"
+
+#include "oops/base/FieldSets.h"
+#include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
+#include "oops/base/Increment.h"
+#include "oops/base/Variables.h"
+#include "oops/util/AssociativeContainers.h"
+#include "oops/util/DateTime.h"
+#include "oops/util/FieldSetHelpers.h"
+#include "oops/util/Logger.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
+#include "oops/util/parameters/RequiredPolymorphicParameter.h"
+#include "oops/util/Printable.h"
+
+#include "saber/blocks/BlockParametersBase.h"
+
+namespace oops {
+  class FieldSet3D;
+}
+
+namespace saber {
+
+// -----------------------------------------------------------------------------
+
+class OuterBlockBase : public util::Printable,
+                            private eckit::NonCopyable {
+ public:
+  explicit OuterBlockBase(const BlockParametersBase & params,
+                          const util::DateTime & validTime,
+                          const oops::GeometryData & outerGeometryData,
+                          const oops::Variables & outerVars)
+    : validTime_(validTime),
+      outerGeometryData_(outerGeometryData),
+      outerVars_(outerVars),
+      blockName_(params.saberBlockName),
+      skipInverse_(params.skipInverse)
+    {}
+  virtual ~OuterBlockBase() {}
+
+  // Accessor
+
+  // To inner geometry data
+  virtual const oops::GeometryData & innerGeometryData() const = 0;
+
+  // To inner variables
+  virtual const oops::Variables & innerVars() const = 0;
+
+  // Application methods
+
+  // Block multiplication
+  virtual void multiply(oops::FieldSet3D &) const = 0;
+
+  // Block multiplication adjoint
+  virtual void multiplyAD(oops::FieldSet3D &) const = 0;
+
+  // Block left inverse multiplication
+  virtual void leftInverseMultiply(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Block right inverse multiplication
+  virtual void rightInverseMultiply(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("rightInverseMultiply not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Transform an input variance fieldset into the output variance fieldset
+  // (element-wise) that this block would produce. Default throws so every
+  // outer block that may be used inside a covariance whose variance is queried
+  // must declare its behaviour explicitly (no-op for correlation-only blocks).
+  virtual void variance(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("variance not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Setup / calibration methods
+
+  // Read block data
+  virtual void read()
+    {throw eckit::NotImplemented("read not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Read model fields
+  virtual std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const
+    {return {};}
+  virtual void setReadFields(const std::vector<oops::FieldSet3D> &) {}
+
+  // Direct calibration
+  virtual void directCalibration(const oops::FieldSets &)
+    {throw eckit::NotImplemented("directCalibration not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Iterative calibration
+  virtual void iterativeCalibrationInit()
+    {throw eckit::NotImplemented("iterativeCalibrationInit not implemented yet for the block "
+      + blockName_, Here());}
+  virtual void iterativeCalibrationUpdate(const oops::FieldSet3D &)
+    {throw eckit::NotImplemented("iterativeCalibrationUpdate not implemented yet for the block "
+      + blockName_, Here());}
+  virtual void iterativeCalibrationFinal()
+    {throw eckit::NotImplemented("iterativeCalibrationUpdate not implemented yet for the block "
+      + blockName_, Here());}
+
+  // Write block data
+  virtual void write() const {}
+
+  // Write model fields
+  virtual std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
+     {return {};}
+
+  // Generate inner FieldSet (for the inverse test)
+  virtual oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
+                                                 const oops::Variables & innerVars) const
+    {return oops::randomFieldSet3D(validTime_,
+                                   innerGeometryData.comm(),
+                                   innerGeometryData.functionSpace(),
+                                   innerVars);}
+
+  // Generate outer FieldSet (for the inverse test)
+  virtual oops::FieldSet3D generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
+                                                 const oops::Variables & outerVars) const
+    {return oops::randomFieldSet3D(validTime_,
+                                   outerGeometryData.comm(),
+                                   outerGeometryData.functionSpace(),
+                                   outerVars);}
+
+  // Compare FieldSets (for the inverse test)
+  virtual bool compareFieldSets(const oops::FieldSet3D & fset3D1,
+                                const oops::FieldSet3D & fset3D2,
+                                const double & tol) const
+    {return fset3D1.compare_with(fset3D2, tol, util::ToleranceType::normalized_absolute);}
+
+  // Non-virtual methods
+
+  // Return block name
+  const std::string blockName() const {return blockName_;}
+
+  // Return flag to skip inverse application
+  bool skipInverse() const {return skipInverse_;}
+
+  // Return outer geometry data
+  const oops::GeometryData & outerGeometryData() const {return outerGeometryData_;}
+
+  // Return outer variables
+  const oops::Variables & outerVars() const {return outerVars_;}
+
+  // Read model fields
+  template <typename MODEL>
+  void read(const oops::Geometry<MODEL> &,
+            const bool &,
+            const oops::Variables &);
+
+  // Write model fields
+  template <typename MODEL>
+  void write(const oops::Geometry<MODEL> &,
+             const bool &,
+             const oops::Variables &) const;
+
+  // Adjoint test
+  void adjointTest(const oops::GeometryData &,
+                   const oops::Variables &,
+                   const oops::GeometryData &,
+                   const oops::Variables &,
+                   const double &) const;
+
+  // Left-inverse test
+  void inverseTest(const oops::GeometryData &,
+                   const oops::Variables &,
+                   const oops::GeometryData &,
+                   const oops::Variables &,
+                   const oops::Variables &,
+                   const oops::Variables &,
+                   const double &,
+                   const double &) const;
+
+ protected:
+  const util::DateTime validTime_;
+  const oops::GeometryData & outerGeometryData_;
+  const oops::Variables outerVars_;
+
+ private:
+  const std::string blockName_;
+  const bool skipInverse_;
+  virtual void print(std::ostream &) const = 0;
+};
+
+// -----------------------------------------------------------------------------
+
+class OuterBlockFactory;
+
+// -----------------------------------------------------------------------------
+
+class OuterBlockParametersWrapper : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(OuterBlockParametersWrapper, Parameters)
+ public:
+  oops::RequiredPolymorphicParameter<BlockParametersBase, OuterBlockFactory>
+    saberOuterBlockParameters{"saber block name", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class OuterBlockFactory {
+ public:
+  static std::shared_ptr<OuterBlockBase> create(const oops::GeometryData &,
+                                                const oops::Variables &,
+                                                const eckit::Configuration &,
+                                                const BlockParametersBase &,
+                                                const oops::FieldSet3D &,
+                                                const oops::FieldSet3D &);
+
+  static std::unique_ptr<BlockParametersBase> createParameters(const std::string &name);
+
+  static std::vector<std::string> getMakerNames() {
+    return oops::keys(getMakers());
+  }
+
+  virtual ~OuterBlockFactory() = default;
+
+ protected:
+  explicit OuterBlockFactory(const std::string &name);
+
+ private:
+  virtual std::shared_ptr<OuterBlockBase> make(const oops::GeometryData &,
+                                               const oops::Variables &,
+                                               const eckit::Configuration &,
+                                               const BlockParametersBase &,
+                                               const oops::FieldSet3D &,
+                                               const oops::FieldSet3D &) = 0;
+
+  virtual std::unique_ptr<BlockParametersBase> makeParameters() const = 0;
+
+  static std::map < std::string, OuterBlockFactory * > & getMakers() {
+    static std::map < std::string, OuterBlockFactory * > makers_;
+    return makers_;
+  }
+};
+
+// -----------------------------------------------------------------------------
+
+template<class T>
+class OuterBlockMaker : public OuterBlockFactory {
+  typedef typename T::Parameters_ Parameters_;
+
+  std::shared_ptr<OuterBlockBase> make(const oops::GeometryData & outerGeometryData,
+                                       const oops::Variables & outerVars,
+                                       const eckit::Configuration & covarConf,
+                                       const BlockParametersBase & params,
+                                       const oops::FieldSet3D & xb,
+                                       const oops::FieldSet3D & fg) override {
+    const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
+    return std::make_shared<T>(outerGeometryData, outerVars,
+                               covarConf, stronglyTypedParams, xb, fg);
+  }
+
+  std::unique_ptr<BlockParametersBase> makeParameters() const override {
+    return std::make_unique<Parameters_>();
+  }
+
+ public:
+  explicit OuterBlockMaker(const std::string & name) : OuterBlockFactory(name) {}
+};
+
+// -----------------------------------------------------------------------------
+
+template <typename MODEL>
+void OuterBlockBase::read(const oops::Geometry<MODEL> & geom,
+                          const bool & validModelGeom,
+                          const oops::Variables & vars) {
+  oops::Log::trace() << "OuterBlockBase::read starting" << std::endl;
+
+  // Cannot read files without a valid MODEL geometry
+  ASSERT(validModelGeom || (this->getReadConfs().size() == 0));
+
+  // Read fieldsets as increments
+  std::vector<oops::FieldSet3D> fsetVec;
+  for (const auto & input : this->getReadConfs()) {
+    // Create increment
+    std::unique_ptr<oops::Variables> incVars;
+    if (input.second.has("overriding variables")) {
+      const std::vector<std::string> incVarsNames =
+        input.second.getStringVector("overriding variables");
+      incVars.reset(new oops::Variables(incVarsNames));
+    } else {
+      incVars.reset(new oops::Variables(vars));
+    }
+    oops::Increment<MODEL> dx(geom, *incVars, validTime_);
+
+    // Read, print norm and push_back
+    dx.read(input.second);
+    oops::Log::test() << "Norm of input parameter " << input.first
+                      << ": " << dx.norm() << std::endl;
+    fsetVec.push_back(dx.fieldSet());
+    fsetVec.back().name() = input.first;
+  }
+  this->setReadFields(fsetVec);
+
+  oops::Log::trace() << "OuterBlockBase::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename MODEL>
+void OuterBlockBase::write(const oops::Geometry<MODEL> & geom,
+                           const bool & validModelGeom,
+                           const oops::Variables & vars) const {
+  oops::Log::trace() << "OuterBlockBase::write starting" << std::endl;
+
+  // Cannot write files without a valid MODEL geometry
+  ASSERT(validModelGeom || (this->fieldsToWrite().size() == 0));
+
+  // Get vector of configuration/FieldSet pairs
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs
+    = this->fieldsToWrite();
+
+  // Loop and write
+  for (const auto & output : outputs) {
+    // Create increment
+    std::unique_ptr<oops::Variables> incVars;
+    if (output.first.has("overriding variables")) {
+      const std::vector<std::string> incVarsNames =
+        output.first.getStringVector("overriding variables");
+      incVars.reset(new oops::Variables(incVarsNames));
+    } else {
+      incVars.reset(new oops::Variables(vars));
+    }
+    oops::Increment<MODEL> dx(geom, *incVars, validTime_);
+
+    // Write and print norm
+    dx.fromFieldSet(output.second.fieldSet());
+    oops::Log::test() << "Norm of output parameter " << output.second.name()
+                      << ": " << dx.norm() << std::endl;
+    dx.write(output.first);
+  }
+
+  oops::Log::trace() << "OuterBlockBase::write done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+}  // namespace saber

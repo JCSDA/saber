@@ -31,7 +31,7 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
-#include "saber/blocks/SaberBlockChainBase.h"
+#include "saber/blocks/BlockChainBase.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
@@ -58,6 +58,9 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void multiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {this->doMultiply(dxi, dxo);}
 
+  /// Diagonal variance of this covariance, on its outer function space.
+  oops::FieldSet3D variance() const {return blockChain_->variance();}
+
  private:
   ErrorCovariance(const ErrorCovariance&);
   ErrorCovariance& operator=(const ErrorCovariance&);
@@ -69,7 +72,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   void print(std::ostream &) const override;
 
   /// Chain of blocks (hybrid or ensemble or parametric)
-  std::unique_ptr<SaberBlockChainBase> blockChain_;
+  std::unique_ptr<BlockChainBase> blockChain_;
 };
 
 // -----------------------------------------------------------------------------
@@ -116,7 +119,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   }
 
   // Create blockchain
-  blockChain_ = SaberBlockChainFactory<MODEL>::create(
+  blockChain_ = BlockChainFactory<MODEL>::create(
         geom,
         outerVars,
         *fset4dXb,

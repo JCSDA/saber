@@ -17,8 +17,8 @@
 
 #include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/blocks/BlockParametersBase.h"
+#include "saber/blocks/OuterBlockBase.h"
 
 namespace saber {
 namespace bifourier {
@@ -89,8 +89,8 @@ class BifourierBalanceRowParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class BifourierBalanceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BifourierBalanceParameters, SaberBlockParametersBase)
+class BifourierBalanceParameters : public BlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BifourierBalanceParameters, BlockParametersBase)
 
  public:
   // Read parameters
@@ -106,13 +106,16 @@ class BifourierBalanceParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<std::vector<BifourierBalanceRowParameters>>
     rows{"rows", this};
 
+  // Extra variable for auto-covariances
+  oops::OptionalParameter<std::string> extraVar{"extra variable for auto-covariances", this};
+
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class BifourierBalance : public SaberOuterBlockBase {
+class BifourierBalance : public OuterBlockBase {
  public:
   static const std::string classname()
     {return "saber::bifourier::BifourierBalance";}
@@ -169,6 +172,9 @@ class BifourierBalance : public SaberOuterBlockBase {
   // Ordered variables
   oops::Variables balVars_;
 
+  // Ordered variables, with a possible extra variable in first position for auto-covariances
+  oops::Variables balVarsExt_;
+
   // Number of active regression components
   size_t nCmp_;
 
@@ -189,6 +195,9 @@ class BifourierBalance : public SaberOuterBlockBase {
 
   // Compute regressions from covariances
   void computeRegressionsFromCovariances();
+
+  // Get variables to compute full covariances with
+  oops::Variables xxCovVars(const oops::Variable &) const;
 
   // Print
   void print(std::ostream &) const override;
