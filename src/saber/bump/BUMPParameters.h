@@ -613,11 +613,11 @@ class NICASSection : public oops::Parameters {
   // Force specific support radii for sampling
   oops::Parameter<bool> forced_radii_sampling = param(def.forced_radii_sampling, this);
   // Forced horizontal support radius for sampling [in meters]
-  oops::Parameter<std::vector<GroupsValueOrProfileParameters>> rhs{"horizontal length-scale for sampling", {},
-    this};
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>>
+    rhs{"horizontal length-scale for sampling", {}, this};
   // Forced vertical support radius for sampling
-  oops::Parameter<std::vector<GroupsValueOrProfileParameters>> rvs{"vertical length-scale for sampling", {},
-    this};
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>>
+    rvs{"vertical length-scale for sampling", {}, this};
   // Forced localization weights
   oops::Parameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights", {},
     this};

@@ -35,15 +35,12 @@ background error:
         zero padding: 6
       localization:
         localization method: SABER
-        saber central block:
+        saber central block: &centralBlockFull
           saber block name: BUMP_NICAS
           read:
             general:
               testing: true
               universe length-scale: 10000.0e3
-            io:
-              data directory: testdata
-              files prefix: dirac_localization_bump_1/_MPI_-_OMP_
             model:
               groups:
               - group name: group1
@@ -56,9 +53,6 @@ background error:
             drivers:
               multivariate strategy: univariate
               compute nicas: true
-              write local nicas: true
-            ensemble sizes:
-              total ensemble size: 25
             nicas:
               resolution: 4.0
               explicit length-scales: true
@@ -100,33 +94,49 @@ background error:
             variables:
             - eastward_wind
             - northward_wind
-            group central block:
+            group central block: &centralBlock1
               saber block name: BUMP_NICAS
               read:
                 general:
                   testing: true
                   universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_1/_MPI_-_OMP_
                 drivers:
                   multivariate strategy: univariate
-                  read local nicas: true
+                  compute nicas: true
+                nicas:
+                  resolution: 4.0
+                  explicit length-scales: true
+                  horizontal length-scale:
+                  - groups:
+                    - group1
+                    value: 6000.0e3
+                  vertical length-scale:
+                  - groups:
+                    - group1
+                    value: 3.0
           - group name: group2
             variables:
             - air_horizontal_streamfunction
-            group central block:
+            group central block: &centralBlock2
               saber block name: BUMP_NICAS
               read:
                 general:
                   testing: true
                   universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_1/_MPI_-_OMP_
                 drivers:
                   multivariate strategy: univariate
-                  read local nicas: true
+                  compute nicas: true
+                nicas:
+                  resolution: 4.0
+                  explicit length-scales: true
+                  horizontal length-scale:
+                  - groups:
+                    - group2
+                    value: 4000.0e3
+                  vertical length-scale:
+                  - groups:
+                    - group2
+                    value: 2.5
     weight:
       value: 0.25
   - covariance:
@@ -147,27 +157,7 @@ background error:
           nmembers: 25
           zero padding: 6
       localization:
-        saber central block:
-          saber block name: BUMP_NICAS
-          read:
-            general:
-              testing: true
-              universe length-scale: 10000.0e3
-            io:
-              data directory: testdata
-              files prefix: dirac_localization_bump_1/_MPI_-_OMP_
-            drivers:
-              multivariate strategy: univariate
-              read local nicas: true
-            model:
-              groups:
-              - group name: group1
-                variables:
-                - eastward_wind
-                - northward_wind
-              - group name: group2
-                variables:
-                - air_horizontal_streamfunction
+        saber central block: *centralBlockFull
     weight:
       value: 0.25
   - covariance:
@@ -195,33 +185,11 @@ background error:
             variables:
             - eastward_wind
             - northward_wind
-            group central block:
-              saber block name: BUMP_NICAS
-              read:
-                general:
-                  testing: true
-                  universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_1/_MPI_-_OMP_
-                drivers:
-                  multivariate strategy: univariate
-                  read local nicas: true
+            group central block: *centralBlock1
           - group name: group2
             variables:
             - air_horizontal_streamfunction
-            group central block:
-              saber block name: BUMP_NICAS
-              read:
-                general:
-                  testing: true
-                  universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_1/_MPI_-_OMP_
-                drivers:
-                  multivariate strategy: univariate
-                  read local nicas: true
+            group central block: *centralBlock2
     weight:
       value: 0.25
 dirac:

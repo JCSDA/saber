@@ -436,9 +436,11 @@ logical :: missing_sampling
 @:probe_in()
 
 ! Check whether sampling is already set
-missing_sampling = .true.
+missing_sampling = (geom%nc0a>0)
 do ig=1,nam%ng
-  if (missing_sampling.and.mpl%msv%isanynot(cmat%blk(ig)%rhs)) missing_sampling = .false.
+  if (missing_sampling) then
+     if (mpl%msv%isanynot(cmat%blk(ig)%rhs)) missing_sampling = .false.
+  end if
 end do
 
 if (missing_sampling) then

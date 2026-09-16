@@ -41,6 +41,18 @@ Input Dirac increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -48,6 +60,18 @@ Input Dirac increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
@@ -59,6 +83,18 @@ Square-root test for block Ensemble passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Adjoint test for block BUMP_NICAS passed
 Adjoint test for the multivariate central block passed
 Square-root test for block BUMP_NICAS passed
@@ -171,6 +207,18 @@ Localization(hybrid1_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Covariance(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -197,6 +245,18 @@ Covariance(hybrid2_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.2999999999999992e+00
@@ -227,6 +287,18 @@ Localization(hybrid2_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
@@ -257,6 +329,18 @@ Covariance(hybrid3_SABER) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
 Adjoint test for block BUMP_NICAS passed
 Adjoint test for the multivariate central block passed
 Square-root test for block BUMP_NICAS passed
