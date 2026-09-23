@@ -247,7 +247,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Create file
-ncid = create_file(mpl,filename,0)
+ncid = create_file(mpl,filename,nam%time_comm,0)
 
 ! Get group name
 call nam%alias(nam%variables(avg_blk%iv),grpname)

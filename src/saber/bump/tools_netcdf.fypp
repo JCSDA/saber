@@ -345,13 +345,14 @@ end subroutine registry_recursive_cleaning
 ! Function: netcdf_create_file
 !> Create file
 !----------------------------------------------------------------------
-function netcdf_create_file(mpl,filename,iproc,io_override) result(ncid)
+function netcdf_create_file(mpl,filename,time_comm,iproc,io_override) result(ncid)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl        !< MPI data
 character(len=*),intent(in) :: filename    !< File name
+integer,intent(in) :: time_comm(2)         !< Time communicator rank and size
 integer,intent(in),optional :: iproc       !< Processor index
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
@@ -376,14 +377,21 @@ if (present(io_override)) lio = lio.or.io_override
 ncid = mpl%msv%vali
 
 if (lio) then
+   if (time_comm(2)>1) then
+      ! Prepend with time communicator rank and size
+      write(fullname,'(a,i2.2,a,i2.2)') trim(filename)//'_time_',time_comm(2),'-',time_comm(1)
+   else
+      fullname = filename
+   end if
+
    if (present(iproc)) then
       ! Local I/O
 
       ! Full file name
       if (iproc==0) then
-         fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+         fullname = trim(mpl%datadir)//'/'//trim(fullname)//'.nc'
       else
-         write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+         write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(fullname)//'_local_',mpl%nproc,'-',iproc,'.nc'
       end if
 
       ! Create file
@@ -392,7 +400,7 @@ if (lio) then
       ! Global I/O
 
       ! Full file name
-      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(fullname)//'.nc'
 
       ! Create file
       if (mpl%parallel_netcdf) then
@@ -404,7 +412,7 @@ if (lio) then
    end if
 
    ! Save ID in registry
-   if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+   if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,fullname)
 
    ! Set global missing value
    call put_att(mpl,ncid,0,'_FillValue',mpl%msv%valr)

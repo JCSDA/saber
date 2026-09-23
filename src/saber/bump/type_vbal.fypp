@@ -459,7 +459,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Open files
-ncid = create_file(mpl,nam%fname_vbal_cov_default,iproc)
+ncid = create_file(mpl,nam%fname_vbal_cov_default,nam%time_comm,iproc)
 
 ! Define dimensions
 nc1a_id = define_dim(mpl,ncid,'nc1a',vbal%nc1a)
@@ -606,7 +606,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Open files
-ncid = create_file(mpl,nam%fname_vbal_cov_default)
+ncid = create_file(mpl,nam%fname_vbal_cov_default,nam%time_comm)
 
 ! Define dimensions
 nc1_id = define_dim(mpl,ncid,'nc1',samp%nc1)
@@ -1257,7 +1257,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Create files
-ncid = create_file(mpl,nam%fname_vbal,iproc)
+ncid = create_file(mpl,nam%fname_vbal,nam%time_comm,iproc)
 
 ! Define dimensions
 nc2a_id = define_dim(mpl,ncid,'nc2a',vbal%nc2a)
@@ -1447,7 +1447,7 @@ write(mpl%info,'(a)') '--- Write global vertical balance operators'
 call mpl%flush
 
 ! Create files
-ncid = create_file(mpl,nam%fname_vbal)
+ncid = create_file(mpl,nam%fname_vbal,nam%time_comm)
 
 ! Define dimensions
 nc2_id = define_dim(mpl,ncid,'nc2',samp%nc2)

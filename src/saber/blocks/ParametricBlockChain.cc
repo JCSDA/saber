@@ -36,6 +36,10 @@ ParametricBlockChain::ParametricBlockChain(const oops::GeometryData & outerGeome
   // Set cross-time covariance flag
   crossTimeCov_ = (params.timeCovariance.value() == "multivariate duplicated");
 
+  // Add time communicator information into fullConf for possible usage in blocks I/O
+  fullConf.set("time communicator rank", fset4dXb.commTime().rank());
+  fullConf.set("time communicator size", fset4dXb.commTime().size());
+
   // If needed create generic outer block chain
   if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_shared<OuterBlockChain>(outerGeometryData,
@@ -59,23 +63,26 @@ ParametricBlockChain::ParametricBlockChain(const oops::GeometryData & outerGeome
                                                  fset4dXb,
                                                  fset4dFg);
 
-  if (centralBlock_->doCalibration()) {
-    // Calibration, without ensemble
-    centralBlock_->calibrateBlock(fset4dXb);
+  if (centralBlock_) {
+    if (centralBlock_->doCalibration()) {
+      // Calibration, without ensemble
+      centralBlock_->calibrateBlock(fset4dXb);
+    }
+
+    if (centralBlock_->doRead()) {
+      // Read data
+      oops::Log::info() << "Info     : Read data" << std::endl;
+      centralBlock_->read();
+    }
+
+    if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
+      // Write data
+      oops::Log::info() << "Info     : Write data" << std::endl;
+      centralBlock_->write();
+    }
   }
 
-  if (centralBlock_->doRead()) {
-    // Read data
-    oops::Log::info() << "Info     : Read data" << std::endl;
-    centralBlock_->read();
-  }
-
-  if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
-    // Write data
-    oops::Log::info() << "Info     : Write data" << std::endl;
-    centralBlock_->write();
-  }
-
+  // Test central block
   testCentralBlock(fullConf);
 
   oops::Log::trace() << "ParametricBlockChain generic ctor done" << std::endl;
@@ -106,12 +113,14 @@ oops::Variables ParametricBlockChain::initCentralBlock(
   }
 
   // Create central block
-  centralBlock_ = std::make_unique<CentralBlockWrapper>(outerGeom,
-                                                        activeVars,
-                                                        conf,
-                                                        saberCentralBlockParams,
-                                                        fset4dXb[0],
-                                                        fset4dFg[0]);
+  if ((!crossTimeCov_) || (timeComm_.rank() == 0)) {
+    centralBlock_ = std::make_unique<CentralBlockWrapper>(outerGeom,
+                                                          activeVars,
+                                                          conf,
+                                                          saberCentralBlockParams,
+                                                          fset4dXb[0],
+                                                          fset4dFg[0]);
+  }
 
   // Save central function space and variables
   centralFunctionSpace_ = outerGeom.functionSpace();
@@ -133,21 +142,25 @@ oops::Variables ParametricBlockChain::initCentralBlock(
 
 void ParametricBlockChain::testCentralBlock(const eckit::Configuration & conf) const {
   oops::Log::trace() << "ParametricBlockChain::testCentralBlock starting" << std::endl;
-  // Adjoint test
-  if (conf.getBool("adjoint test")) {
-    // Get tolerance (can be overridden from central block parameters)
-    const double adjointTolerance = conf.getDouble("adjoint tolerance");
-    // Run test
-    centralBlock_->adjointTest(adjointTolerance);
+
+  if (centralBlock_) {
+    // Adjoint test
+    if (conf.getBool("adjoint test")) {
+      // Get tolerance (can be overridden from central block parameters)
+      const double adjointTolerance = conf.getDouble("adjoint tolerance");
+      // Run test
+      centralBlock_->adjointTest(adjointTolerance);
+    }
+
+    // Square-root test
+    if (conf.getBool("square-root test")) {
+      // Get tolerance (can be overridden from central block parameters)
+      const double sqrtTolerance = conf.getDouble("square-root tolerance");
+      // Run test
+      centralBlock_->sqrtTest(sqrtTolerance);
+    }
   }
 
-  // Square-root test
-  if (conf.getBool("square-root test")) {
-    // Get tolerance (can be overridden from central block parameters)
-    const double sqrtTolerance = conf.getDouble("square-root tolerance");
-    // Run test
-    centralBlock_->sqrtTest(sqrtTolerance);
-  }
   oops::Log::trace() << "ParametricBlockChain::testCentralBlock done" << std::endl;
 }
 
@@ -346,28 +359,6 @@ void ParametricBlockChain::multiplySqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-oops::FieldSet3D ParametricBlockChain::variance() const {
-  oops::Log::trace() << "ParametricBlockChain::variance starting" << std::endl;
-  // Start from the central block's diagonal variance
-  oops::FieldSet3D variance = centralBlock_->variance();
-  // Copy metadata to the new fields so that outer blocks (e.g.
-  // Interpolation) can read field-level metadata such as "interp_type".
-  for (auto & field : variance.fieldSet()) {
-    auto it = centralXbMetadata_.find(field.name());
-    if (it != centralXbMetadata_.end()) {
-      field.metadata() = it->second;
-    }
-  }
-  // Propagate through the outer blocks in forward (innermost-first) order.
-  if (outerBlockChain_) {
-    outerBlockChain_->applyBackgroundVariance(variance);
-  }
-  oops::Log::trace() << "ParametricBlockChain::variance done" << std::endl;
-  return variance;
-}
-
-// -----------------------------------------------------------------------------
-
 void ParametricBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
                                           atlas::Field & cv,
                                           const size_t & offset) const {
@@ -410,5 +401,26 @@ void ParametricBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
 
 // -----------------------------------------------------------------------------
 
+oops::FieldSet3D ParametricBlockChain::variance() const {
+  oops::Log::trace() << "ParametricBlockChain::variance starting" << std::endl;
+  // Start from the central block's diagonal variance
+  oops::FieldSet3D variance = centralBlock_->variance();
+  // Copy metadata to the new fields so that outer blocks (e.g.
+  // Interpolation) can read field-level metadata such as "interp_type".
+  for (auto & field : variance.fieldSet()) {
+    auto it = centralXbMetadata_.find(field.name());
+    if (it != centralXbMetadata_.end()) {
+      field.metadata() = it->second;
+    }
+  }
+  // Propagate through the outer blocks in forward (innermost-first) order.
+  if (outerBlockChain_) {
+    outerBlockChain_->applyBackgroundVariance(variance);
+  }
+  oops::Log::trace() << "ParametricBlockChain::variance done" << std::endl;
+  return variance;
+}
+
+// -----------------------------------------------------------------------------
 
 }  // namespace saber

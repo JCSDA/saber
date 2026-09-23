@@ -83,6 +83,8 @@ TEST( test_nicas_sqrt )
   call rv(1)%set("variables",["var1","var2"])
   call rv(1)%set("value",3.0_kind_real)
   call conf%set("nicas.vertical length-scale",rv)
+  call conf%set("external.time communicator rank",1)
+  call conf%set("external.time communicator size",1)
 
   ! Create BUMP
   call bump%create(f_comm,fspace_out,fset,conf)

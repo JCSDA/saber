@@ -186,6 +186,13 @@ HybridBlockChain<MODEL>::HybridBlockChain(const oops::Geometry<MODEL> & geom,
   ErrorCovarianceParametersBase paramsBase;
   paramsBase.deserialize(fullConf);
 
+  // Add time communicator information into fullConf for possible usage in blocks I/O
+  // NB: the rank and size of fset4dXb.commTime() might be wrong if this parametric block chain is
+  // built from the saber::Localization<MODEL> class, so the geom.timeComm() rank and size should be
+  // used instead.
+  fullConf.set("time communicator rank", geom.timeComm().rank());
+  fullConf.set("time communicator size", geom.timeComm().size());
+
   // Initialize current outer variables
   oops::Variables currentOuterVars(outerVars);
 

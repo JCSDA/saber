@@ -44,10 +44,9 @@ class ParametricBlockChainParameters: public ErrorCovarianceParametersBase {
   oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
 
-  // Time covariance mode (by default duplicated multivariate)
-  // Options: univariate, duplicated multivariate.
-  oops::Parameter<std::string> timeCovariance{"time covariance", "multivariate duplicated",
-                                              this};
+  // Time covariance mode (by default duplicated)
+  // Options: univariate or duplicated
+  oops::Parameter<std::string> timeCovariance{"time covariance", "duplicated", this};
 
   // Ensemble
   oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};
@@ -148,7 +147,21 @@ ParametricBlockChain::ParametricBlockChain(const oops::Geometry<MODEL> & geom,
   params.serialize(fullConf);
 
   // Set cross-time covariance flag
-  crossTimeCov_ = (params.timeCovariance.value() == "multivariate duplicated");
+  if (params.timeCovariance.value() == "univariate") {
+    crossTimeCov_ = false;
+  } else if (params.timeCovariance.value() == "duplicated") {
+    crossTimeCov_ = true;
+  } else {
+    throw eckit::UserError("Wrong time covariance type: " + params.timeCovariance.value() +
+      " should be univariate or duplicated", Here());
+  }
+
+  // Add time communicator information into fullConf for possible usage in blocks I/O
+  // NB: the rank and size of fset4dXb.commTime() might be wrong if this parametric block chain is
+  // built from the saber::Localization<MODEL> class, so the geom.timeComm() rank and size should be
+  // used instead.
+  fullConf.set("time communicator rank", geom.timeComm().rank());
+  fullConf.set("time communicator size", geom.timeComm().size());
 
   // Get central block parameters
   CentralBlockWrapperParameters saberCentralBlockParams = params.saberCentralBlockParams;
@@ -182,31 +195,33 @@ ParametricBlockChain::ParametricBlockChain(const oops::Geometry<MODEL> & geom,
                                                  fset4dXb,
                                                  fset4dFg);
 
-  // Read and add model fields
-  centralBlock_->read(geom, currentOuterVars);
+  if (centralBlock_) {
+    // Read and add model fields
+    centralBlock_->read(geom, currentOuterVars);
 
-  if (centralBlock_->doCalibration()) {
-    // Calibration
-    centralBlock_->calibrateBlock(geom,
-                                  outerVariables_,
-                                  fset4dXb,
-                                  fset4dFg,
-                                  fullConf,
-                                  outerBlockChain_,
-                                  fsetEns);
-  }
+    if (centralBlock_->doCalibration()) {
+      // Calibration
+      centralBlock_->calibrateBlock(geom,
+                                    outerVariables_,
+                                    fset4dXb,
+                                    fset4dFg,
+                                    fullConf,
+                                    outerBlockChain_,
+                                   fsetEns);
+    }
 
-  if (centralBlock_->doRead()) {
-    // Read data
-    oops::Log::info() << "Info     : Read data" << std::endl;
-    centralBlock_->read();
-  }
+    if (centralBlock_->doRead()) {
+      // Read data
+      oops::Log::info() << "Info     : Read data" << std::endl;
+      centralBlock_->read();
+    }
 
-  if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
-    // Write data
-    oops::Log::info() << "Info     : Write data" << std::endl;
-    centralBlock_->write(geom);
-    centralBlock_->write();
+    if (centralBlock_->forceWrite() || centralBlock_->doCalibration()) {
+      // Write data
+      oops::Log::info() << "Info     : Write data" << std::endl;
+      centralBlock_->write(geom);
+      centralBlock_->write();
+    }
   }
 
   // Test central block

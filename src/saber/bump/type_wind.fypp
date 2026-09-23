@@ -433,7 +433,7 @@ do iproc=1,mpl%nproc
       call mpl%flush
 
       ! Open file
-      ncid = create_file(mpl,nam%fname_wind,iproc)
+      ncid = create_file(mpl,nam%fname_wind,nam%time_comm,iproc)
       if (iproc==iprocio) then
          ! Write attributes
          call put_att(mpl,ncid,0,'nc0b',wind%nc0b)
@@ -828,7 +828,7 @@ write(mpl%info,'(a7,a,i6)') '','Write global wind data'
 call mpl%flush
 
 ! Open file
-ncid = create_file(mpl,nam%fname_wind)
+ncid = create_file(mpl,nam%fname_wind,nam%time_comm)
 
 ! Allocation
 allocate(transform_nop(geom%nc0a))

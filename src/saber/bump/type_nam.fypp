@@ -213,6 +213,7 @@ type nam_type
    logical :: iterative_algo                                  !< Iterative algorithm (ensemble members loaded sequentially)
    character(len=1024) :: vert_coord_name                     !< Vertical coordinate field name in geometry fields
    character(len=1024) :: gmask_name                          !< Geographical mask name in geometry fields
+   integer :: time_comm(2)                                    !< Time communicator rank and size
 contains
    procedure :: init => nam_init
    procedure :: final => nam_final
@@ -973,6 +974,8 @@ if (conf%get('external',section)) then
    call nam%get(section,'iterative algorithm',nam%iterative_algo)
    call nam%get(section,'vertical coordinate name',nam%vert_coord_name)
    call nam%get(section,'geographical mask name',nam%gmask_name)
+   call nam%get(section,'time communicator rank',nam%time_comm(1))
+   call nam%get(section,'time communicator size',nam%time_comm(2))
 end if
 
 ! Release memory
@@ -1396,6 +1399,9 @@ end if
 ! Wind section
 if (nam%new_wind.and.(nam%load_wind_local.or.nam%load_wind_global)) &
  & call mpl%abort('${subr}$','new_wind and load_wind_local/load_wind_global are exclusive')
+
+! External section
+if (any(nam%time_comm<=0)) call mpl%abort('${subr}$','time_comm elements should larger than 0')
 
 ! Probe out
 @:probe_out()

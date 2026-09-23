@@ -596,6 +596,14 @@ struct ExternalDef {
   // Geographical mask name in geometry fields
   std::pair<const char *, std::string> gmask_name =
     std::make_pair("geographical mask name", "");
+
+  // Time communicator rank
+  std::pair<const char *, int> time_comm_rank =
+    std::make_pair("time communicator rank", 0);
+
+  // Time communicator size
+  std::pair<const char *, int> time_comm_size =
+    std::make_pair("time communicator size", 0);;
 };
 
 // -----------------------------------------------------------------------------

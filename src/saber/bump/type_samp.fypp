@@ -753,7 +753,7 @@ integer :: lon_c3a_id,lat_c3a_id,smask_c3a_id,lon_c2a_id,lat_c2a_id,vert_coord_c
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,nam%fname_samp,iproc)
+ncid = create_file(mpl,nam%fname_samp,nam%time_comm,iproc)
 
 ! Define dimensions
 if (samp%sc1) nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a)
@@ -1084,7 +1084,7 @@ integer :: lon_c2_id,lat_c2_id,vert_coord_c2_id,smask_c2_id
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,nam%fname_samp)
+ncid = create_file(mpl,nam%fname_samp,nam%time_comm)
 
 ! Define dimensions
 if (samp%sc1) nc1_id = define_dim(mpl,ncid,'nc1',samp%nc1)
@@ -1173,7 +1173,7 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc,io_override=.true.)
+ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',nam%time_comm,mpl%myproc,io_override=.true.)
 
 ! Define dimensions
 nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0,io_override=.true.)
