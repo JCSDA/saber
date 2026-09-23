@@ -7,21 +7,21 @@
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
                    Requested distance between points (min/max/avg):  0.693E+03 km /  0.693E+03 km /  0.693E+03 km
-                   Regular sampling grid size:      760 points
-                   Nearest neighbor distance (min/max/avg):  0.233E+03 km /  0.782E+03 km /  0.688E+03 km
-                   Effective resolution (min/max/avg):  5.12 / 17.15 /  6.33
-                   Subgrid hash:   1497432802
-                Subgrid size:      760
-             nc1(  1) =                        760
-             nc1(  2) =                        760
-             ns =                             1520
+                   Regular sampling grid size:     7488 points
+                   Nearest neighbor distance (min/max/avg):  0.563E+03 km /  0.939E+03 km /  0.708E+03 km
+                   Effective resolution (min/max/avg):  4.26 /  7.11 /  5.69
+                   Subgrid hash:  -1130474589
+                Subgrid size:      724
+             nc1(  1) =                        724
+             nc1(  2) =                        724
+             ns =                             1448
              v%n_s =                             2
-             c%n_s[global] =                 29600
-             nc1(  1) =                        760
-             nc1(  2) =                        760
-             ns =                             1520
+             c%n_s[global] =                 23284
+             nc1(  1) =                        724
+             nc1(  2) =                        724
+             ns =                             1448
              v%n_s =                             2
-             c%n_s[global] =                 52832
+             c%n_s[global] =                 49356
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -40,12 +40,12 @@
           Convolution / communication adjoint test result: T
           Component NICAS adjoint test result:             T
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.7650384 /  1.3309062 over     50 tests
+             Min / max: 0.7124308 /  1.2869171 over     50 tests
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.7015543 /  1.3021546 over     50 tests
-             0.0 /    0.0:  1.0114537
-          Level   1:  0.0000000 -  1.0114537
-          Level   2:  0.0000000 -  0.5719561
+             Min / max: 0.7777949 /  1.3315910 over     50 tests
+             0.0 /    0.0:  0.9202196
+          Level   1:  0.0000000 -  0.9202196
+          Level   2:  0.0000000 -  0.5501360
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000

@@ -35,6 +35,7 @@ background error:
         total ensemble size: 50
       nicas:
         resolution: 4.0
+        grid type: random
         explicit length-scales: true
         horizontal length-scale:
         - groups:

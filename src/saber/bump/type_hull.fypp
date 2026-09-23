@@ -21,16 +21,10 @@ type hull_type
    integer :: nb                            !< Number of hull vertices
    real(kind_real),allocatable :: vbnd(:,:) !< Hull vertices
    real(kind_real) :: area                  !< Hull area
-
-   ! Deprecated: centroid/radius-based hull
-   real(kind_real) :: lon                   !< Centroid longitude
-   real(kind_real) :: lat                   !< Centroid latitude
-   real(kind_real) :: radius                !< Radius
 contains
    procedure :: hull_init_empty
    procedure :: hull_init_from_vertices
-   procedure :: hull_init_centroid_radius
-   generic :: init => hull_init_empty,hull_init_from_vertices,hull_init_centroid_radius
+   generic :: init => hull_init_empty,hull_init_from_vertices
    procedure :: dealloc => hull_dealloc
    procedure :: inside => hull_inside
    procedure :: distance => hull_distance
@@ -55,11 +49,6 @@ type(mpl_type),intent(inout) :: mpl     !< MPI data
 
 ! Set name
 @:set_name(hull_init_empty)
-
-! Missing lon/lat/radius
-hull%lon = mpl%msv%valr
-hull%lat = mpl%msv%valr
-hull%radius = mpl%msv%valr
 
 ! No hull vertices
 hull%nb = 0
@@ -129,71 +118,6 @@ end if
 end subroutine hull_init_from_vertices
 
 !----------------------------------------------------------------------
-! Subroutine: hull_init_centroid_radius
-!> Allocation and initialization with centroid and radius
-!----------------------------------------------------------------------
-subroutine hull_init_centroid_radius(hull,mpl,n,lon,lat,min_radius)
-
-implicit none
-
-! Passed variables
-class(hull_type),intent(inout) :: hull   !< Hull
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-integer,intent(in) :: n                  !< Size
-real(kind_real),intent(in) :: lon(n)     !< Longitudes
-real(kind_real),intent(in) :: lat(n)     !< Latitudes
-real(kind_real),intent(in) :: min_radius !< Minimum radius
-
-! Local variables
-integer :: i
-real(kind_real) :: dist
-real(kind_real) :: cd(3),v(3)
-
-! Set name
-@:set_name(hull_init_centroid_radius)
-
-if (n>0) then
-   ! Compute centroid
-   cd = zero
-   do i=1,n
-      ! Transform to cartesian coordinates
-      call lonlat2xyz(mpl,lon(i),lat(i),v(1),v(2),v(3))
-
-      ! Accumulate
-      cd = cd+v
-   end do
-   if (sum(cd**2)>0) then
-      ! Convert centroid back to lon/lat
-      call xyz2lonlat(mpl,cd(1),cd(2),cd(3),hull%lon,hull%lat)
-
-      ! Compute hull radius
-      hull%radius = 0.0
-      do i=1,n
-         ! Compute distance to centroid
-         call sphere_dist(hull%lon,hull%lat,lon(i),lat(i),dist)
-
-         ! Update hull radius
-          if (dist>hull%radius) hull%radius = dist
-      end do
-   else
-      ! Dummy centroid, large radius
-      hull%lon = zero
-      hull%lat = zero
-      hull%radius = two*pi
-   end if
-
-   ! Enforce minimum radius
-   hull%radius = max(hull%radius,min_radius)
-else
-   ! Empty universe
-   hull%lon = mpl%msv%valr
-   hull%lat = mpl%msv%valr
-   hull%radius = zero
-end if
-
-end subroutine hull_init_centroid_radius
-
-!----------------------------------------------------------------------
 ! Subroutine: hull_dealloc
 !> Release memory
 !----------------------------------------------------------------------
@@ -235,60 +159,43 @@ real(kind_real) :: vp(3),v1(3),v2(3),cp(3),cd(3)
 ! Set name
 @:set_name(hull_inside)
 
-if (allocated(hull%vbnd)) then
-   ! Boundary points-based hull
+! Transform to cartesian coordinates
+call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
 
-   ! Transform to cartesian coordinates
-   call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
+! Initialization
+inside_hull = .true.
 
-   ! Initialization
-   inside_hull = .true.
-
-   do ib=1,hull%nb
-      ! Index
-      if (ib<hull%nb) then
-         ibnext = ib+1
-      else
-         ibnext = 1
-      end if
-
-      ! Check whether points are aligned
-      call vector_product(hull%vbnd(:,ib),hull%vbnd(:,ibnext),cp)
-      cp = cp/sqrt(sum(cp**2))
-
-      if (sup(abs(sum(vp*cp)),repro_th)) then
-         ! Points are not aligned (aligned or almost aligned points are considered inside the hull)
-
-         ! Cross-product
-         v1 = hull%vbnd(:,ibnext)-hull%vbnd(:,ib)
-         v2 = vp-hull%vbnd(:,ib)
-         call vector_product(v1,v2,cp)
-
-         ! Centroid
-         cd = vp+hull%vbnd(:,ib)+hull%vbnd(:,ibnext)
-         cd = cd/sqrt(sum(cd**2))
-
-         ! Compare the directions
-         if (sum(cp*cd)<zero) then
-            inside_hull = .false.
-            exit
-         end if
-      end if
-   end do
-else
-   ! Centroid/radius-based hull
-   if (mpl%msv%is(hull%radius)) then
-      ! Undefined universe
-      inside_hull = .true.
-   else if (hull%radius>zero) then
-      ! Limited universe
-      call sphere_dist(hull%lon,hull%lat,lon,lat,dist)
-      inside_hull = infeq(dist,hull%radius)
+do ib=1,hull%nb
+   ! Index
+   if (ib<hull%nb) then
+      ibnext = ib+1
    else
-      ! Empty universe
-      inside_hull = .false.
+      ibnext = 1
    end if
-end if
+
+   ! Check whether points are aligned
+   call vector_product(hull%vbnd(:,ib),hull%vbnd(:,ibnext),cp)
+   cp = cp/sqrt(sum(cp**2))
+
+   if (sup(abs(sum(vp*cp)),repro_th)) then
+      ! Points are not aligned (aligned or almost aligned points are considered inside the hull)
+
+      ! Cross-product
+      v1 = hull%vbnd(:,ibnext)-hull%vbnd(:,ib)
+      v2 = vp-hull%vbnd(:,ib)
+      call vector_product(v1,v2,cp)
+
+      ! Centroid
+      cd = vp+hull%vbnd(:,ib)+hull%vbnd(:,ibnext)
+      cd = cd/sqrt(sum(cd**2))
+
+      ! Compare the directions
+      if (sum(cp*cd)<zero) then
+         inside_hull = .false.
+         exit
+      end if
+   end if
+end do
 
 end subroutine hull_inside
 
@@ -315,41 +222,36 @@ real(kind_real) :: vp(3),cp(3)
 ! Set name
 @:set_name(hull_distance)
 
-if (allocated(hull%vbnd)) then
-   ! Transform to cartesian coordinates
-   call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
+! Transform to cartesian coordinates
+call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
 
-   ! Initialization
-   dist = huge_real
+! Initialization
+dist = huge_real
 
-   do ib=1,hull%nb
-      ! Index
-      if (ib<hull%nb) then
-         ibnext = ib+1
+do ib=1,hull%nb
+   ! Index
+   if (ib<hull%nb) then
+      ibnext = ib+1
+   else
+      ibnext = 1
+   end if
+
+   if ((sum(abs(hull%vbnd(:,ib)-vp))<repro_th).or.(sum(abs(hull%vbnd(:,ibnext)-vp))<repro_th)) then
+      ! Point from the hull
+      dist = zero
+      exit
+   else
+      ! Distance to the arc
+      call vector_product(hull%vbnd(:,ib),hull%vbnd(:,ibnext),cp)
+      cp = cp/sqrt(sum(cp**2))
+      dist_test = asin(sum(vp*cp))
+      if (dist_test<zero) then
+         call mpl%abort('${subr}$','point shoud be inside hull to compute distance')
       else
-         ibnext = 1
+         dist = min(dist,dist_test)
       end if
-
-      if ((sum(abs(hull%vbnd(:,ib)-vp))<repro_th).or.(sum(abs(hull%vbnd(:,ibnext)-vp))<repro_th)) then
-         ! Point from the hull
-         dist = zero
-         exit
-      else
-         ! Distance to the arc
-         call vector_product(hull%vbnd(:,ib),hull%vbnd(:,ibnext),cp)
-         cp = cp/sqrt(sum(cp**2))
-         dist_test = asin(sum(vp*cp))
-         if (dist_test<zero) then
-            call mpl%abort('${subr}$','point shoud be inside hull to compute distance')
-         else
-            dist = min(dist,dist_test)
-         end if
-      end if
-   end do
-else
-   ! Missing value
-   dist = mpl%msv%valr
-end if
+   end if
+end do
 
 end subroutine hull_distance
 

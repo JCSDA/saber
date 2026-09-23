@@ -37,10 +37,6 @@ implicit none
 
 ! Geometry derived type
 type geom_type
-   ! Deprecation flags
-   logical :: deprecated_hull                         !< Use deprecated hull
-   logical :: deprecated_work_grid                    !< Use deprecated work grid
-
    ! Number of tasks
    integer :: nproc                                   !< Number of tasks
 
@@ -333,10 +329,6 @@ real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
 ! Set name
 @:set_name(geom_setup)
 
-! Deprecation flags
-geom%deprecated_hull = nam%deprecated_hull
-geom%deprecated_work_grid = nam%deprecated_work_grid
-
 ! Number of tasks
 geom%nproc = mpl%nproc
 
@@ -393,11 +385,6 @@ call geom%tree_c0u%init(mpl,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
 if (mpl%main) call geom%tree_c0%init(mpl,geom%nc0,lon_c0,lat_c0)
 
 if (nam%mask_check.or.(.not.geom%global)) then
-   if (geom%deprecated_hull) then
-      ! Reseed for backward compatibility
-      call rng%reseed
-   end if
-
    ! Setup mesh
    write(mpl%info,'(a7,a)') '','Setup mesh'
    call mpl%flush
@@ -772,11 +759,9 @@ end do
 call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
 
 ! Release memory
-if (.not.geom%deprecated_hull) then
-   deallocate(geom%lon_mga)
-   deallocate(geom%lat_mga)
-   deallocate(geom%vert_coord_mga)
-end if
+deallocate(geom%lon_mga)
+deallocate(geom%lat_mga)
+deallocate(geom%vert_coord_mga)
 
 end subroutine geom_setup_c0
 
@@ -993,15 +978,7 @@ if (geom%nc0u>0) then
    end do
 
    ! Setup hull
-   if (geom%deprecated_hull) then
-      if (geom%global.and.indist(geom%universe_proportion,one)) then
-         call geom%hull_c0u%init(mpl)
-      else
-         call geom%hull_c0u%init(mpl,geom%nc0u,geom%lon_c0u,geom%lat_c0u,nam%universe_radius)
-      end if
-   else
-      call geom%hull_c0u%init(geom%mesh_c0u%nb,vbnd)
-   end if
+   call geom%hull_c0u%init(geom%mesh_c0u%nb,vbnd)
 
    ! Release memory
    deallocate(vbnd)
@@ -1141,7 +1118,7 @@ else
    call mpl%f_comm%allreduce(geom%v_center,fckit_mpi_sum())
    geom%v_center = geom%v_center/sqrt(sum(geom%v_center**2))
 
-   if ((geom%afunctionspace_mg%name()=='StructuredColumns').and.(.not.geom%deprecated_work_grid)) then
+   if (geom%afunctionspace_mg%name()=='StructuredColumns') then
       ! Get StructuredColumns function space
       afunctionspace_sc = geom%afunctionspace_mg
 
@@ -1219,35 +1196,6 @@ else
          v_bnd(:,ib_2) = vtmp
       end do
 
-      if (geom%deprecated_hull) then
-         ! Compute area
-
-         ! Compute area as the sum of two spherical triangles
-         call area(v_bnd(:,1),v_bnd(:,2),v_bnd(:,4),area_124)
-         call area(v_bnd(:,2),v_bnd(:,3),v_bnd(:,4),area_234)
-         geom%area = area_124+area_234
-
-         ! Create hull
-         call hull%init(4,v_bnd)
-
-         ! Count points inside hull
-         nmg_inside = 0
-         do imga=1,geom%nmga
-            if (geom%owned_mga(imga,1)) then
-               call hull%inside(mpl,geom%lon_mga(imga),geom%lat_mga(imga),valid)
-              if (valid) nmg_inside = nmg_inside+1
-            end if
-         end do
-         call mpl%f_comm%allreduce(nmg_inside,fckit_mpi_sum())
-
-         ! Adjust area
-         call mpl%f_comm%allreduce(count(geom%owned_mga),nmg_owned,fckit_mpi_sum())
-         geom%area = geom%area*real(nmg_owned,kind_real)/real(nmg_inside,kind_real)
-
-         ! Release memory
-         call hull%dealloc
-      end if
-
       ! Inflate corners from centers to include all points
 
       ! Optimize inflation with a dichotomy method
@@ -1305,11 +1253,7 @@ else
       ! Minimization parameters initialization
       minim%hooke_rho = half
       minim%hooke_tol = 1.0e-6_kind_real
-      if (geom%deprecated_hull) then
-         minim%hooke_itermax = 25
-      else
-         minim%hooke_itermax = 15
-      end if
+      minim%hooke_itermax = 15
 
       ! Allocation
       minim%nx = 3
@@ -1330,12 +1274,6 @@ else
       ! Fit type
       minim%cost_function = 'work_grid'
       f_min = huge_real
-
-      if (geom%deprecated_hull) then
-         ! Reseed for backward compatibility
-         call rng%reseed
-         rng%seed = rng%seed+1
-      end if
 
       ! Resynchronize random number generator
       call rng%resync(mpl)

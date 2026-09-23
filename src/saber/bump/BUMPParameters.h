@@ -177,10 +177,6 @@ class GeneralSection : public oops::Parameters {
   oops::Parameter<bool> timers{"timers", false, this};
   // Universe radius [in meters]
   oops::Parameter<double> universe_radius{"universe length-scale", 6371229*M_PI, this};
-  // Use deprecated hull (for backward compatibility)
-  oops::Parameter<bool> deprecated_hull{"deprecated hull", true, this};
-  // Use deprecated work grid (for backward compatibility)
-  oops::Parameter<bool> deprecated_work_grid{"deprecated work grid", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -406,8 +402,6 @@ class SamplingSection : public oops::Parameters {
   oops::Parameter<double> local_rad{"averaging length-scale", 0.0, this};
   // Local diagnostics calculation latitude band half-width [in degrees]
   oops::Parameter<double> local_dlat{"averaging latitude width", 0.0, this};
-  // Maximum number of random number draws
-  oops::Parameter<int> irmax{"max number of draws", 10000000, this};
   // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
   oops::Parameter<std::string> interp_type{"interpolation type", "c0", this};
