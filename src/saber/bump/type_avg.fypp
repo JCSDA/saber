@@ -338,7 +338,7 @@ character(len=1024) :: grpname
 @:set_name(avg_write_single)
 
 ! Create file
-ncid = create_file(mpl,nam%fname_avg,iproc)
+ncid = create_file(mpl,nam%fname_avg,nam%time_comm,iproc)
 
 ! Put attribute
 call put_att(mpl,ncid,0,'nc2a',avg%nc2a)
