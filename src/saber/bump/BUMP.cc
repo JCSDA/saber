@@ -209,6 +209,10 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     }
     grid.set("external.geographical mask name", gmaskName);
 
+    // Add time communicator rank and size
+    grid.set("external.time communicator rank", covarConf_.getInt("time communicator rank", 0)+1);
+    grid.set("external.time communicator size", covarConf_.getInt("time communicator size", 1));
+
     // Create BUMP instance
     oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"

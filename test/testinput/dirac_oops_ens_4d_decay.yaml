@@ -1,0 +1,98 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 2
+  halo: 1
+background:
+  states:
+  - date: 2010-01-01T12:00:00Z
+    state variables:
+    - air_horizontal_streamfunction
+  - date: 2010-01-01T18:00:00Z
+    state variables:
+    - air_horizontal_streamfunction
+background error:
+  covariance model: ensemble
+  localization:
+    time decay: PT9H
+    communication mode: fast
+    localization method: SABER
+    saber central block:
+      saber block name: BUMP_NICAS
+      calibration:
+        general:
+          testing: true
+        io:
+          data directory: testdata
+          files prefix: dirac_oops_ens_4d_decay/_MPI_-_OMP_
+        drivers:
+          multivariate strategy: univariate
+          compute nicas: true
+          write local nicas: true
+        nicas:
+          resolution: 4.0
+          explicit length-scales: true
+          horizontal length-scale:
+          - groups:
+            - air_horizontal_streamfunction
+            value: 5.0e6
+          vertical length-scale:
+          - groups:
+            - air_horizontal_streamfunction
+            value: 4.0
+  members from template:
+    template:
+      states:
+      - date: 2010-01-01T12:00:00Z
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
+        state variables:
+        - air_horizontal_streamfunction
+      - date: 2010-01-01T18:00:00Z
+        filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_%mem%
+        state variables:
+        - air_horizontal_streamfunction
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
+dirac:
+  - lon:
+    - 0.0
+    lat:
+    - -0.001
+    level:
+    - 1
+    variable:
+    - air_horizontal_streamfunction
+  - {}
+diagnostic points:
+  - lon:
+    - 10.0
+    lat:
+    - -0.001
+    level:
+    - 1
+    variable:
+    - air_horizontal_streamfunction
+  - lon:
+    - 0.0
+    - 10.0
+    lat:
+    - -0.001
+    - -0.001
+    level:
+    - 1
+    - 1
+    variable:
+    - air_horizontal_streamfunction
+    - air_horizontal_streamfunction
+output dirac:
+  states:
+  - filepath: testdata/dirac_oops_ens_4d_decay/_MPI_-_OMP__dirac_%id%_12
+  - filepath: testdata/dirac_oops_ens_4d_decay/_MPI_-_OMP__dirac_%id%_18
+test:
+  reference filename: testref/dirac_oops_ens_4d_decay.ref

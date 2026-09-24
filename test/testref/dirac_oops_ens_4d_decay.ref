@@ -1,0 +1,101 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927613e-02
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                Estimated nc1 from horizontal support radius:      376
+                   Decimate full grid, at least      376 points required,     762 valid points found
+                   Subgrid hash:    -19204982
+                Final nc1:      376
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        376
+             nc1(  2) =                        376
+             ns =                              752
+             v%n_s =                             2
+             c%n_s[global] =                 21632
+Covariance(ensemble) diagnostics:
+- Variances at Dirac points:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.2673127220262923e+00
+- Covariances at diagnostic points:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 6.2301379417311287e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): -1.2609806275780858e-02
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): -9.7393498764820743e-02
+Covariance(ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -8.0139632938544189e-02
+    + max    = 1.2673127220262923e+00
+    + mean   = 6.9628640693508610e-03
+    + stddev = 6.1488323816847275e-02
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -1.1405732524592317e-01
+    + max    = 1.5888470333764193e-01
+    + mean   = 1.6290216017522743e-03
+    + stddev = 1.4390063677045187e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                Estimated nc1 from horizontal support radius:      376
+                   Decimate full grid, at least      376 points required,     762 valid points found
+                   Subgrid hash:    -19204982
+                Final nc1:      376
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        376
+             nc1(  2) =                        376
+             ns =                              752
+             v%n_s =                             2
+             c%n_s[global] =                 21632
+Localization(ensemble_localization) diagnostics:
+- Localization at zero separation:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.9999999999999956e-01
+- Localization at diagnostic points:
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 8.2380676674740927e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 8.0073740291680773e-01
+  + Value for variable air_horizontal_streamfunction, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 6.5965289091061319e-01
+Localization(ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 9.9999999999999956e-01
+    + mean   = 2.0331640884482683e-02
+    + stddev = 9.4907365540396069e-02
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min close to zero
+    + max    = 8.0073740291680773e-01
+    + mean   = 1.6280305318877853e-02
+    + stddev = 7.5995877400493572e-02

@@ -338,6 +338,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(externalDef.vert_coord_name, externalConf);
   // Geographical mask name in geometry fields
   param(externalDef.gmask_name, externalConf);
+  // Time communicator rank
+  param(externalDef.time_comm_rank, externalConf);
+  // Time communicator size
+  param(externalDef.time_comm_size, externalConf);
 
   // General parameters
   config->set("general", generalConf);

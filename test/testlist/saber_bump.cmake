@@ -667,6 +667,16 @@ saber_add_test( TARGET saber_dirac_oops_ens_noloc_4d_2-1
                 TEST_DEPENDS saber_randomization_bump_nicas_L10L2_2-1
                              saber_randomization_bump_nicas_L10L2T18_2-1 )
 
+# dirac_oops_ens_4d_decay
+saber_add_test( TARGET saber_dirac_oops_ens_4d_decay_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_oops_ens_4d_decay.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_randomization_bump_nicas_L10L2_2-1
+                             saber_randomization_bump_nicas_L10L2T18_2-1 )
+
 # dirac_shadow_levels_1
 saber_add_test( TARGET saber_dirac_shadow_levels_1_1-1
                 MPI 1
