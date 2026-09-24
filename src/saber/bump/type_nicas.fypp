@@ -409,7 +409,7 @@ do iproc=1,mpl%nproc
 
       if (nam%new_files) then
          ! Create file
-         ncid = create_file(mpl,nam%fname_nicas,iproc)
+         ncid = create_file(mpl,nam%fname_nicas,nam%time_comm,iproc)
       else
          ! Open file
          ncid = open_file(mpl,nam%fname_nicas,iproc,nowrite=.false.)
@@ -542,7 +542,7 @@ call mpl%flush
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,nam%fname_nicas)
+   ncid = create_file(mpl,nam%fname_nicas,nam%time_comm)
 else
    ! Open file
    ncid = open_file(mpl,nam%fname_nicas,nowrite=.false.)
@@ -593,7 +593,7 @@ integer :: ig
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc,io_override=.true.)
+   ncid = create_file(mpl,trim(nam%fname_nicas)//'_grids',nam%time_comm,mpl%myproc,io_override=.true.)
 else
    ! Open file
    ncid = open_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc,nowrite=.false.,io_override=.true.)
@@ -644,7 +644,7 @@ integer :: ig
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc,io_override=.true.)
+   ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',nam%time_comm,mpl%myproc,io_override=.true.)
 else
    ! Open file
    ncid = open_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc,nowrite=.false.,io_override=.true.)
@@ -1837,7 +1837,7 @@ nam%ens_ne = ens_ne
 
 if (mpl%main) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'randomization',0)
+   ncid = create_file(mpl,trim(nam%prefix)//'randomization',nam%time_comm,0)
 
    ! Define dimensions
    ntest_id = define_dim(mpl,ncid,'ntest',ntest)

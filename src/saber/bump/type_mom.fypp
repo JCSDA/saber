@@ -443,7 +443,7 @@ do isub=1,mom%nsub
    if (allocated(nam%fname_mom)) fname_mom = nam%fname_mom(isub)
 
    ! Create file
-   ncid = create_file(mpl,fname_mom,iproc)
+   ncid = create_file(mpl,fname_mom,nam%time_comm,iproc)
 
    ! Define or get dimension
    nc1a_id = define_dim(mpl,ncid,'nc1a',mom%nc1a)

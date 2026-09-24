@@ -142,7 +142,7 @@ end do
 do ildwv=0,nam%nldwv
    if (mpl%msv%isnot(ic2a(ildwv))) then
       ! Open file
-      ncid = create_file(mpl,filename(ildwv),0)
+      ncid = create_file(mpl,filename(ildwv),nam%time_comm,0)
 
       do ig=1,nam%ng
          ! Get group name
