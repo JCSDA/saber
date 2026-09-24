@@ -21,21 +21,29 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: StdDev
-    scale factor: 2.0
+    standard deviations:
+    - variable: air_horizontal_streamfunction
+      scale factor: 2.0
+    - variable: air_horizontal_velocity_potential
+      scale factor: 0.5
     read:
       atlas file:
         filepath: testdata/error_covariance_training_stddev_1/_MPI_-_OMP__stddev
 dirac: &dirac
   lon:
   - 0.0
+  - 0.0
   lat:
+  - 0.0
   - 0.0
   level:
   - 1
+  - 1
   variable:
   - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 diagnostic points: *dirac
 output dirac:
-  filepath: testdata/dirac_stddev_4/_MPI_-_OMP__stddev_%id%
+  filepath: testdata/dirac_stddev_5/_MPI_-_OMP__stddev_%id%
 test:
-  reference filename: testref/dirac_stddev_4.ref
+  reference filename: testref/dirac_stddev_5.ref
