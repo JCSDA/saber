@@ -647,138 +647,61 @@ end subroutine multiply
    type(atlas_field) :: afield
    integer,intent(out):: ier
    integer,save :: icount = 0
+   character(len=:), allocatable :: fname
    ier=-1
-   if (trim(vname) == "ps") then
-      if (.not.fields%has("air_pressure_at_surface")) return
-      afield = fields%field("air_pressure_at_surface")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "prse" .or. trim(vname) == "air_pressure_levels") then
-      if (.not.fields%has("air_pressure_levels")) return
-      afield = fields%field("air_pressure_levels")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "prsl" .or. trim(vname) == "air_pressure") then
-      if (.not.fields%has("air_pressure")) return
-      afield = fields%field("air_pressure")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "ts" .or. trim(vname) == "sst") then !  ts=gsi background name
-      if (.not.fields%has("skin_temperature_at_surface")) return      ! sst=gsi S/CV name
-      afield = fields%field("skin_temperature_at_surface")
-      call afield%data(rank2)
-      icount = icount + 1
-      ier=0
-   end if
-   if (trim(vname) == "u" .or. trim(vname) == "ua" ) then
-      if (.not.fields%has("eastward_wind")) return
-      afield = fields%field("eastward_wind")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "v" .or. trim(vname) == "va" ) then
-      if (.not.fields%has("northward_wind")) return
-      afield = fields%field("northward_wind")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "sf") then
-      if (.not.fields%has("air_horizontal_streamfunction")) return
-      afield = fields%field("air_horizontal_streamfunction")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "vp") then
-      if (.not.fields%has("air_horizontal_velocity_potential")) return
-      afield = fields%field("air_horizontal_velocity_potential")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "t" .or. trim(vname) == "tsen" ) then
-      if (.not.fields%has("air_temperature")) return
-      afield = fields%field("air_temperature")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "tv" ) then
-      if (.not.fields%has("virtual_temperature")) return
-      afield = fields%field("virtual_temperature")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "q" .or. trim(vname) == "sphum" ) then
-      if (.not.fields%has("water_vapor_mixing_ratio_wrt_moist_air")) return
-      afield = fields%field("water_vapor_mixing_ratio_wrt_moist_air")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "qi") then
-      if (.not.fields%has("cloud_liquid_ice")) return
-      afield = fields%field("cloud_liquid_ice")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "ql") then
-      if (.not.fields%has("cloud_liquid_water")) return
-      afield = fields%field("cloud_liquid_water")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "qr") then
-      if (.not.fields%has("rain_water")) return
-      afield = fields%field("rain_water")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "qs") then
-      if (.not.fields%has("snow_water")) return
-      afield = fields%field("snow_water")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "qg") then
-      if (.not.fields%has("graupel")) return
-      afield = fields%field("graupel")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "qh") then
-      if (.not.fields%has("hail")) return
-      afield = fields%field("hail")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "dbz") then
+
+   ! Map the GSI variable name to the JEDI field name for fields that are
+   ! passed through without any transformation. Fields needing special
+   ! handling (phis) are dealt with in their own case and leave fname empty.
+   fname = ""
+   select case (trim(vname))
+   case ("ps")
+      fname = "air_pressure_at_surface"
+   case ("prse", "air_pressure_levels")
+      fname = "air_pressure_levels"
+   case ("prsl", "air_pressure")
+      fname = "air_pressure"
+   case ("ts", "sst")  ! ts=gsi background name, sst=gsi S/CV name
+      fname = "skin_temperature_at_surface"
+   case ("u", "ua")
+      fname = "eastward_wind"
+   case ("v", "va")
+      fname = "northward_wind"
+   case ("sf")
+      fname = "air_horizontal_streamfunction"
+   case ("vp")
+      fname = "air_horizontal_velocity_potential"
+   case ("t", "tsen")
+      fname = "air_temperature"
+   case ("tv")
+      fname = "virtual_temperature"
+   case ("q", "sphum")
+      fname = "water_vapor_mixing_ratio_wrt_moist_air"
+   case ("qi")
+      fname = "cloud_liquid_ice"
+   case ("ql")
+      fname = "cloud_liquid_water"
+   case ("qr")
+      fname = "rain_water"
+   case ("qs")
+      fname = "snow_water"
+   case ("qg")
+      fname = "graupel"
+   case ("qh")
+      fname = "hail"
+   case ("dbz")
       ! Passed through GSI-B unchanged: no unit conversion, no variable transform.
       ! Serves create() and multiply() alike, since the met_guess usrname is "dbz",
       ! matching the cv/sv name, as qr/qs/qg/qh above also require.
-      if (.not.fields%has("equivalent_reflectivity_factor")) return
-      afield = fields%field("equivalent_reflectivity_factor")
-      call afield%data(rank2)
-      ier=0
-   end if
-!  if (trim(vname) == 'cw') then
-!     if (.not.fields%has('cloud_water')) return
-!     afield = fields%field('cloud_water')
-!     call afield%data(rank2)
-!     ier=0
-!  end if
-   if (trim(vname) == "oz" .or. trim(vname) == "o3ppmv" ) then
-      if (.not.fields%has("mole_fraction_of_ozone_in_air")) return
-      afield = fields%field("mole_fraction_of_ozone_in_air")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "o3mr") then
-      if (.not.fields%has("ozone_mass_mixing_ratio")) return
-      afield = fields%field("ozone_mass_mixing_ratio")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "phis" ) then
+      fname = "equivalent_reflectivity_factor"
+!  case ("cw")
+!     fname = "cloud_water"
+   case ("oz", "o3ppmv")
+      fname = "mole_fraction_of_ozone_in_air"
+   case ("o3mr")
+      fname = "ozone_mass_mixing_ratio"
+   case ("phis")
+      ! Prefer geopotential; fall back to geopotential height converted with grav.
       if (.not.fields%has("geopotential_at_surface")) then
          if (fields%has("geopotential_height_at_surface")) then
             afield = fields%field("geopotential_height_at_surface")
@@ -793,46 +716,31 @@ end subroutine multiply
          call afield%data(rank2)
          ier=0
       end if
-   end if
-   if (trim(vname) == "frocean" ) then
-      if (.not.fields%has("fraction_of_ocean")) return
-       afield = fields%field("fraction_of_ocean")
+   case ("frocean")
+      fname = "fraction_of_ocean"
+   case ("frlake")
+      fname = "fraction_of_lake"
+   case ("frseaice")
+      fname = "fraction_of_ice"
+   case ("ext1", "volume_extinction_in_air_due_to_aerosol_particles_lambda1")
+      fname = "volume_extinction_in_air_due_to_aerosol_particles_lambda1"
+   case ("ext2", "volume_extinction_in_air_due_to_aerosol_particles_lambda2")
+      fname = "volume_extinction_in_air_due_to_aerosol_particles_lambda2"
+   case ("ext3", "volume_extinction_in_air_due_to_aerosol_particles_lambda3")
+      fname = "volume_extinction_in_air_due_to_aerosol_particles_lambda3"
+   case default
+      ! Not a pass-through field: leave fname empty and ier=-1 so the caller marks it unfilled
+      fname = ""
+   end select
+
+   if (len(fname) > 0) then
+      if (.not.fields%has(fname)) return
+      afield = fields%field(fname)
       call afield%data(rank2)
+      if (trim(vname) == "ts" .or. trim(vname) == "sst") icount = icount + 1
       ier=0
    end if
-   if (trim(vname) == "frlake" ) then
-      if (.not.fields%has("fraction_of_lake")) return
-      afield = fields%field("fraction_of_lake")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "frseaice" ) then
-      if (.not.fields%has("fraction_of_ice")) return
-      afield = fields%field("fraction_of_ice")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "ext1" .or. &
-      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda1") then
-      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda1")) return
-      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda1")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "ext2" .or. &
-      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda2") then
-      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda2")) return
-      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda2")
-      call afield%data(rank2)
-      ier=0
-   end if
-   if (trim(vname) == "ext3" .or. &
-      trim(vname) == "volume_extinction_in_air_due_to_aerosol_particles_lambda3") then
-      if (.not.fields%has("volume_extinction_in_air_due_to_aerosol_particles_lambda3")) return
-      afield = fields%field("volume_extinction_in_air_due_to_aerosol_particles_lambda3")
-      call afield%data(rank2)
-      ier=0
-   end if
+
    call afield%final()
    end subroutine get_rank2_
 
