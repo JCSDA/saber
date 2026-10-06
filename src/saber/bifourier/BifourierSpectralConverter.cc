@@ -91,15 +91,29 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
     xSpaceConfig.set("end", innerEndX);
     ySpaceConfig.set("end", innerEndY);
 
+    // Get projection (same for outer and inner geometries)
+    const atlas::Projection projection(
+        outerGridConfig.getSubConfiguration("projection"));
+
     // Get and update domain configuration
-    atlas::util::Config domainConfig = outerGridConfig.getSubConfiguration("domain");
+    // If not provided then reconstruct historic atlas
+    // default domain from xSpace and ySpace
+    atlas::util::Config domainConfig;
+    if (outerGridConfig.has("domain")) {
+      domainConfig = outerGridConfig.getSubConfiguration("domain");
+    } else {
+      // If domain not provided, reconstruct atlas default rectangular domain
+      oops::Log::warning()
+          << "Configuration does not include domain info: constructing "
+             "rectangular domain from xSpace, ySpace, and projection units."
+          << std::endl;
+      domainConfig.set("units", projection.units());
+      domainConfig.set("type", "rectangular");
+    }
     domainConfig.set("xmin", innerStartX);
     domainConfig.set("ymin", innerStartY);
     domainConfig.set("xmax", innerEndX);
     domainConfig.set("ymax", innerEndY);
-
-    // Get projection (same for outer and inner geometries)
-    const atlas::Projection projection(outerGridConfig.getSubConfiguration("projection"));
 
     // Create new xSpace and ySpace
     const atlas::StructuredGrid::XSpace xspace(xSpaceConfig);
