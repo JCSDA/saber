@@ -523,11 +523,12 @@ real(kind_real) :: lon0,lat0,dist,maxdist,area_124,area_234,splon_opt,splat_opt,
 real(kind_real) :: lonlat_bnd(2,4),v_bnd(3,4),v1(3),v2(3),cp(3),cd(3),v_bnd_infl(3,4),vtmp(3)
 real(kind_real) :: lonlat_bnd_opt(2,4)
 real(kind_real) :: north,south,east,west
+real(kind_real) :: xstart,xend,ystart,yend
 real(kind_real),pointer :: vert_coord_ptr(:),real_ptr(:,:)
 real(kind_real),allocatable :: v_mga(:,:)
 logical :: valid
 type(hull_type) :: hull
-type(atlas_config) :: aconfig_domain,aconfig_work_grid,aconfig_work_proj
+type(atlas_config) :: aconfig_domain,aconfig_work_grid,aconfig_work_proj,aconfig_xspace,aconfig_yspace
 type(atlas_field) :: afield,afield_lonlat
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
@@ -894,8 +895,17 @@ else
    ! Get work grid parameters
    call work_grid(splon_opt,splat_opt,rota_opt,lonlat_bnd,dist_maxmin,lonlat_bnd_opt,geom%aconfig_work_grid)
    agrid_work = atlas_structuredgrid(geom%aconfig_work_grid)
-   if (.not.geom%aconfig_work_grid%get('projection',aconfig_work_proj)) call mpl%abort('${subr}$','missing projection')
-   geom%aproj_work = atlas_projection(aconfig_work_proj)
+
+   if (geom%aconfig_work_grid%has('projection')) then
+      if (.not.geom%aconfig_work_grid%get('projection',aconfig_work_proj)) call mpl%abort('${subr}$','missing projection')
+      geom%aproj_work = atlas_projection(aconfig_work_proj)
+   else
+      ! Atlas no longer provides a default projection, reconstruct old default here
+      call aconfig_work_proj%set('type','rotated_lonlat')
+      call aconfig_work_proj%set('south_pole',(/splon_opt*rad2deg,splat_opt*rad2deg/))
+      call aconfig_work_proj%set('rotation_angle',rota_opt*rad2deg)
+      geom%aproj_work = atlas_projection(aconfig_work_proj)
+   end if
 
    ! Print results
    write(mpl%info,'(a7,a,e10.3,a)') '','Work regional grid accuracy: ',dist_maxmin*reqkm,' km'
@@ -919,13 +929,28 @@ else
    ! Get work grid domain
    agrid_work = atlas_structuredgrid(geom%aconfig_work_grid)
    aconfig_work_grid = agrid_work%spec()
-   if (.not.aconfig_work_grid%get('domain',aconfig_domain)) call mpl%abort('${subr}$','missing domain')
-   if (.not.aconfig_domain%get('type',domain_type)) call mpl%abort('${subr}$','missing domain type')
-   if (trim(domain_type)/='rectangular') call mpl%abort('${subr}$','only rectangular domains allowed')
-   if (.not.aconfig_domain%get('xmin',geom%xmin)) call mpl%abort('${subr}$','missing domain xmin')
-   if (.not.aconfig_domain%get('xmax',geom%xmax)) call mpl%abort('${subr}$','missing domain xmax')
-   if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
-   if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
+
+   if(aconfig_work_grid%has('domain')) then
+      if (.not.aconfig_work_grid%get('domain',aconfig_domain)) call mpl%abort('${subr}$','missing domain')
+      if (.not.aconfig_domain%get('type',domain_type)) call mpl%abort('${subr}$','missing domain type')
+      if (trim(domain_type)/='rectangular') call mpl%abort('${subr}$','only rectangular domains allowed')
+      if (.not.aconfig_domain%get('xmin',geom%xmin)) call mpl%abort('${subr}$','missing domain xmin')
+      if (.not.aconfig_domain%get('xmax',geom%xmax)) call mpl%abort('${subr}$','missing domain xmax')
+      if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
+      if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
+   else 
+      ! Atlas no longer provides default rectangular domain from grid spec. Reconstruct here if no domain provided.
+      if (.not.aconfig_work_grid%get('xspace',aconfig_xspace)) call mpl%abort('${subr}$','missing xspace')
+      if (.not.aconfig_work_grid%get('yspace',aconfig_yspace)) call mpl%abort('${subr}$','missing yspace')
+
+      if(.not.aconfig_xspace%get('start',geom%xmin)) call mpl%abort('${subr}$','missing xspace start')
+      if(.not.aconfig_xspace%get('end',geom%xmax)) call mpl%abort('${subr}$','missing xspace end')
+      if(.not.aconfig_yspace%get('start',geom%ymin)) call mpl%abort('${subr}$','missing yspace start')
+      if(.not.aconfig_yspace%get('end',geom%ymax)) call mpl%abort('${subr}$','missing yspace end')
+
+      domain_type = 'rectangular'
+   end if
+
    geom%xmin = geom%xmin*deg2rad
    geom%xmax = geom%xmax*deg2rad
    geom%ymin = geom%ymin*deg2rad

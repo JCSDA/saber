@@ -67,7 +67,7 @@ class StdDevParameters : public BlockParametersBase {
   oops::OptionalParameter<StdDevWriteParameters> calibrationParams{"calibration", this};
 
   // Scaling parameter
-  oops::Parameter<double> scaleFactorParam{"stddev scale factor",
+  oops::Parameter<double> scaleFactorParam{"scale factor",
                                            "multiplicative factor applied to StdDev block",
                                            1.0, this, {oops::exclusiveMinConstraint(0.)}};
 
