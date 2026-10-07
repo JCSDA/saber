@@ -876,6 +876,32 @@ saber_add_test( TARGET saber_dirac_stddev_4_1-2
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_stddev_1_1-2 )
 
+# dirac_stddev_5
+saber_add_test( TARGET saber_dirac_stddev_5_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_stddev_5.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_error_covariance_training_stddev_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_stddev_5_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_stddev_5.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_error_covariance_training_stddev_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_stddev_5_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_stddev_5.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_error_covariance_training_stddev_1_1-2 )
+
 # error_covariance_training_bump_1
 saber_add_test( TARGET saber_error_covariance_training_bump_1_1-1
                 MPI 1

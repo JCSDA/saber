@@ -126,9 +126,26 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
   // Save scaling
   const eckit::LocalConfiguration & scaling = params_.scaling.value();
   std::vector<eckit::LocalConfiguration> scales = scaling.getSubConfigurations();
+  const bool scaleReadStdDev = (readFromProfile_ || readFromAtlas_ || readFromModel_);
   for (const eckit::LocalConfiguration & scale : scales) {
     const std::string var = scale.getString("variable");
-    scaling_[var] = scale.getDouble("stddev");
+    if (scaleReadStdDev) {
+      if (!scale.has("scale factor")) {
+        throw eckit::UserError(
+          "When using 'read' in StdDev, entries in 'standard deviations' "
+          "must define 'scale factor'",
+          Here());
+      }
+      scaling_[var] = scale.getDouble("scale factor");
+    } else {
+      if (!scale.has("stddev")) {
+        throw eckit::UserError(
+          "Without 'read' in StdDev, entries in 'standard deviations' "
+          "must define 'stddev'",
+          Here());
+      }
+      scaling_[var] = scale.getDouble("stddev");
+    }
   }
 
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
@@ -142,17 +159,17 @@ void StdDev::multiply(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     // Apply 3D standard-deviation
     fset *= *stdDevFset_;
-  } else {
-    // Apply scaling
-    for (auto & field : fset) {
-      const std::string var = field.name();
-      if (scaling_.find(var) != scaling_.end()) {
-        const double fact = scaling_.at(var);
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) *= fact;
-          }
+  }
+
+  // Apply scaling factors.
+  for (auto & field : fset) {
+    const std::string var = field.name();
+    if (scaling_.find(var) != scaling_.end()) {
+      const double fact = scaling_.at(var);
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) *= fact;
         }
       }
     }
@@ -169,17 +186,17 @@ void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     // Apply 3D standard-deviation
     fset *= *stdDevFset_;
-  } else {
-    // Apply scaling
-    for (auto & field : fset) {
-      const std::string var = field.name();
-      if (scaling_.find(var) != scaling_.end()) {
-        const double fact = scaling_.at(var);
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) *= fact;
-          }
+  }
+
+  // Apply scaling factors.
+  for (auto & field : fset) {
+    const std::string var = field.name();
+    if (scaling_.find(var) != scaling_.end()) {
+      const double fact = scaling_.at(var);
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) *= fact;
         }
       }
     }
@@ -472,16 +489,17 @@ void StdDev::variance(oops::FieldSet3D & variance) const {
   if (stdDevFset_) {
     variance *= *stdDevFset_;
     variance *= *stdDevFset_;
-  } else {
-    for (auto & field : variance) {
-      const std::string var = field.name();
-      if (scaling_.find(var) != scaling_.end()) {
-        const double fact = scaling_.at(var) * scaling_.at(var);
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) *= fact;
-          }
+  }
+
+  // Apply scaling factors
+  for (auto & field : variance) {
+    const std::string var = field.name();
+    if (scaling_.find(var) != scaling_.end()) {
+      const double fact = scaling_.at(var) * scaling_.at(var);
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) *= fact;
         }
       }
     }
@@ -497,21 +515,22 @@ void StdDev::inverseMultiply(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     // Apply 3D standard-deviation
     fset /= *stdDevFset_;
-  } else {
-    // Apply scaling
-    for (auto & field : fset) {
-      const std::string var = field.name();
-      if (scaling_.find(var) != scaling_.end()) {
-        const double fact = 1.0 / scaling_.at(var);
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) *= fact;
-          }
+  }
+
+  // Apply scaling factors.
+  for (auto & field : fset) {
+    const std::string var = field.name();
+    if (scaling_.find(var) != scaling_.end()) {
+      const double fact = 1.0 / scaling_.at(var);
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) *= fact;
         }
       }
     }
   }
+
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
