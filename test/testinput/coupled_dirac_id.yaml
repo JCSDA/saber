@@ -93,20 +93,9 @@ dirac:
     - air_horizontal_velocity_potential
 output dirac:
   quench:
-    mpi pattern: '%MPI%'
-    filepath: testdata/coupled_dirac_id/%MPI%_dirac_%id%
+    filepath: testdata/coupled_dirac_id/_MPI_-_OMP__dirac_%id%
   quench2:
-    mpi pattern: '%MPI%'
-    filepath: testdata/coupled_dirac_id/%MPI%_dirac2_%id%
-output variance:
-  quench:
-    mpi pattern: '%MPI%'
-    filepath: testdata/coupled_dirac_id/%MPI%_variance
-    formats: [default, gmsh]
-  quench2:
-    mpi pattern: '%MPI%'
-    filepath: testdata/coupled_dirac_id/%MPI%_variance2
-    formats: [default, gmsh]
+    filepath: testdata/coupled_dirac_id/_MPI_-_OMP__dirac2_%id%
 test:
   reference filename: testref/coupled_dirac_id.ref
   test output filename: testref/coupled_dirac_id.out
