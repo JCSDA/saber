@@ -1338,9 +1338,24 @@ else
    if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
    if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
 
+
    ! Get grid projection
    if (.not.geom%aconfig_work_grid%get('projection',aconfig_work_proj)) call mpl%abort('${subr}$','missing projection')
    geom%aproj_work = atlas_projection(aconfig_work_proj)
+
+
+   ! Get grid projection
+   if (geom%aconfig_work_grid%get('projection',aconfig_work_proj)) then
+      geom%aproj_work = atlas_projection(aconfig_work_proj)
+   else if (geom%afunctionspace_mg%name()/='StructuredColumns') then
+      ! Atlas no longer provides a default projection, reconstruct old default here
+      call aconfig_work_proj%set('type','rotated_lonlat')
+      call aconfig_work_proj%set('south_pole',(/splon_opt*rad2deg,splat_opt*rad2deg/))
+      call aconfig_work_proj%set('rotation_angle',rota_opt*rad2deg)
+      geom%aproj_work = atlas_projection(aconfig_work_proj)
+   else
+      call mpl%abort('${subr}$','missing projection')
+   end if
 
    ! Release memory
    deallocate(v_c0a)
