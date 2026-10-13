@@ -9,6 +9,9 @@
 #include <netcdf.h>
 
 #include <algorithm>
+#include <map>
+#include <utility>
+#include <vector>
 
 #include "oops/generic/gc99.h"
 
@@ -185,18 +188,23 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
       // Set horizontal spectral variance to zero
       horSpecVarView.assign(0.0);
 
-      // Compute horizontal spectral variance
+      // Compute horizontal spectral variance, consistently with the ensemble calibration:
+      // the variance of each coefficient of a (k,l) mode is its ReRe correlation coefficient
+      // divided by spNorm, averaged over the total wavenumber with spNorm weights
       for (size_t js = 0; js < trans_->ns(); ++js) {
-        if ((trans_->l(js) == 0) && (trans_->q(js) == 0)) {
-          const size_t jw = trans_->jw(js);
-          for (size_t jzI = 0; jzI < nz; ++jzI) {
-            horSpecVarView(jw, jzI, 0) += horCorSpView(js, jzI);
+        if (trans_->q(js) == 0) {
+          for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+            if (trans_->includeWavenumber(js, jw)) {
+              for (size_t jzI = 0; jzI < nz; ++jzI) {
+                horSpecVarView(jw, jzI, 0) += trans_->spNorm(js)*horCorSpView(js, jzI);
+              }
+            }
           }
         }
       }
 
-      // Reduce horizontal spectral variance
-      trans_->reduceCov(horSpecVarField);
+      // Reduce and normalize horizontal spectral variance
+      trans_->reduceNormalizeCov(1, horSpecVarField);
 
       // Compute horizontal spectral standard-deviation
       for (size_t jw = 0; jw < trans_->nw(); ++jw) {
@@ -232,6 +240,73 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
           }
         }
       }
+
+      // The covariance above is averaged over each total wavenumber, which is only an
+      // approximation of the isotropic correlation when the length-scale is not small compared
+      // to the domain. It is kept for the outputs, while the square-root multiplication uses
+      // the horizontal spectrum of each (k,l) mode and the vertical correlation square-root.
+
+      // Get the local index of the ReRe coefficient of each (k,l) mode (all the coefficients
+      // of a given mode are on the same task)
+      std::map<std::pair<size_t, size_t>, size_t> reReIndex;
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        if (trans_->q(js) == 0) {
+          reReIndex[std::make_pair(trans_->k(js), trans_->l(js))] = js;
+        }
+      }
+
+      // Create horizontal spectral standard-deviation field for each coefficient
+      atlas::Field horSqrtField(fieldName("horSqrt", var), make_datatype<double>(),
+        make_shape(trans_->ns(), nz));
+
+      // Get horizontal spectral standard-deviation view
+      auto horSqrtView = make_view<double, 2>(horSqrtField);
+
+      // Compute horizontal spectral standard-deviation and grid-point variance
+      std::vector<double> variance(nz, 0.0);
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        const size_t jsReRe = reReIndex.at(std::make_pair(trans_->k(js), trans_->l(js)));
+        for (size_t jz = 0; jz < nz; ++jz) {
+          horSqrtView(js, jz) = std::sqrt(std::max(horCorSpView(jsReRe, jz), 0.0)
+            /trans_->spNorm(js));
+          if (trans_->q(js) == 0) {
+            variance[jz] += horSqrtView(js, jz)*horSqrtView(js, jz)
+              *trans_->spNorm(js)*trans_->spNorm(js);
+          }
+        }
+      }
+
+      // Communication
+      comm_.allReduceInPlace(variance.begin(), variance.end(), eckit::mpi::sum());
+
+      // Normalize to a unit grid-point variance
+      for (size_t jz = 0; jz < nz; ++jz) {
+        ASSERT(variance[jz] > 0.0);
+        const double norm = 1.0/std::sqrt(variance[jz]);
+        for (size_t js = 0; js < trans_->ns(); ++js) {
+          horSqrtView(js, jz) *= norm;
+        }
+      }
+
+      // Add field
+      data_.add(horSqrtField);
+
+      // Create vertical correlation square-root field
+      atlas::Field vertSqrtField(fieldName("vertSqrt", var), make_datatype<double>(),
+        make_shape(nz, nz));
+
+      // Get vertical correlation square-root view
+      auto vertSqrtView = make_view<double, 2>(vertSqrtField);
+
+      // Compute vertical correlation square-root
+      for (size_t jzI = 0; jzI < nz; ++jzI) {
+        for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
+          vertSqrtView(jzI, jzJ) = es.eigenvectors().col(jzJ)[jzI]*std::sqrt(es.eigenvalues()[jzJ]);
+        }
+      }
+
+      // Add field
+      data_.add(vertSqrtField);
     }
 
     // Compute square-root
@@ -293,12 +368,28 @@ void BifourierCovarianceImpl::multiplySqrt(oops::FieldSet3D & fset) const {
     // Set output field to zero
     view.assign(0.0);
 
-    // Apply correlation square-root
-    for (size_t js = 0; js < trans_->ns(); ++js) {
-      const size_t jw = trans_->jw(js);
-      for (size_t jzI = 0; jzI < nz; ++jzI) {
-        for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
-          view(js, jzI) += corSqrtView(jw, jzI, jzJ)*copyView(js, jzJ);
+    if (data_.has(fieldName("horSqrt", var))) {
+      // Get vertical correlation square-root and horizontal spectral standard-deviation views
+      const auto vertSqrtView = make_view<double, 2>(data_[fieldName("vertSqrt", var)]);
+      const auto horSqrtView = make_view<double, 2>(data_[fieldName("horSqrt", var)]);
+
+      // Apply vertical correlation square-root and horizontal spectral standard-deviation
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        for (size_t jzI = 0; jzI < nz; ++jzI) {
+          for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
+            view(js, jzI) += vertSqrtView(jzI, jzJ)*copyView(js, jzJ);
+          }
+          view(js, jzI) *= horSqrtView(js, jzI);
+        }
+      }
+    } else {
+      // Apply correlation square-root
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        const size_t jw = trans_->jw(js);
+        for (size_t jzI = 0; jzI < nz; ++jzI) {
+          for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
+            view(js, jzI) += corSqrtView(jw, jzI, jzJ)*copyView(js, jzJ);
+          }
         }
       }
     }
@@ -366,12 +457,30 @@ void BifourierCovarianceImpl::multiplySqrtAD(oops::FieldSet3D & fset) const {
       }
     }
 
-    // Apply covariance square-root
-    for (size_t js = 0; js < trans_->ns(); ++js) {
-      const size_t jw = trans_->jw(js);
-      for (size_t jzI = 0; jzI < nz; ++jzI) {
+    if (data_.has(fieldName("horSqrt", var))) {
+      // Get vertical correlation square-root and horizontal spectral standard-deviation views
+      const auto vertSqrtView = make_view<double, 2>(data_[fieldName("vertSqrt", var)]);
+      const auto horSqrtView = make_view<double, 2>(data_[fieldName("horSqrt", var)]);
+
+      // Apply horizontal spectral standard-deviation and vertical correlation square-root
+      for (size_t js = 0; js < trans_->ns(); ++js) {
         for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
-          view(js, jzI) += corSqrtView(jw, jzJ, jzI)*copyView(js, jzJ);
+          copyView(js, jzJ) *= horSqrtView(js, jzJ);
+        }
+        for (size_t jzI = 0; jzI < nz; ++jzI) {
+          for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
+            view(js, jzI) += vertSqrtView(jzJ, jzI)*copyView(js, jzJ);
+          }
+        }
+      }
+    } else {
+      // Apply covariance square-root
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        const size_t jw = trans_->jw(js);
+        for (size_t jzI = 0; jzI < nz; ++jzI) {
+          for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
+            view(js, jzI) += corSqrtView(jw, jzJ, jzI)*copyView(js, jzJ);
+          }
         }
       }
     }
@@ -1256,6 +1365,24 @@ void BifourierCovarianceImpl::print(std::ostream & os) const {
     os << "- " << var.name() << ": " << std::endl;
     os << "  + correlation square-root: " << trans_->normCov(corSqrtField) << std::endl;
     os << "  + standard-deviation:      " << stdDevNorm << std::endl;
+
+    if (data_.has(fieldName("horSqrt", var))) {
+      // Get horizontal spectral standard-deviation view
+      const auto horSqrtView = make_view<double, 2>(data_[fieldName("horSqrt", var)]);
+
+      // Compute horizontal spectral standard-deviation norm
+      double horSqrtNorm = 0.0;
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        for (size_t jz = 0; jz < nz; ++jz) {
+          horSqrtNorm += horSqrtView(js, jz)*horSqrtView(js, jz);
+        }
+      }
+      comm_.allReduceInPlace(horSqrtNorm, eckit::mpi::sum());
+      horSqrtNorm = std::sqrt(horSqrtNorm);
+
+      // Print norm
+      os << "  + horizontal spectral std: " << horSqrtNorm << std::endl;
+    }
   }
 }
 
