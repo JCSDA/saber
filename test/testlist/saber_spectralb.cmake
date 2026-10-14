@@ -305,6 +305,15 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_2_1-2
                 DEPENDS saber_quench_process_perts.x
                 TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-2 )
 
+                # O gauss grid test
+saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_2_o_grid_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                ARGS testinput/process_perts_spectralb_from_csdual_states_2_o_grid.yaml
+                DEPENDS saber_quench_process_perts.x
+                TEST_DEPENDS saber_randomization_csdual_sqrtspectralb_1-1 )
+
 if(ATLAS_TEST_46_OR_GREATER)
   # process_perts_spectralb_from_csdual_states_1
   saber_add_test( TARGET saber_process_perts_spectralb_from_csdual_states_with_smv_1_1-1
