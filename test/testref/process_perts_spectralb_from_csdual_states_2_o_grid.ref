@@ -1,0 +1,44 @@
+Norm of perturbation: member 1: 2.8639068549893367e+08
+initial_CS14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 5.2561952355913885e+11
+initial_CS14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 4.7129467516503809e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//initial_CS14_variance_1.nc
+wb1_O14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 2.0164669175888162e+11
+wb1_O14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 2.0798185227572845e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb1_O14_variance_1.nc
+Fields:
+  air_horizontal_streamfunction: 1.3428544568983102e+08
+  air_horizontal_velocity_potential: 1.3567865442023006e+08
+Norm of band perturbation: member 1: band 1: 1.8336208242936921e+08
+wb2_O14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.9660416268714957e+11
+wb2_O14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 1.6396331021000854e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb2_O14_variance_1.nc
+Fields:
+  air_horizontal_streamfunction: 1.3299216967486848e+08
+  air_horizontal_velocity_potential: 1.2175834466690885e+08
+Norm of band perturbation: member 1: band 2: 1.7025009279581010e+08
+Norm of band perturbation: member 1: band 3: 1.2786693889243224e+08
+wb3_cs14_variance_1 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.1245000731295181e+11
+wb3_cs14_variance_1 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 8.6392658665326477e+10
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb3_cs14_variance_1.nc
+Norm of perturbation: member 2: 2.8639068549893367e+08
+initial_CS14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 5.2561952355913885e+11
+initial_CS14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 4.7129467516503809e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//initial_CS14_variance_2.nc
+wb1_O14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 2.0164669175888162e+11
+wb1_O14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 2.0798185227572852e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb1_O14_variance_2.nc
+Fields:
+  air_horizontal_streamfunction: 1.3428544568983102e+08
+  air_horizontal_velocity_potential: 1.3567865442023006e+08
+Norm of band perturbation: member 2: band 1: 1.8336208242936921e+08
+wb2_O14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.9660416268714957e+11
+wb2_O14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 1.6396331021000854e+11
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb2_O14_variance_2.nc
+Fields:
+  air_horizontal_streamfunction: 1.3299216967486848e+08
+  air_horizontal_velocity_potential: 1.2175834466690885e+08
+Norm of band perturbation: member 2: band 2: 1.7025009279581010e+08
+Norm of band perturbation: member 2: band 3: 1.2786693889243224e+08
+wb3_cs14_variance_2 ; name = air_horizontal_streamfunction ; bin index = 0 ; binned variance = 1.1245000731295183e+11
+wb3_cs14_variance_2 ; name = air_horizontal_velocity_potential ; bin index = 0 ; binned variance = 8.6392658665326477e+10
+Wrote file testdata/process_perts_spectralb_from_csdual_states_2//wb3_cs14_variance_2.nc
