@@ -5,10 +5,6 @@
 
 #include "saber/bifourier/BifourierSpectralConverter.h"
 
-#include "atlas/field.h"
-#include "atlas/functionspace.h"
-#include "atlas/grid.h"
-
 #include "oops/util/FloatCompare.h"
 
 using atlas::array::make_view;
@@ -50,6 +46,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
       outerTrans_->geometryData().functionSpace());
     const atlas::StructuredGrid & outerGrid = outerFs.grid();
     const atlas::util::Config outerGridConfig = outerGrid.spec();
+    atlas::util::Config domainConfig = outerGrid.domain().spec();
 
     // Get xSpace and ySpace properties
     atlas::util::Config xSpaceConfig = outerGridConfig.getSubConfiguration("xspace");
@@ -95,21 +92,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
     const atlas::Projection projection(
         outerGridConfig.getSubConfiguration("projection"));
 
-    // Get and update domain configuration
-    // If not provided then reconstruct historic atlas
-    // default domain from xSpace and ySpace
-    atlas::util::Config domainConfig;
-    if (outerGridConfig.has("domain")) {
-      domainConfig = outerGridConfig.getSubConfiguration("domain");
-    } else {
-      // If domain not provided, reconstruct atlas default rectangular domain
-      oops::Log::warning()
-          << "Configuration does not include domain info: constructing "
-             "rectangular domain from xSpace, ySpace, and projection units."
-          << std::endl;
-      domainConfig.set("units", projection.units());
-      domainConfig.set("type", "rectangular");
-    }
+    // Update domain configuration
     domainConfig.set("xmin", innerStartX);
     domainConfig.set("ymin", innerStartY);
     domainConfig.set("xmax", innerEndX);

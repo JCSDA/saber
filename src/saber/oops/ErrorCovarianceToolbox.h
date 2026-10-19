@@ -302,7 +302,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const auto & fspace = geom.functionSpace();
     if (fspace.type() == "StructuredColumns") {
       const atlas::functionspace::StructuredColumns fs(fspace);
-      if (fs.grid().name().compare(0, 1, "F") == 0) {
+      if (fs.grid().name().compare(0, 1, "F") == 0 ||
+          fs.grid().name().compare(0, 1, "O") == 0) {
         oops::Log::info() << "Info     : maximum distance computed as twice the cell "
                              "length at the Equator:" << std::endl;
         const int n = std::stoi(fs.grid().name().substr(1, std::string::npos));

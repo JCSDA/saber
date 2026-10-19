@@ -758,14 +758,16 @@ saber_add_test( TARGET saber_dirac_shadow_levels_4_1-1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_shadow_levels_4.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x )
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_shadow_levels_3_1-1 )
 
 saber_add_test( TARGET saber_dirac_shadow_levels_4_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_shadow_levels_4.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x )
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_shadow_levels_3_2-1 )
 
 saber_add_test( TARGET saber_dirac_shadow_levels_4_1-2
                 MPI 1
@@ -773,7 +775,8 @@ saber_add_test( TARGET saber_dirac_shadow_levels_4_1-2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_shadow_levels_4.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x )
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_dirac_shadow_levels_3_1-2 )
 
 # dirac_stddev_1
 saber_add_test( TARGET saber_dirac_stddev_1_1-1
@@ -1461,7 +1464,8 @@ saber_add_test( TARGET saber_error_covariance_training_bump_nicas_3_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_bump_nicas_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-1 )
+                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-1
+                             saber_error_covariance_training_bump_nicas_2_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_nicas_3_2-1
                 MPI 2
@@ -1469,7 +1473,8 @@ saber_add_test( TARGET saber_error_covariance_training_bump_nicas_3_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_bump_nicas_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_2-1 )
+                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_2-1
+                             saber_error_covariance_training_bump_nicas_2_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_bump_nicas_3_1-2
                 MPI 1
@@ -1478,7 +1483,8 @@ saber_add_test( TARGET saber_error_covariance_training_bump_nicas_3_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_bump_nicas_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-2 )
+                TEST_DEPENDS saber_error_covariance_training_bump_hdiag-nicas_1_1-2
+                             saber_error_covariance_training_bump_nicas_2_1-2 )
 
 # error_covariance_training_bump_nicas_4
 saber_add_test( TARGET saber_error_covariance_training_bump_nicas_4_1-1
