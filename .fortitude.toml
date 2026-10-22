@@ -1,8 +1,29 @@
 [check]
 target-std="f2008"
 line-length=133
+exclude = [
+    "src/saber/mgbf/covariance/mgbf_covariance_mod.f90",
+    "src/saber/mgbf/mgbf_lib/jp*.f90",
+    "src/saber/mgbf/mgbf_lib/jp*.F90",
+    "src/saber/mgbf/mgbf_lib/mg_bocos.f90",
+    "src/saber/mgbf/mgbf_lib/mg_filtering.f90",
+    "src/saber/mgbf/mgbf_lib/phi*.f90",
+    "src/saber/mgbf/mgbf_lib/phi*.F90",
+]
 
 [check.per-file-ignores]
+"src/saber/mgbf/mgbf_lib/mg_domain.f90" = [
+    "C011", # missing-default-case - g is bounded by do g = 1,2
+]
+"src/saber/mgbf/mgbf_lib/mg_transfer.f90" = [
+    "C121", # use-missing-only - intentionally imports all from mpi, mg_timers, phint1
+]
+"src/saber/mgbf/mgbf_lib/mg_parameter.f90" = [
+    "C121", # use-missing-only - MPI_Bcast is not exposed in legacy mpi module only-list
+]
+"src/saber/mgbf/mgbf_lib/mg_intstate.f90" = [
+    "C121", # use-missing-only - MPI procedures are not exposed in legacy mpi module only-list
+]
 "src/saber/gsi/covariance/gsi_covariance_mod.f90" = [
     "C072", # assumed-size-character-intent
     "C082", # pointer-initialisation-in-declaration

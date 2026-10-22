@@ -29,6 +29,9 @@ if( ENABLE_QUENCH )
   if( gsibec_FOUND AND ip_FOUND )
       set( SABER_TEST_GSI_GFS 1 )
   endif()
+  if( ENABLE_MGBF )
+      set( SABER_TEST_MGBF 1 )
+  endif()
   set( SABER_TEST_SPECTRALB 0 )
   if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
       set( SABER_TEST_SPECTRALB 1 )
@@ -176,6 +179,11 @@ if( ENABLE_QUENCH )
   endif()
   if( SABER_TEST_GSI_GFS )
     include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_gsi-gfs.cmake )
+  endif()
+
+  # --- MGBF tests ---
+  if( SABER_TEST_MGBF )
+      include( ${CMAKE_CURRENT_LIST_DIR}/testlist/saber_mgbf.cmake )
   endif()
 
   # --- SpectralB tests ---
