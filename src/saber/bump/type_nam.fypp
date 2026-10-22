@@ -1897,13 +1897,14 @@ character(len=*),intent(in) :: msg          !< Input message
 character(len=1024),intent(inout) :: newmsg !< Output message
 
 ! Local variable
-integer :: isub,istart,iend,i,pos,result_pos
+integer :: isub,istart,iend,i,pos,result_pos,new_pos
 character(len=1),parameter :: sep(1) = (/'*'/)
 character(len=:),allocatable :: str
 
 ! Initialization
 newmsg = ''
 pos = 0
+new_pos = 0
 isub = 1
 
 ! Process input message
@@ -1927,13 +1928,28 @@ do
    if (mod(isub,2)==0) then
       ! Replace BUMP internal variable with yaml key
       if (.not.nam%conf_keys%get(msg(istart:iend),str)) then
-         newmsg = trim(newmsg)//trim(msg(istart:iend))//' [internal]'
+         if (new_pos==0) then
+            newmsg = trim(msg(istart:iend))//'[internal]'
+         else
+            newmsg = newmsg(1:new_pos)//trim(msg(istart:iend))//'[internal]'
+         end if
+         new_pos = new_pos+(iend-istart+1)+10
        else
-         newmsg = trim(newmsg)//' *'//trim(str)//'*'
+         if (new_pos==0) then
+            newmsg = '*'//trim(str)//'*'
+         else
+            newmsg = newmsg(1:new_pos)//'*'//trim(str)//'*'
+         end if
+         new_pos = new_pos+len(trim(str))+2
       end if
    else
       ! Append substring to new message
-      newmsg = trim(newmsg)//msg(istart:iend)
+      if (new_pos==0) then
+         newmsg = msg(istart:iend)
+      else
+         newmsg = newmsg(1:new_pos)//msg(istart:iend)
+      end if
+      new_pos = new_pos+(iend-istart+1)
    end if
 
    ! Update separator iterator

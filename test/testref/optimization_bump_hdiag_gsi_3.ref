@@ -145,7 +145,7 @@
              Level  70 ~> -0.115E+02 vert. coord.
              Level  71 ~> -0.115E+02 vert. coord.
              Level  72 ~> -0.115E+02 vert. coord.
-Norm of input parameter gsi_ref - 1: 1.1477894674003418e+01
+Norm of input parameter gsi_ref - 1: 1.1477894674003430e+01
        Factor 0.20, horizontal MSE:  0.58090379E+02 / vertical MSE:  0.15741612E+02 
        Factor 0.30, horizontal MSE:  0.49554009E+02 / vertical MSE:  0.12958508E+02 
        Factor 0.40, horizontal MSE:  0.39911839E+02 / vertical MSE:  0.10608036E+02 

@@ -93,7 +93,7 @@ Norm of input parameter sampling_mask_field - 1: 7.6056477143600858e+01
                 Level:   8 ~> cov. at class zero:  0.77E+00
                 Level:   9 ~> cov. at class zero:  0.10E+01
                 Level:  10 ~> cov. at class zero:  0.10E+01
-             Block air_horizontal_streamfunction:  0.33087967E+00 for    34569 diagnostic points
+             Block air_horizontal_streamfunction:  0.33085068E+00 for    34569 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3935.33 km
                                  cor. ver. support:         5.80 vertical units
@@ -124,7 +124,7 @@ Norm of input parameter sampling_mask_field - 1: 7.6056477143600858e+01
                    Level:  10 ~> amplitude:        1.00
                                  cor. hor. support:      4951.16 km
                                  cor. ver. support:         6.44 vertical units
-             Block air_horizontal_streamfunction:  0.24235349E+00 for    51800 diagnostic points
+             Block air_horizontal_streamfunction:  0.24239129E+00 for    51800 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                 Level:   3 ~> loc. at class zero:       0.92
@@ -166,4 +166,4 @@ Norm of input parameter sampling_mask_field - 1: 7.6056477143600858e+01
                                  loc. hor. support:      6516.02 km
                                  loc. ver. support:         8.49 vertical units
 Norm of output parameter cor_rh - 1: 4.2101809022582084e+08
-Norm of output parameter cor_rv - 1: 5.3564881971352611e+02
+Norm of output parameter cor_rv - 1: 5.3469080245936266e+02

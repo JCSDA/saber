@@ -61,20 +61,20 @@
           Independent levels for angular sector   4 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.98E+00
-             Block common:  0.18461128E+00 for    40160 diagnostic points
-                   Level:   1 ~> amplitude:        0.70
-                                 cor. hor. support:      5168.89 km
-                                 cor. ver. support:         5.81 vertical units
-                   Level:   2 ~> amplitude:        0.67
-                                 cor. hor. support:      5446.40 km
-                                 cor. ver. support:         6.79 vertical units
-                   Level:   1 ~> amplitude:        0.30
-                                 cor. hor. support:      2906.68 km
-                                 cor. ver. support:         0.58 vertical units
-                   Level:   2 ~> amplitude:        0.33
-                                 cor. hor. support:      3062.73 km
-                                 cor. ver. support:         0.68 vertical units
-             Block common:  0.31033268E+00 for    36199 diagnostic points
+             Block common:  0.16197871E+00 for    40160 diagnostic points
+                   Level:   1 ~> amplitude:        0.88
+                                 cor. hor. support:      4836.78 km
+                                 cor. ver. support:         3.48 vertical units
+                   Level:   2 ~> amplitude:        0.85
+                                 cor. hor. support:      4996.92 km
+                                 cor. ver. support:         3.54 vertical units
+                   Level:   1 ~> amplitude:        0.12
+                                 cor. hor. support:       631.63 km
+                                 cor. ver. support:         0.45 vertical units
+                   Level:   2 ~> amplitude:        0.15
+                                 cor. hor. support:      1401.91 km
+                                 cor. ver. support:         0.99 vertical units
+             Block common:  0.31063312E+00 for    36199 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
@@ -91,13 +91,14 @@
                                  loc. ver. support:         6.13 vertical units
 Norm of output parameter loc_a - 1: 5.5208694967369041e+01
 Norm of output parameter loc_a - 2: 0.0000000000000000e+00
-Norm of output parameter loc_rh1 - 1: 4.2105372270191973e+08
-Norm of output parameter loc_rh1 - 2: 4.0396643351794785e+08
-Norm of output parameter loc_rh2 - 1: 4.4781903713818836e+08
-Norm of output parameter loc_rh2 - 2: 4.2820011194273412e+08
-Norm of output parameter loc_rhc - 1: 1.4585867083304150e+01
-Norm of output parameter loc_rhc - 2: 1.4585867083304150e+01
-Norm of output parameter loc_rh - 1: 4.2293770252997571e+08
-Norm of output parameter loc_rh - 2: 4.0594397216056991e+08
-Norm of output parameter loc_rv - 1: 3.4685490332927520e+02
-Norm of output parameter loc_rv - 2: 3.1828902750870913e+02
+Norm of output parameter loc_rh1 - 1: 4.3831397640925574e+08
+Norm of output parameter loc_rh1 - 2: 3.9574630115279078e+08
+Norm of output parameter loc_rh2 - 1: 4.5980824208745313e+08
+Norm of output parameter loc_rh2 - 2: 4.1396672976884568e+08
+Norm of output parameter loc_rhc - 1: 1.4436710121381585e+01
+Norm of output parameter loc_rhc - 2: 1.4436710121381585e+01
+Norm of output parameter loc_ecc - 1: 3.5385747648023596e+01
+Norm of output parameter loc_rh - 1: 4.3760961866092414e+08
+Norm of output parameter loc_rh - 2: 3.9533288594921166e+08
+Norm of output parameter loc_rv - 1: 3.4305121705821625e+02
+Norm of output parameter loc_rv - 2: 3.1872185618643823e+02

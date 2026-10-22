@@ -11,7 +11,7 @@ module type_diag_blk
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,ten,pi,req
 use tools_cor_var, only: eval
-use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2r,tensor_check_cond,fast_fit
+use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2r,tensor_d2e,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum,write_yaml_profile
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,define_dim,define_var,put_var
@@ -42,22 +42,26 @@ type diag_blk_type
 
    integer,allocatable :: ncmp                          !< Number of components
    real(kind_real),allocatable :: a_l0(:,:)             !< Amplitude, profiles
-   real(kind_real),allocatable :: rh_l0(:,:)            !< Horizontal support radius, profiles
-   real(kind_real),allocatable :: D11_l0(:,:)           !< Horizontal direct tensor, coefficient 11, profiles
-   real(kind_real),allocatable :: D22_l0(:,:)           !< Horizontal direct tensor, coefficient 22, profiles
-   real(kind_real),allocatable :: D12_l0(:,:)           !< Horizontal direct tensor, coefficient 12 (normalized), profiles
-   real(kind_real),allocatable :: rv_l0(:,:)            !< Vertical support radius, profiles
+   real(kind_real),allocatable :: s_l0(:,:)             !< Scaling factor, profiles
+   real(kind_real),allocatable :: rh_l0(:)              !< Base horizontal support radius, profiles
+   real(kind_real),allocatable :: D11_l0(:)             !< Base horizontal direct tensor, coefficient 11, profiles
+   real(kind_real),allocatable :: D22_l0(:)             !< Base horizontal direct tensor, coefficient 22, profiles
+   real(kind_real),allocatable :: D12_l0(:)             !< Base horizontal direct tensor, coefficient 12 (normalized), profiles
+   real(kind_real),allocatable :: ecc_l0(:)             !< Base horizontal direct tensor, eccentricity, profiles
+   real(kind_real),allocatable :: rv_l0(:)              !< Base vertical support radius, profiles
    real(kind_real),allocatable :: hyb_coef_1_raw(:)     !< Raw hybrid coefficient 1
    real(kind_real),allocatable :: hyb_coef_1(:)         !< Hybrid coefficient 1
    real(kind_real),allocatable :: hyb_coef_2_raw(:)     !< Raw hybrid coefficient 2
    real(kind_real),allocatable :: hyb_coef_2(:)         !< Hybrid coefficient 2
 
-   real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitudes, subset Sc0, halo A
-   real(kind_real),allocatable :: rh_c0a(:,:,:)         !< Horizontal support radius, subset Sc0, halo A
-   real(kind_real),allocatable :: D11_c0a(:,:,:)        !< Horizontal direct tensor, component 11, subset Sc0, halo A
-   real(kind_real),allocatable :: D22_c0a(:,:,:)        !< Horizontal direct tensor, component 22, subset Sc0, halo A
-   real(kind_real),allocatable :: D12_c0a(:,:,:)        !< Horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
-   real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Vertical support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitude, subset Sc0, halo A
+   real(kind_real),allocatable :: s_c0a(:,:,:)          !< Scaling factor, subset Sc0, halo A
+   real(kind_real),allocatable :: rh_c0a(:,:)           !< Base horizontal support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: D11_c0a(:,:)          !< Base horizontal direct tensor, component 11, subset Sc0, halo A
+   real(kind_real),allocatable :: D22_c0a(:,:)          !< Base horizontal direct tensor, component 22, subset Sc0, halo A
+   real(kind_real),allocatable :: D12_c0a(:,:)          !< Base horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
+   real(kind_real),allocatable :: ecc_c0a(:,:)          !< Base horizontal direct tensor, eccentricity, subset Sc0, halo A
+   real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Base vertical support radius, subset Sc0, halo A
    real(kind_real),allocatable :: hyb_coef_1_c0a(:,:)   !< Hybrid coefficient 1, subset Sc0, halo A
    real(kind_real),allocatable :: hyb_coef_2_c0a(:,:)   !< Hybrid coefficient 2, subset Sc0, halo A
 contains
@@ -171,10 +175,13 @@ if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
 if (allocated(diag_blk%vert_coord)) deallocate(diag_blk%vert_coord)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%fit_detail)) deallocate(diag_blk%fit_detail)
+if (allocated(diag_blk%a_l0)) deallocate(diag_blk%a_l0)
+if (allocated(diag_blk%s_l0)) deallocate(diag_blk%s_l0)
 if (allocated(diag_blk%rh_l0)) deallocate(diag_blk%rh_l0)
 if (allocated(diag_blk%D11_l0)) deallocate(diag_blk%D11_l0)
 if (allocated(diag_blk%D22_l0)) deallocate(diag_blk%D22_l0)
 if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
+if (allocated(diag_blk%ecc_l0)) deallocate(diag_blk%ecc_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
 if (allocated(diag_blk%hyb_coef_1_raw)) deallocate(diag_blk%hyb_coef_1_raw)
 if (allocated(diag_blk%hyb_coef_1)) deallocate(diag_blk%hyb_coef_1)
@@ -203,6 +210,7 @@ if (allocated(diag_blk%rh_c0a)) deallocate(diag_blk%rh_c0a)
 if (allocated(diag_blk%D11_c0a)) deallocate(diag_blk%D11_c0a)
 if (allocated(diag_blk%D22_c0a)) deallocate(diag_blk%D22_c0a)
 if (allocated(diag_blk%D12_c0a)) deallocate(diag_blk%D12_c0a)
+if (allocated(diag_blk%ecc_c0a)) deallocate(diag_blk%ecc_c0a)
 if (allocated(diag_blk%rv_c0a)) deallocate(diag_blk%rv_c0a)
 if (allocated(diag_blk%hyb_coef_1_c0a)) deallocate(diag_blk%hyb_coef_1_c0a)
 if (allocated(diag_blk%hyb_coef_2_c0a)) deallocate(diag_blk%hyb_coef_2_c0a)
@@ -232,7 +240,8 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 ! Local variables
 integer :: grpid,ncmp_id,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
-integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id,hyb_coef_1_raw_id,hyb_coef_1_id,hyb_coef_2_raw_id,hyb_coef_2_id
+integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,ecc_l0_id,rv_l0_id
+integer :: hyb_coef_1_raw_id,hyb_coef_1_id,hyb_coef_2_raw_id,hyb_coef_2_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
 
 ! Set name
@@ -268,6 +277,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
          D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id/))
          D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
+         ecc_l0_id = define_var(mpl,grpid,'ecc_l0','real',(/nl0_1_id/))
       end if
       rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
    else
@@ -277,6 +287,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id,ncmp_id/))
          D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id,ncmp_id/))
          D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id,ncmp_id/))
+         ecc_l0_id = define_var(mpl,grpid,'ecc_l0','real',(/nl0_1_id/))
       end if
       rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id,ncmp_id/))
    end if
@@ -330,22 +341,26 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       end do
    end if
    if (diag_blk%ncmp==1) then
-      call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0(:,1)*req)
-      if (nam%nc4>1) then
-         call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0(:,1)*req**2)
-         call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0(:,1)*req**2)
-         call put_var(mpl,grpid,D12_l0_id,diag_blk%D11_l0(:,1)*diag_blk%D22_l0(:,1)*diag_blk%D12_l0(:,1)*req**2)
-      end if
-      call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0(:,1))
-   else
-      call put_var(mpl,grpid,a_l0_id,diag_blk%a_l0)
       call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0*req)
       if (nam%nc4>1) then
          call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0*req**2)
          call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0*req**2)
          call put_var(mpl,grpid,D12_l0_id,diag_blk%D11_l0*diag_blk%D22_l0*diag_blk%D12_l0*req**2)
+         call put_var(mpl,grpid,ecc_l0_id,diag_blk%ecc_l0)
       end if
       call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
+   else
+      call put_var(mpl,grpid,a_l0_id,diag_blk%a_l0)
+      do icmp=1,diag_blk%ncmp
+         call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0*diag_blk%s_l0(:,icmp)*req)
+         if (nam%nc4>1) then
+            call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0*diag_blk%s_l0(:,icmp)**2*req**2)
+            call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0*diag_blk%s_l0(:,icmp)**2*req**2)
+            call put_var(mpl,grpid,D12_l0_id,diag_blk%D11_l0*diag_blk%D22_l0*diag_blk%D12_l0*diag_blk%s_l0(:,icmp)**2*req**2)
+         end if
+         call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0*diag_blk%s_l0(:,icmp))
+      end do
+      if (nam%nc4>1) call put_var(mpl,grpid,ecc_l0_id,diag_blk%ecc_l0)
    end if
 end if
 if (mpl%msv%isanynot(diag_blk%hyb_coef_1_raw)) call put_var(mpl,grpid,hyb_coef_1_raw_id,diag_blk%hyb_coef_1_raw)
@@ -388,27 +403,32 @@ write(lunit,'(a2,a)') '',trim(diag_blk%prefix)//':'
 
 ! Write variables
 if (diag_blk%ncmp==1) then
-   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0(:,1)*req)
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0*req)
    if (nam%nc4>1) then
-      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_blk%D11_l0(:,1)*req**2)
-      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_blk%D22_l0(:,1)*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_blk%D11_l0*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_blk%D22_l0*req**2)
       call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
- & diag_blk%D11_l0(:,1)*diag_blk%D22_l0(:,1)*diag_blk%D12_l0(:,1)*req**2)
+ & diag_blk%D11_l0*diag_blk%D22_l0*diag_blk%D12_l0*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_blk%ecc_l0)
    end if
-   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0(:,1))
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0)
 else
    do icmp=1,diag_blk%ncmp
       ! Write component
       write(lunit,'(a4,a,i1,a)') '','component ',icmp,':'
-      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0(:,icmp)*req)
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'a_l0',diag_blk%a_l0(:,icmp))
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_blk%rh_l0*diag_blk%s_l0(:,icmp)*req)
       if (nam%nc4>1) then
-         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_blk%D11_l0(:,icmp)*req**2)
-         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_blk%D22_l0(:,icmp)*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0', &
+ & diag_blk%D11_l0*diag_blk%s_l0(:,icmp)**2*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0', &
+ & diag_blk%D22_l0*diag_blk%s_l0(:,icmp)**2*req**2)
          call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
- & diag_blk%D11_l0(:,icmp)*diag_blk%D22_l0(:,icmp)*diag_blk%D12_l0(:,icmp)*req**2)
+ & diag_blk%D11_l0*diag_blk%D22_l0*diag_blk%D12_l0*diag_blk%s_l0(:,icmp)**2*req**2)
       end if
-      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0(:,icmp))
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_blk%rv_l0*diag_blk%s_l0(:,icmp))
    end do
+   call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_blk%ecc_l0)
 end if
 if (mpl%msv%isanynot(diag_blk%hyb_coef_1_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_blk%hyb_coef_1_raw
 if (mpl%msv%isanynot(diag_blk%hyb_coef_1)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_blk%hyb_coef_1_raw
@@ -437,9 +457,10 @@ type(geom_type),intent(in) :: geom             !< Geometry
 ! Local variables
 integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc3,jc4,icmp,jcmp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: a,m2(geom%nl0),scaling,rh_span
+real(kind_real) :: a,m2(geom%nl0),rh_span
 real(kind_real),allocatable :: raw_copy(:,:,:,:),raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:)
-real(kind_real),allocatable :: fit_hor(:,:),fit_ver(:),rh_l1(:,:),D11_l1(:,:),D22_l1(:,:),D12_l1(:,:),rv_l1(:,:),a_l1(:,:)
+real(kind_real),allocatable :: fit_hor(:,:),fit_ver(:)
+real(kind_real),allocatable :: a_l1(:,:),s_l1(:,:),rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
 logical :: valid
 type(minim_type) :: minim
 
@@ -509,19 +530,20 @@ rh_span = half*pi
 ! Allocation
 allocate(raw_copy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
 allocate(rh_c4l1(nam%nc4,nl1))
-allocate(rv_l1(nl1,0:diag_blk%ncmp))
 allocate(a_l1(nl1,diag_blk%ncmp))
+allocate(s_l1(nl1,diag_blk%ncmp))
+allocate(rh_l1(nl1))
+if (nam%nc4>1) then
+   allocate(D11_l1(nl1))
+   allocate(D22_l1(nl1))
+   allocate(D12_l1(nl1))
+end if
+allocate(rv_l1(nl1))
 allocate(raw_hor(nam%nc3,nam%nc4))
 allocate(raw_ver(nl0r))
 allocate(distv(nl0r))
 allocate(fit_hor(nam%nc3,nam%nc4))
 allocate(fit_ver(nl0r))
-allocate(rh_l1(nl1,0:diag_blk%ncmp))
-if (nam%nc4>1) then
-   allocate(D11_l1(nl1,0:diag_blk%ncmp))
-   allocate(D22_l1(nl1,0:diag_blk%ncmp))
-   allocate(D12_l1(nl1,0:diag_blk%ncmp))
-end if
 
 ! Copy raw data
 raw_copy = diag_blk%raw
@@ -543,9 +565,6 @@ do il1=1,nl1
 
    ! Get zero separation level and min/max levels
    jl0rz = geom%il0rz(il0)
-
-   ! Global shape fit
-   icmp = 0
 
    ! Horizontal fit for each angular sector
    do jc4=1,nam%nc4
@@ -582,12 +601,12 @@ do il1=1,nl1
 
    if (nam%nc4==1) then
       ! One angular sector only
-      rh_l1(il1,icmp) = rh_c4l1(1,il1)
+      rh_l1(il1) = rh_c4l1(1,il1)
    else
       ! Horizontal tensor fit
       if (mpl%msv%isallnot(rh_c4l1(:,il1)).and.all(rh_c4l1(:,il1)>zero)) then
          ! Average value
-         rh_l1(il1,icmp) = sqrt(sum(rh_c4l1(:,il1)**2)/real(nam%nc4,kind_real))
+         rh_l1(il1) = sqrt(sum(rh_c4l1(:,il1)**2)/real(nam%nc4,kind_real))
 
          ! Allocation
          minim%nx = 3
@@ -595,9 +614,9 @@ do il1=1,nl1
          call minim%alloc
 
          ! Guess and bounds
-         minim%guess = (/rh_l1(il1,icmp)**2,rh_l1(il1,icmp)**2,zero/)
-         minim%binf = (/rh_l1(il1,icmp)**2/sqrt(condmax),rh_l1(il1,icmp)**2/sqrt(condmax),-D12max/)
-         minim%bsup = (/rh_l1(il1,icmp)**2*sqrt(condmax),rh_l1(il1,icmp)**2*sqrt(condmax),D12max/)
+         minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
+         minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-D12max/)
+         minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),D12max/)
 
          ! Observations
          minim%obs = reshape(raw_copy(:,:,jl0rz,il0),(/minim%ny/))
@@ -607,46 +626,46 @@ do il1=1,nl1
          call minim%compute(mpl)
 
          ! Get parameters, apply bounds
-         D11_l1(il1,icmp) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
-         D22_l1(il1,icmp) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
-         D12_l1(il1,icmp) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
+         D11_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+         D22_l1(il1) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+         D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
 
          ! Check tensor conditioning
-         call tensor_check_cond(D11_l1(il1,icmp),D22_l1(il1,icmp),D12_l1(il1,icmp),valid)
+         call tensor_check_cond(D11_l1(il1),D22_l1(il1),D12_l1(il1),valid)
          if (.not.valid) then
-            D11_l1(il1,icmp) = mpl%msv%valr
-            D22_l1(il1,icmp) = mpl%msv%valr
-            D12_l1(il1,icmp) = mpl%msv%valr
+            D11_l1(il1) = mpl%msv%valr
+            D22_l1(il1) = mpl%msv%valr
+            D12_l1(il1) = mpl%msv%valr
          end if
 
          ! Get corresponding length-scale
-         call tensor_d2r(mpl,D11_l1(il1,icmp),D22_l1(il1,icmp),D12_l1(il1,icmp),rh_l1(il1,icmp))
+         call tensor_d2r(mpl,D11_l1(il1),D22_l1(il1),D12_l1(il1),rh_l1(il1))
 
          ! Release memory
          call minim%partial_dealloc
       else
          ! Missing values
-         rh_l1(il1,icmp) = mpl%msv%valr
-         D11_l1(il1,icmp) = mpl%msv%valr
-         D22_l1(il1,icmp) = mpl%msv%valr
-         D12_l1(il1,icmp) = mpl%msv%valr
+         rh_l1(il1) = mpl%msv%valr
+         D11_l1(il1) = mpl%msv%valr
+         D22_l1(il1) = mpl%msv%valr
+         D12_l1(il1) = mpl%msv%valr
       end if
    end if
 
    ! Check that horizontal length-scale is not too large
-   if (supeq(rh_l1(il1,0),rh_span)) then
-      rh_l1(il1,:) = mpl%msv%valr
+   if (supeq(rh_l1(il1),rh_span)) then
+      rh_l1(il1) = mpl%msv%valr
       if (nam%nc4>1) then
-         D11_l1(il1,:) = mpl%msv%valr
-         D22_l1(il1,:) = mpl%msv%valr
-         D12_l1(il1,:) = mpl%msv%valr
-      end if      
+         D11_l1(il1) = mpl%msv%valr
+         D22_l1(il1) = mpl%msv%valr
+         D12_l1(il1) = mpl%msv%valr
+      end if
    end if
 
    if (nl0r==1) then
       ! No vertical fit
       distv(1) = zero
-      rv_l1(il1,icmp) = zero
+      rv_l1(il1) = zero
    else
       ! Raw vertical function, averaged over angular sectors
       raw_ver = sum(raw_copy(1,:,:,il0),dim=1)/real(nam%nc4,kind_real)
@@ -658,9 +677,9 @@ do il1=1,nl1
       end do
 
       ! Fast vertical fit
-      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',raw_ver,rv_l1(il1,icmp))
+      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',raw_ver,rv_l1(il1))
 
-      if (mpl%msv%isnot(rv_l1(il1,icmp))) then
+      if (mpl%msv%isnot(rv_l1(il1))) then
          ! Optimized vertical fit
 
          ! Vertical distance
@@ -672,9 +691,9 @@ do il1=1,nl1
          call minim%alloc
 
          ! Guess and bounds
-         minim%guess(1) = rv_l1(il1,icmp)
+         minim%guess(1) = rv_l1(il1)
          minim%binf(1) = zero
-         minim%bsup(1) = ten*rv_l1(il1,icmp)
+         minim%bsup(1) = ten*rv_l1(il1)
 
          ! Observations
          minim%obs(1:nl0r) = raw_ver
@@ -684,38 +703,31 @@ do il1=1,nl1
          call minim%compute(mpl)
 
          ! Get parameter, apply bounds
-         rv_l1(il1,icmp) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+         rv_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
 
          ! Release memory
          call minim%partial_dealloc
       end if
    end if
 
-   if (mpl%msv%isnot(rh_l1(il1,0)).and.mpl%msv%isnot(rv_l1(il1,0))) then
+   if (mpl%msv%isnot(rh_l1(il1)).and.mpl%msv%isnot(rv_l1(il1))) then
       ! Both horizontal and vertical fits succeed
       if (diag_blk%ncmp==1) then
          ! One component only, simple copy
          a_l1(il1,1) = one
-         rh_l1(il1,1) = rh_l1(il1,0)
-         if (nam%nc4>1) then
-            D11_l1(il1,1) =D11_l1(il1,0)
-            D22_l1(il1,1) = D22_l1(il1,0)
-            D12_l1(il1,1) = D12_l1(il1,0)
-         end if      
-         rv_l1(il1,1) = rv_l1(il1,0)
+         s_l1(il1,1) = one
       else
          ! Multiple component optimization
 
          ! Initialization
-         scaling = one
          if (nam%nc4==1) then
-            minim%rh = rh_l1(il1,0)
+            minim%rh = rh_l1(il1)
          else
-            minim%D11 = D11_l1(il1,0)
-            minim%D22 = D22_l1(il1,0)
-            minim%D12 = D12_l1(il1,0)
+            minim%D11 = D11_l1(il1)
+            minim%D22 = D22_l1(il1)
+            minim%D12 = D12_l1(il1)
          end if
-         minim%rv = rv_l1(il1,0)
+         minim%rv = rv_l1(il1)
 
          do icmp=1,diag_blk%ncmp
             ! Amplitude, horizontal and vertical raw functions
@@ -727,26 +739,20 @@ do il1=1,nl1
             do jcmp=1,icmp-1
                a = a-a_l1(il1,jcmp)
                if (nam%nc4==1) then
-                  call diag_iso(mpl,nam%nc3,geom%disth,'hor',rh_l1(il1,jcmp),fit_hor(:,1))
+                  call diag_iso(mpl,nam%nc3,geom%disth,'hor',s_l1(il1,jcmp),rh_l1(il1),fit_hor(:,1))
                else
-                  call diag_tensor(mpl,nam%nc3,nam%nc4,geom%disth,geom%as,D11_l1(il1,jcmp),D22_l1(il1,jcmp),D12_l1(il1,jcmp), &
+                  call diag_tensor(mpl,nam%nc3,nam%nc4,geom%disth,geom%as,s_l1(il1,jcmp),D11_l1(il1),D22_l1(il1),D12_l1(il1), &
  & fit_hor)
                end if
                raw_hor = raw_hor-a_l1(il1,jcmp)*fit_hor
-               call diag_iso(mpl,nl0r,distv,'ver',rv_l1(il1,jcmp),fit_ver)
+               call diag_iso(mpl,nl0r,distv,'ver',s_l1(il1,jcmp),rv_l1(il1),fit_ver)
                raw_ver = raw_ver-a_l1(il1,jcmp)*fit_ver
             end do
 
             if (inf(a,tenth)) then
                ! Amplitude is too small: unstable optimization
                a_l1(il1,icmp) = zero
-               rh_l1(il1,icmp) = rh_l1(il1,icmp-1)
-               if (nam%nc4>1) then
-                  D11_l1(il1,icmp) = D11_l1(il1,icmp-1)
-                  D22_l1(il1,icmp) = D22_l1(il1,icmp-1)
-                  D12_l1(il1,icmp) = D12_l1(il1,icmp-1)
-               end if      
-               rv_l1(il1,icmp) = rv_l1(il1,icmp-1)
+               s_l1(il1,icmp) = s_l1(il1,icmp-1)
 
                ! Adjust amplitude of the previous component
                a_l1(il1,icmp-1) = a_l1(il1,icmp-1)+a
@@ -762,16 +768,17 @@ do il1=1,nl1
 
                ! Guess and bounds
                if (icmp==1) then
+                  ! First component
                   minim%guess(1) = one
                   minim%binf(1) = tenth
-
-                  ! Ensure that scaling cannot lead to very large length-scales
                   minim%bsup(1) = ten
-                  if (rh_l1(il1,0)>zero) minim%bsup(1) = min(minim%bsup(1),rh_span/rh_l1(il1,0))
+
+                  ! Ensure that scaling cannot lead to very large horizontal length-scale
+                  if (rh_l1(il1)>zero) minim%bsup(1) = min(minim%bsup(1),rh_span/rh_l1(il1))
                else
-                  minim%guess(1) = half*scaling
-                  minim%binf(1) = tenth*scaling
-                  minim%bsup(1) = scaling
+                  minim%guess(1) = half*s_l1(il1,icmp-1)
+                  minim%binf(1) = tenth*s_l1(il1,icmp-1)
+                  minim%bsup(1) = s_l1(il1,icmp-1)
                end if
                if (icmp<diag_blk%ncmp) then
                   minim%guess(2) = half*a
@@ -790,10 +797,10 @@ do il1=1,nl1
                call minim%compute(mpl)
 
                ! Get parameters, apply bounds
-               scaling = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
-               if ((icmp==1).and.infeq(scaling,one)) then
+               s_l1(il1,icmp) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+               if ((icmp==1).and.infeq(s_l1(il1,icmp),one)) then
                   ! A single component is better
-                  scaling = one
+                  s_l1(il1,icmp) = one
                   a_l1(il1,icmp) = one
                else
                  if (icmp<diag_blk%ncmp) then
@@ -803,98 +810,78 @@ do il1=1,nl1
                  end if
                end if
 
-               ! Scale length-scales/tensor
-               rh_l1(il1,icmp) = rh_l1(il1,0)*scaling
-               if (nam%nc4>1) then
-                  D11_l1(il1,icmp) = D11_l1(il1,0)*sqrt(scaling)
-                  D22_l1(il1,icmp) = D22_l1(il1,0)*sqrt(scaling)
-                  D12_l1(il1,icmp) = D12_l1(il1,0)
-               end if      
-               rv_l1(il1,icmp) = rv_l1(il1,0)*scaling
-
                ! Release memory
                call minim%partial_dealloc
             end if
          end do
       end if
-
-      ! Check that length-scale is not too large
-      if (supeq(rh_l1(il1,1),rh_span)) then
-         a_l1(il1,:) = mpl%msv%valr
-         rh_l1(il1,:) = mpl%msv%valr
-         if (nam%nc4>1) then
-            D11_l1(il1,:) = mpl%msv%valr
-            D22_l1(il1,:) = mpl%msv%valr
-            D12_l1(il1,:) = mpl%msv%valr
-         end if      
-         rv_l1(il1,:) = mpl%msv%valr
-      end if
    else
       ! Either horizontal fit or vertical fit failed
       a_l1(il1,:) = mpl%msv%valr
-      rh_l1(il1,:) = mpl%msv%valr
-      if (nam%nc4>1) then
-         D11_l1(il1,:) = mpl%msv%valr
-         D22_l1(il1,:) = mpl%msv%valr
-         D12_l1(il1,:) = mpl%msv%valr
-      end if      
-      rv_l1(il1,:) = mpl%msv%valr
+      s_l1(il1,:) = mpl%msv%valr
    end if
 end do
 
 ! Allocation
 allocate(diag_blk%a_l0(geom%nl0,diag_blk%ncmp))
-allocate(diag_blk%rh_l0(geom%nl0,diag_blk%ncmp))
+allocate(diag_blk%s_l0(geom%nl0,diag_blk%ncmp))
+allocate(diag_blk%rh_l0(geom%nl0))
 if (nam%nc4>1) then
-   allocate(diag_blk%D11_l0(geom%nl0,diag_blk%ncmp))
-   allocate(diag_blk%D22_l0(geom%nl0,diag_blk%ncmp))
-   allocate(diag_blk%D12_l0(geom%nl0,diag_blk%ncmp))
+   allocate(diag_blk%D11_l0(geom%nl0))
+   allocate(diag_blk%D22_l0(geom%nl0))
+   allocate(diag_blk%D12_l0(geom%nl0))
+   allocate(diag_blk%ecc_l0(geom%nl0))
 end if
-allocate(diag_blk%rv_l0(geom%nl0,diag_blk%ncmp))
+allocate(diag_blk%rv_l0(geom%nl0))
 
 ! Initialization
 diag_blk%a_l0 = mpl%msv%valr
+diag_blk%s_l0 = mpl%msv%valr
 diag_blk%rh_l0 = mpl%msv%valr
 if (nam%nc4>1) then
    diag_blk%D11_l0 = mpl%msv%valr
    diag_blk%D22_l0 = mpl%msv%valr
    diag_blk%D12_l0 = mpl%msv%valr
+   diag_blk%ecc_l0 = mpl%msv%valr
 end if
 diag_blk%rv_l0 = mpl%msv%valr
-if (mpl%msv%isnot(ilev2d)) diag_blk%rv_l0(ilev2d,:) = zero
 
 ! Interpolate parameters
-do icmp=1,diag_blk%ncmp
-   if (mpl%msv%isnot(ilev2d)) then
-      ! No vertical interpolation for 2D variables
+if (mpl%msv%isnot(ilev2d)) then
+   ! No vertical interpolation for 2D variables
+   do icmp=1,diag_blk%ncmp
       diag_blk%a_l0(ilev2d,icmp) = a_l1(1,icmp)
-      if (nam%nc4==1) then
-         diag_blk%rh_l0(ilev2d,icmp) = rh_l1(1,icmp)
-      else
-         diag_blk%D11_l0(ilev2d,icmp) = D11_l1(1,icmp)
-         diag_blk%D22_l0(ilev2d,icmp) = D22_l1(1,icmp)
-         diag_blk%D12_l0(ilev2d,icmp) = D12_l1(1,icmp)
-         call tensor_d2r(mpl,diag_blk%D11_l0(ilev2d,icmp),diag_blk%D22_l0(ilev2d,icmp),diag_blk%D12_l0(ilev2d,icmp), &
- & diag_blk%rh_l0(ilev2d,icmp))
-      end if
-      diag_blk%rv_l0(ilev2d,icmp) = rv_l1(1,icmp)
+      diag_blk%s_l0(ilev2d,icmp) = s_l1(1,icmp)
+   end do
+   if (nam%nc4==1) then
+      diag_blk%rh_l0(ilev2d) = rh_l1(1)
    else
-      ! Vertical interpolation
-      call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
-      if (nam%nc4==1) then
-         call vert_interp(mpl,nl1,rh_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0(:,icmp))
-      else
-         call vert_interp(mpl,nl1,D11_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0(:,icmp))
-         call vert_interp(mpl,nl1,D22_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D22_l0(:,icmp))
-         call vert_interp(mpl,nl1,D12_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D12_l0(:,icmp))
-         do il0=1,geom%nl0
-            call tensor_d2r(mpl,diag_blk%D11_l0(il0,icmp),diag_blk%D22_l0(il0,icmp),diag_blk%D12_l0(il0,icmp), &
- & diag_blk%rh_l0(il0,icmp))
-         end do
-      end if
-      call vert_interp(mpl,nl1,rv_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0(:,icmp))
+      diag_blk%D11_l0(ilev2d) = D11_l1(1)
+      diag_blk%D22_l0(ilev2d) = D22_l1(1)
+      diag_blk%D12_l0(ilev2d) = D12_l1(1)
+      call tensor_d2r(mpl,diag_blk%D11_l0(ilev2d),diag_blk%D22_l0(ilev2d),diag_blk%D12_l0(ilev2d),diag_blk%rh_l0(ilev2d))
+      call tensor_d2e(mpl,diag_blk%D11_l0(ilev2d),diag_blk%D22_l0(ilev2d),diag_blk%D12_l0(ilev2d),diag_blk%ecc_l0(ilev2d))
    end if
-end do
+   diag_blk%rv_l0(ilev2d) = rv_l1(1)
+else
+   ! Vertical interpolation
+   do icmp=1,diag_blk%ncmp
+      call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
+      call vert_interp(mpl,nl1,s_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%s_l0(:,icmp))
+   end do
+   if (nam%nc4==1) then
+      call vert_interp(mpl,nl1,rh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0)
+   else
+      call vert_interp(mpl,nl1,D11_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0)
+      call vert_interp(mpl,nl1,D22_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D22_l0)
+      call vert_interp(mpl,nl1,D12_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D12_l0)
+      do il0=1,geom%nl0
+         call tensor_d2r(mpl,diag_blk%D11_l0(il0),diag_blk%D22_l0(il0),diag_blk%D12_l0(il0),diag_blk%rh_l0(il0))
+         call tensor_d2e(mpl,diag_blk%D11_l0(il0),diag_blk%D22_l0(il0),diag_blk%D12_l0(il0),diag_blk%ecc_l0(il0))
+      end do
+   end if
+   call vert_interp(mpl,nl1,rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0)
+end if
 
 ! Release memory
 deallocate(il0_interp)
@@ -902,15 +889,16 @@ deallocate(il1inf)
 deallocate(il1sup)
 deallocate(rinf)
 deallocate(rsup)
-deallocate(a_l1)
 deallocate(rh_c4l1)
-deallocate(rv_l1)
+deallocate(a_l1)
+deallocate(s_l1)
 deallocate(rh_l1)
 if (nam%nc4>1) then
    deallocate(D11_l1)
    deallocate(D22_l1)
    deallocate(D12_l1)
 end if
+deallocate(rv_l1)
 deallocate(raw_hor)
 deallocate(raw_ver)
 deallocate(distv)
@@ -1115,7 +1103,7 @@ do il0=1,geom%nl0
             if (mpl%msv%isnot(diag_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg1_blk%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_blk%m11(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg2_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11asysq(jc3,jc4,jl0r,il0))) then
-               wgt = one ! TODO(Benjamin): should be diag_blk%frob_wgt(jc3,jc4,jl0r,il0)
+               wgt = diag_blk%frob_wgt(jc3,jc4,jl0r,il0)
                a = a+wgt*diag_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
                bc = bc+wgt*diag_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
                select case (nam%hybrid_source)

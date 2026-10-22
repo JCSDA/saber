@@ -90,6 +90,9 @@ background error:
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rhc_2
+      - parameter: loc_ecc
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_ecc
       - parameter: loc_rh
         component: 1
         file:

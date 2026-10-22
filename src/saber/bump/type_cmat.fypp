@@ -191,7 +191,7 @@ type(diag_type),intent(in) :: diag                    !< Diagnostics
 real(kind_real),intent(in),optional :: scaling_factor !< Scaling factor
 
 ! Local variables
-integer :: ig
+integer :: ig,icmp
 real(kind_real) :: lscaling_factor
 
 ! Set name
@@ -213,12 +213,14 @@ end if
 do ig=1,nam%ng
    ! Copy fields
    cmat%blk(ig)%a = diag%blk(0,ig)%a_c0a
-   cmat%blk(ig)%rh = diag%blk(0,ig)%rh_c0a*lscaling_factor
-   if (nam%nc4>1) then
-      cmat%blk(ig)%D11 = diag%blk(0,ig)%D11_c0a*lscaling_factor**2
-      cmat%blk(ig)%D22 = diag%blk(0,ig)%D22_c0a*lscaling_factor**2
-      cmat%blk(ig)%D12 = diag%blk(0,ig)%D12_c0a
-   end if
+   do icmp=1,diag%blk(0,ig)%ncmp
+      cmat%blk(ig)%rh(:,:,icmp) = diag%blk(0,ig)%rh_c0a*diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor
+      if (nam%nc4>1) then
+         cmat%blk(ig)%D11(:,:,icmp) = diag%blk(0,ig)%D11_c0a*(diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor)**2
+         cmat%blk(ig)%D22(:,:,icmp) = diag%blk(0,ig)%D22_c0a*(diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor)**2
+         cmat%blk(ig)%D12(:,:,icmp) = diag%blk(0,ig)%D12_c0a
+      end if
+   end do
    cmat%blk(ig)%rv = diag%blk(0,ig)%rv_c0a*lscaling_factor
 end do
 
@@ -333,14 +335,14 @@ do ig=1,nam%ng
    write(mpl%info,'(a10,a,i3,a)') '','BUMP import for ',cmat%blk(ig)%ncmp,' components'
    call mpl%flush
 
-   ! Amplitudes
+   ! Amplitude
    if (allocated(cmat%blk(ig)%bump_a)) then
       cmat%blk(ig)%a = cmat%blk(ig)%bump_a
    else
       cmat%blk(ig)%a = one
    end if
 
-   ! Horizontal
+   ! Horizontal component
    if (cmat%blk(ig)%anisotropic) then
       cmat%blk(ig)%D11 = cmat%blk(ig)%bump_D11
       cmat%blk(ig)%D22 = cmat%blk(ig)%bump_D22
@@ -357,7 +359,7 @@ do ig=1,nam%ng
       if (allocated(cmat%blk(ig)%bump_rh)) cmat%blk(ig)%rh = cmat%blk(ig)%bump_rh
    end if
 
-   ! Vertical
+   ! Vertical component
    if (allocated(cmat%blk(ig)%bump_rv)) cmat%blk(ig)%rv = cmat%blk(ig)%bump_rv
 
    ! Release memory (partial)

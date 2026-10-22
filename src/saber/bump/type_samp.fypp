@@ -3597,17 +3597,6 @@ if (flt%rflt>zero) then
          case ('average')
             ! Compute average
             diag_c2a(ic2a) = zss_sum(diag_eff)/real(nc2eff,kind_real)
-         case ('gc99')
-            ! Gaspari-Cohn (1999) kernel
-            diag_c2a(ic2a) = zero
-            norm = zero
-            do ic2eff=1,nc2eff
-               distnorm = diag_eff_dist(ic2eff)/flt%rflt
-               wgt = fit_func(mpl,'hor',distnorm)
-               diag_c2a(ic2a) = diag_c2a(ic2a)+wgt*diag_eff(ic2eff)
-               norm = norm+wgt
-            end do
-            if (norm>zero) diag_c2a(ic2a) = diag_c2a(ic2a)/norm
          case ('median')
             ! Compute median
             allocate(order(nc2eff))

@@ -145,7 +145,7 @@
              Level  70 ~> -0.115E+02 vert. coord.
              Level  71 ~> -0.115E+02 vert. coord.
              Level  72 ~> -0.115E+02 vert. coord.
-Norm of input parameter gsi_ref - 1: 2.8285238362553752e+01
+Norm of input parameter gsi_ref - 1: 2.8285238362554871e+01
        Factor 0.20, horizontal MSE:  0.25476734E+03 / vertical MSE:  0.38389586E+02 
        Factor 0.30, horizontal MSE:  0.21007331E+03 / vertical MSE:  0.29768386E+02 
        Factor 0.40, horizontal MSE:  0.16265105E+03 / vertical MSE:  0.20045999E+02 
@@ -163,4 +163,4 @@ Norm of input parameter gsi_ref - 1: 2.8285238362553752e+01
        Factor 1.60, horizontal MSE:  0.23831582E+03 / vertical MSE:  0.14162720E+02 
        Factor 1.70, horizontal MSE:  0.31556975E+03 / vertical MSE:  0.18082475E+02 
        Factor 1.80, horizontal MSE:  0.40200216E+03 / vertical MSE:  0.22245501E+02 
-Norm of output parameter dirac_diag_cor - 1: 2.9370843809358977e+01
+Norm of output parameter dirac_diag_cor - 1: 2.9370843809358252e+01

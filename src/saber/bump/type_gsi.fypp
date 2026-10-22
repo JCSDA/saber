@@ -45,7 +45,7 @@ type gsi_type
    ! Standard-deviation
    real(kind_real),allocatable :: stddev(:,:,:) !< Standard-deviation
 
-   ! Correlation amplitudes and support radii
+   ! Correlation amplitude and support radii
    real(kind_real),allocatable :: a(:)          !< Amplitude
    real(kind_real),allocatable :: rh(:,:,:,:)   !< Horizontal support radius
    real(kind_real),allocatable :: rv(:,:,:,:)   !< Vertical support radius

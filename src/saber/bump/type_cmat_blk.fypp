@@ -21,7 +21,7 @@ type cmat_blk_type
 
    ! Computational data
    integer :: ncmp = 1                               !< Number of components
-   real(kind_real),allocatable :: a(:,:,:)           !< Amplitudes
+   real(kind_real),allocatable :: a(:,:,:)           !< Amplitude
    real(kind_real),allocatable :: rh(:,:,:)          !< Horizontal support radius
    real(kind_real),allocatable :: D11(:,:,:)         !< Horizontal direct tensor, component 11
    real(kind_real),allocatable :: D22(:,:,:)         !< Horizontal direct tensor, component 22
@@ -32,7 +32,7 @@ type cmat_blk_type
    real(kind_real),allocatable :: rvs(:,:,:)         !< Vertical fit support radius for sampling
 
    ! BUMP interface data
-   real(kind_real),allocatable :: bump_a(:,:,:)      !< Amplitudes
+   real(kind_real),allocatable :: bump_a(:,:,:)      !< Amplitude
    real(kind_real),allocatable :: bump_rh(:,:,:)     !< Horizontal support radius
    real(kind_real),allocatable :: bump_D11(:,:,:)    !< Horizontal direct tensor, component 11
    real(kind_real),allocatable :: bump_D22(:,:,:)    !< Horizontal direct tensor, component 22

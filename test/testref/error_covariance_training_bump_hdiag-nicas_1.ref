@@ -112,104 +112,104 @@
                 Level:   2 ~> cov. at class zero:  0.97E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block air_horizontal_streamfunction:  0.16880103E+00 for      160 diagnostic points
-             Block air_horizontal_velocity_potential:  0.18660097E+00 for      160 diagnostic points
-                   Level:   1 ~> amplitude:        0.68
-                                 cor. hor. support:      5265.32 km
-                                 cor. ver. support:         6.31 vertical units
-                   Level:   2 ~> amplitude:        0.69
-                                 cor. hor. support:      5142.47 km
-                                 cor. ver. support:         6.15 vertical units
-                   Level:   1 ~> amplitude:        0.32
-                                 cor. hor. support:      2960.91 km
-                                 cor. ver. support:         0.63 vertical units
-                   Level:   2 ~> amplitude:        0.31
-                                 cor. hor. support:      2891.83 km
-                                 cor. ver. support:         0.62 vertical units
-                   Level:   1 ~> amplitude:        0.83
-                                 cor. hor. support:      4730.89 km
-                                 cor. ver. support:         4.06 vertical units
-                   Level:   2 ~> amplitude:        0.67
-                                 cor. hor. support:      5648.24 km
-                                 cor. ver. support:         6.89 vertical units
-                   Level:   1 ~> amplitude:        0.17
-                                 cor. hor. support:      2660.38 km
-                                 cor. ver. support:         0.41 vertical units
-                   Level:   2 ~> amplitude:        0.33
-                                 cor. hor. support:      3176.24 km
-                                 cor. ver. support:         0.69 vertical units
+             Block air_horizontal_streamfunction:  0.14303157E+00 for      160 diagnostic points
+             Block air_horizontal_velocity_potential:  0.15423795E+00 for      160 diagnostic points
+                   Level:   1 ~> amplitude:        0.87
+                                 cor. hor. support:      4847.24 km
+                                 cor. ver. support:         3.48 vertical units
+                   Level:   2 ~> amplitude:        0.87
+                                 cor. hor. support:      4754.82 km
+                                 cor. ver. support:         3.47 vertical units
+                   Level:   1 ~> amplitude:        0.13
+                                 cor. hor. support:       633.00 km
+                                 cor. ver. support:         0.45 vertical units
+                   Level:   2 ~> amplitude:        0.13
+                                 cor. hor. support:      1155.87 km
+                                 cor. ver. support:         0.84 vertical units
+                   Level:   1 ~> amplitude:        0.89
+                                 cor. hor. support:      4807.45 km
+                                 cor. ver. support:         3.46 vertical units
+                   Level:   2 ~> amplitude:        0.84
+                                 cor. hor. support:      5236.22 km
+                                 cor. ver. support:         3.61 vertical units
+                   Level:   1 ~> amplitude:        0.11
+                                 cor. hor. support:       627.80 km
+                                 cor. ver. support:         0.45 vertical units
+                   Level:   2 ~> amplitude:        0.16
+                                 cor. hor. support:      1552.50 km
+                                 cor. ver. support:         1.07 vertical units
              Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.912E+03 km /  0.912E+03 km /  0.912E+03 km
-                   Regular sampling grid size:      360 points
-                   Nearest neighbor distance (min/max/avg):  0.381E+03 km /  0.103E+04 km /  0.886E+03 km
-                   Effective resolution (min/max/avg):  5.09 / 13.82 /  6.54
-                   Subgrid hash:   -435093158
-                Subgrid size:      360
-                   Requested distance between points (min/max/avg):  0.891E+03 km /  0.891E+03 km /  0.891E+03 km
+                   Requested distance between points (min/max/avg):  0.840E+03 km /  0.840E+03 km /  0.840E+03 km
                    Regular sampling grid size:      448 points
                    Nearest neighbor distance (min/max/avg):  0.329E+03 km /  0.953E+03 km /  0.826E+03 km
-                   Effective resolution (min/max/avg):  5.40 / 15.63 /  6.85
+                   Effective resolution (min/max/avg):  5.09 / 14.73 /  6.46
                    Subgrid hash:   -823721553
                 Subgrid size:      448
-             nc1(  1) =                        360
-             nc1(  2) =                        448
-             ns =                              808
-             v%n_s =                             2
-             c%n_s[global] =                 13928
-             Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.513E+03 km /  0.513E+03 km /  0.513E+03 km
-                   Regular sampling grid size:     1440 points
-                   Nearest neighbor distance (min/max/avg):  0.157E+03 km /  0.604E+03 km /  0.540E+03 km
-                   Effective resolution (min/max/avg):  4.91 / 18.86 /  5.86
-                   Subgrid hash:   1163527547
-                Subgrid size:     1440
-                   Requested distance between points (min/max/avg):  0.501E+03 km /  0.501E+03 km /  0.501E+03 km
-                   Regular sampling grid size:     1440 points
-                   Nearest neighbor distance (min/max/avg):  0.157E+03 km /  0.604E+03 km /  0.540E+03 km
-                   Effective resolution (min/max/avg):  4.79 / 18.42 /  5.73
-                   Subgrid hash:   1163527547
-                Subgrid size:     1440
-             nc1(  1) =                       1440
-             nc1(  2) =                       1440
-             ns =                             2880
-             v%n_s =                             2
-             c%n_s[global] =                 26664
-             Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.820E+03 km /  0.820E+03 km /  0.820E+03 km
+                   Requested distance between points (min/max/avg):  0.824E+03 km /  0.824E+03 km /  0.824E+03 km
                    Regular sampling grid size:      544 points
                    Nearest neighbor distance (min/max/avg):  0.289E+03 km /  0.889E+03 km /  0.774E+03 km
-                   Effective resolution (min/max/avg):  5.32 / 16.34 /  6.71
+                   Effective resolution (min/max/avg):  5.35 / 16.43 /  6.74
                    Subgrid hash:   -474283508
                 Subgrid size:      544
-                   Requested distance between points (min/max/avg):  0.979E+03 km /  0.979E+03 km /  0.979E+03 km
-                   Regular sampling grid size:      360 points
-                   Nearest neighbor distance (min/max/avg):  0.381E+03 km /  0.103E+04 km /  0.886E+03 km
-                   Effective resolution (min/max/avg):  5.46 / 14.82 /  7.02
-                   Subgrid hash:   -435093158
-                Subgrid size:      360
-             nc1(  1) =                        544
-             nc1(  2) =                        360
-             ns =                              904
+             nc1(  1) =                        448
+             nc1(  2) =                        544
+             ns =                              992
              v%n_s =                             2
-             c%n_s[global] =                 16488
+             c%n_s[global] =                 17504
              Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.461E+03 km /  0.461E+03 km /  0.461E+03 km
-                   Regular sampling grid size:     1768 points
-                   Nearest neighbor distance (min/max/avg):  0.139E+03 km /  0.554E+03 km /  0.497E+03 km
-                   Effective resolution (min/max/avg):  4.80 / 19.16 /  5.68
-                   Subgrid hash:    139593403
-                Subgrid size:     1768
-                   Requested distance between points (min/max/avg):  0.550E+03 km /  0.550E+03 km /  0.550E+03 km
-                   Regular sampling grid size:     1288 points
-                   Nearest neighbor distance (min/max/avg):  0.168E+03 km /  0.633E+03 km /  0.564E+03 km
-                   Effective resolution (min/max/avg):  5.02 / 18.91 /  6.04
-                   Subgrid hash:   -680262426
-                Subgrid size:     1288
-             nc1(  1) =                       1768
-             nc1(  2) =                       1288
-             ns =                             3056
+                   Requested distance between points (min/max/avg):  0.110E+03 km /  0.110E+03 km /  0.110E+03 km
+                   Regular sampling grid size:    33408 points
+                   Nearest neighbor distance (min/max/avg):  0.275E+02 km /  0.137E+03 km /  0.119E+03 km
+                   Effective resolution (min/max/avg):  4.63 / 23.04 /  5.35
+                   Subgrid hash:    -49774093
+                Subgrid size:    33408
+                   Requested distance between points (min/max/avg):  0.200E+03 km /  0.200E+03 km /  0.200E+03 km
+                   Regular sampling grid size:     9720 points
+                   Nearest neighbor distance (min/max/avg):  0.530E+02 km /  0.256E+03 km /  0.224E+03 km
+                   Effective resolution (min/max/avg):  4.51 / 21.82 /  5.26
+                   Subgrid hash:  -1499126353
+                Subgrid size:     9720
+             nc1(  1) =                      33408
+             nc1(  2) =                       9720
+             ns =                            43128
              v%n_s =                             2
-             c%n_s[global] =                 28664
+             c%n_s[global] =                365960
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.833E+03 km /  0.833E+03 km /  0.833E+03 km
+                   Regular sampling grid size:      544 points
+                   Nearest neighbor distance (min/max/avg):  0.289E+03 km /  0.889E+03 km /  0.774E+03 km
+                   Effective resolution (min/max/avg):  5.40 / 16.61 /  6.82
+                   Subgrid hash:   -474283508
+                Subgrid size:      544
+                   Requested distance between points (min/max/avg):  0.907E+03 km /  0.907E+03 km /  0.907E+03 km
+                   Regular sampling grid size:      448 points
+                   Nearest neighbor distance (min/max/avg):  0.329E+03 km /  0.953E+03 km /  0.826E+03 km
+                   Effective resolution (min/max/avg):  5.50 / 15.91 /  6.97
+                   Subgrid hash:   -823721553
+                Subgrid size:      448
+             nc1(  1) =                        544
+             nc1(  2) =                        448
+             ns =                              992
+             v%n_s =                             2
+             c%n_s[global] =                 18944
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.109E+03 km /  0.109E+03 km /  0.109E+03 km
+                   Regular sampling grid size:    34144 points
+                   Nearest neighbor distance (min/max/avg):  0.272E+02 km /  0.135E+03 km /  0.118E+03 km
+                   Effective resolution (min/max/avg):  4.65 / 23.12 /  5.36
+                   Subgrid hash:   1190036688
+                Subgrid size:    34144
+                   Requested distance between points (min/max/avg):  0.269E+03 km /  0.269E+03 km /  0.269E+03 km
+                   Regular sampling grid size:     5544 points
+                   Nearest neighbor distance (min/max/avg):  0.721E+02 km /  0.339E+03 km /  0.297E+03 km
+                   Effective resolution (min/max/avg):  4.58 / 21.54 /  5.38
+                   Subgrid hash:   2076120451
+                Subgrid size:     5544
+             nc1(  1) =                      34144
+             nc1(  2) =                       5544
+             ns =                            39688
+             v%n_s =                             2
+             c%n_s[global] =                339056
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -249,24 +249,25 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6294109
+          Level   2:  0.0000000 -  0.6209030
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
 Norm of output parameter dirac_mom_cov - 1: 1.0099297110777711e+01
 Norm of output parameter dirac_mom_single_obs - 1: 1.0717171215390524e+01
 Norm of output parameter dirac_mom - 1: 1.0531524436024691e+01
-Norm of output parameter dirac_diag_cor - 1: 2.8513707937328223e+00
-Norm of output parameter cor_a - 1: 3.9846859833541764e+01
-Norm of output parameter cor_a - 2: 1.5911061168856598e+01
-Norm of output parameter cor_rh1 - 1: 2.7454568289722943e+08
-Norm of output parameter cor_rh1 - 2: 1.5438838314579359e+08
-Norm of output parameter cor_rh2 - 1: 3.0287271538210493e+08
-Norm of output parameter cor_rh2 - 2: 1.7031784413206720e+08
+Norm of output parameter dirac_diag_cor - 1: 2.7002142720577536e+00
+Norm of output parameter cor_a - 1: 4.7944707465970552e+01
+Norm of output parameter cor_a - 2: 7.3584341166431972e+00
+Norm of output parameter cor_rh1 - 1: 2.5922480047344485e+08
+Norm of output parameter cor_rh1 - 2: 5.6177407446928203e+07
+Norm of output parameter cor_rh2 - 1: 2.8583777102418441e+08
+Norm of output parameter cor_rh2 - 2: 6.2047478468614563e+07
 Norm of output parameter cor_rhc - 1: 6.0469184187659790e+00
 Norm of output parameter cor_rhc - 2: 6.0469184187659790e+00
-Norm of output parameter cor_rh - 1: 2.8747320662300146e+08
-Norm of output parameter cor_rh - 2: 1.6165806396918637e+08
-Norm of output parameter cor_rv - 1: 3.2847831417238638e+02
-Norm of output parameter cor_rv - 2: 3.2847831417302586e+01
-Norm of output parameter nicas_norm - 1: 8.4262408589735841e+01
+Norm of output parameter cor_ecc - 1: 2.7754179731567827e+01
+Norm of output parameter cor_rh - 1: 2.7135741031923908e+08
+Norm of output parameter cor_rh - 2: 5.8824693210457429e+07
+Norm of output parameter cor_rv - 1: 1.9358909277910544e+02
+Norm of output parameter cor_rv - 2: 4.1565010573423358e+01
+Norm of output parameter nicas_norm - 1: 8.3039717315623491e+01

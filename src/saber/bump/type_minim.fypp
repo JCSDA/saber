@@ -238,7 +238,7 @@ call minim%vt_dir(xtmp)
 rh = xtmp(1)
 
 ! Compute horizontal fit
-call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh,fit_hor)
+call diag_iso(mpl,minim%nc3,minim%disth,'hor',one,rh,fit_hor)
 
 ! Observations penalty
 f = sum((fit_hor-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_hor))
@@ -274,7 +274,7 @@ call minim%vt_dir(xtmp)
 D11 = xtmp(1)
 D22 = xtmp(2)
 D12 = xtmp(3)
-call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,fit)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,one,D11,D22,D12,fit)
 
 ! Pack
 fit_pack = reshape(fit,(/minim%ny/))
@@ -313,7 +313,7 @@ call minim%vt_dir(xtmp)
 rv = xtmp(1)
 
 ! Compute vertical fit
-call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
+call diag_iso(mpl,minim%nl0r,minim%distv,'ver',one,rv,fit_ver)
 
 ! Observations penalty
 f = sum((fit_ver-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_ver))
@@ -336,7 +336,7 @@ real(kind_real),intent(out) :: f          !< Cost function value
 
 ! Local variables
 integer :: iy,jc4
-real(kind_real) :: a,scaling,fit_hor(minim%nc3,minim%nc4),wgt_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r),wgt_ver(minim%nl0r)
+real(kind_real) :: a,s,fit_hor(minim%nc3,minim%nc4),wgt_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r),wgt_ver(minim%nl0r)
 real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),wgt_pack(minim%ny),wgt_sign
 
 ! Set name
@@ -347,7 +347,7 @@ xtmp = x
 call minim%vt_dir(xtmp)
 
 ! Parameters
-scaling = xtmp(1)
+s = xtmp(1)
 if (minim%nx==2) then
    ! Joint optimization of scaling and amplitude (for icmp < ncmp)
    a = xtmp(2)
@@ -358,10 +358,10 @@ end if
 
 ! Compute horizontal fit and weight
 if (minim%nc4==1) then
-   call diag_iso(mpl,minim%nc3,minim%disth,'hor',minim%rh*scaling,fit_hor(:,1))
+   call diag_iso(mpl,minim%nc3,minim%disth,'hor',s,minim%rh,fit_hor(:,1))
    wgt_hor(:,1) = minim%disth**2
 else
-   call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,minim%D11*sqrt(scaling),minim%D22*sqrt(scaling),minim%D12,fit_hor)
+   call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,s,minim%D11,minim%D22,minim%D12,fit_hor)
    do jc4=1,minim%nc4
       wgt_hor(:,jc4) = minim%disth**2
    end do
@@ -369,7 +369,7 @@ end if
 fit_hor = a*fit_hor
 
 ! Compute vertical fit and weight
-call diag_iso(mpl,minim%nl0r,minim%distv,'ver',minim%rv*scaling,fit_ver)
+call diag_iso(mpl,minim%nl0r,minim%distv,'ver',s,minim%rv,fit_ver)
 wgt_ver = minim%distv**2
 fit_ver = a*fit_ver
 

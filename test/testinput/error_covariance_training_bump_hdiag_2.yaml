@@ -84,6 +84,9 @@ background error:
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rhc_2
+      - parameter: cor_ecc
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_ecc
       - parameter: cor_rh
         component: 1
         file:
