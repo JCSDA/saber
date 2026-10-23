@@ -9,9 +9,8 @@
 module type_vbal_blk
 
 use tools_const, only: zero,one
-use tools_func, only: syminv,zss_count
+use tools_func, only: zss_count
 use tools_kinds, only: kind_real
-use tools_wrfda, only: pseudoinv
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
@@ -53,7 +52,6 @@ contains
    procedure :: cov_update => vbal_blk_cov_update
    procedure :: compute_covariance => vbal_blk_compute_covariance
    procedure :: compute_spatial_average => vbal_blk_compute_spatial_average
-   procedure :: compute_regression => vbal_blk_compute_regression
    procedure :: apply => vbal_blk_apply
    procedure :: apply_ad => vbal_blk_apply_ad
 end type vbal_blk_type
@@ -491,114 +489,6 @@ if (nam%diag_rhflt>zero) then
 end if
 
 end subroutine vbal_blk_compute_spatial_average
-
-!----------------------------------------------------------------------
-! Subroutine: vbal_blk_compute_regression
-!> Compute regression
-!----------------------------------------------------------------------
-subroutine vbal_blk_compute_regression(vbal_blk,mpl,nam,geom,samp,auto_c2b,cross_c2b)
-
-implicit none
-
-! Passed variables
-class(vbal_blk_type),intent(inout) :: vbal_blk                       !< Vertical balance block
-type(mpl_type),intent(inout) :: mpl                                  !< MPI data
-type(nam_type), intent(in) :: nam                                    !< Namelist
-type(geom_type),intent(in) :: geom                                   !< Geometry
-type(samp_type), intent(in) :: samp                                  !< Sampling
-real(kind_real),intent(in) :: auto_c2b(geom%nl0,geom%nl0,samp%nc2b)  !< Auto-covariance on subset Sc2, halo B
-real(kind_real),intent(in) :: cross_c2b(geom%nl0,geom%nl0,samp%nc2b) !< Cross-covariance on subset Sc2, halo B
-
-! Local variables
-integer :: ic2b,il0,jl0
-real(kind_real) :: cross_eff(geom%nl0,geom%nl0),auto_inv(geom%nl0,geom%nl0),explained_cov(geom%nl0,geom%nl0)
-real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:)
-logical :: valid
-
-! Set name
-@:set_name(vbal_blk_compute_regression)
-
-! Initialization
-call mpl%prog_init(samp%nc2b)
-
-do ic2b=1,samp%nc2b
-   ! Check if this column is valid (no missing values, positive diagonal for auto-covariance)
-   valid = mpl%msv%isallnot(auto_c2b(:,:,ic2b)).and.mpl%msv%isallnot(cross_c2b(:,:,ic2b))
-   do il0=1,geom%nl0
-      if (.not.(auto_c2b(il0,il0,ic2b)>zero)) valid = .false.
-   end do
-
-   if (valid) then
-      ! Compute effective cross-covariance
-      if (nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
-         ! Keep diagonal coefficients only
-         cross_eff = zero
-         do il0=1,geom%nl0
-            cross_eff(il0,il0) = cross_c2b(il0,il0,ic2b)
-         end do
-      else
-         ! Copy all coefficients
-         cross_eff = cross_c2b(:,:,ic2b)
-      end if
-
-      ! Compute effective auto-coariance inverse
-      if (nam%vbal_diag_auto(vbal_blk%iv,vbal_blk%jv).or.nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
-         ! Diagonal auto-covariance inversion
-         auto_inv = zero
-         do il0=1,geom%nl0
-            auto_inv(il0,il0) = one/auto_c2b(il0,il0,ic2b)
-         end do
-      else
-         ! Full auto-covariance inversion
-         if (nam%vbal_pseudo_inv) then
-            if (nam%vbal_pseudo_inv_mmax>0) then
-               call pseudoinv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv,mmax=nam%vbal_pseudo_inv_mmax)
-            elseif (nam%vbal_pseudo_inv_var_th>zero) then
-               call pseudoinv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv,var_th=nam%vbal_pseudo_inv_var_th)
-            end if
-         else
-            call syminv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv)
-         end if
-      end if
-
-      ! Compute the regression
-      vbal_blk%reg_c2b(:,:,ic2b) = matmul(cross_eff,auto_inv)
-   else
-      ! No regression
-      vbal_blk%reg_c2b(:,:,ic2b) = zero
-   end if
-
-   ! Compute explained variance
-   explained_cov = matmul(vbal_blk%reg_c2b(:,:,ic2b),matmul(auto_c2b(:,:,ic2b),transpose(vbal_blk%reg_c2b(:,:,ic2b))))
-   do il0=1,geom%nl0
-      vbal_blk%explained_var_c2b(il0,ic2b) = explained_cov(il0,il0)
-   end do
-
-   ! Update
-   call mpl%prog_print(ic2b)
-end do
-call mpl%prog_final
-
-if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
-   ! Allocation
-   allocate(fld_c1a(samp%nc1a))
-   allocate(fld_c2b(samp%nc2b))
-
-   ! Interpolate regression
-   do il0=1,geom%nl0
-      do jl0=1,geom%nl0
-         fld_c2b = vbal_blk%reg_c2b(jl0,il0,:)
-         call samp%interp_c2b_to_c1a%apply(mpl,fld_c2b,fld_c1a)
-         vbal_blk%reg_c1a(jl0,il0,:) = fld_c1a
-      end do
-   end do
-
-   ! Release memory
-   deallocate(fld_c1a)
-   deallocate(fld_c2b)
-end if
-
-end subroutine vbal_blk_compute_regression
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_blk_apply
