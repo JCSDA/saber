@@ -1422,7 +1422,7 @@ do jL=1,this%jmL
   do iL=1,this%imL
     i = 2*iL - 1
     im1 = max(i-1,1); ip0 = i; ip1 = min(i+1,this%im); ip2 = min(i+2,this%im)
-    W(:,iL,jL) = r1_16*(F(:,im1,jm1)+F(:,ip2,jm1)+F(:,im1,jp2)+F(:,ip2,jp2))+ &
+    W(:,iL,jL) = r1_16*(F(:,im1,jm1)+F(:,ip2,jm1)+F(:,im1,jp2)+F(:,ip2,jp2)) &
         + r3_16*(F(:,ip0,jm1)+F(:,ip1,jm1)                           &
         +        F(:,im1,jp0)+F(:,im1,jp1)                           &
         +        F(:,ip2,jp0)+F(:,ip2,jp1)                           &

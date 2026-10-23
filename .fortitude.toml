@@ -1,6 +1,11 @@
 [check]
 target-std="f2008"
 line-length=133
+ignore=[
+    "MOD051", # superfluous-save
+    "S233", # incorrect-keyword-case
+    "S291", # bare-decimal
+]
 exclude = [
     "src/saber/mgbf/covariance/mgbf_covariance_mod.f90",
     "src/saber/mgbf/mgbf_lib/jp*.f90",
