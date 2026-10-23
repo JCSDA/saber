@@ -10,7 +10,7 @@ module type_var
 
 use fckit_mpi_module, only: fckit_mpi_min,fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: zero,half,one,two,three,four,six,reqkm
+use tools_const, only: zero,half,one,two,three,four,six,reqkm,pi
 use tools_func, only: zss_minval,zss_sum,global_average
 use tools_kinds, only: kind_real
 use type_ens, only: ens_type
@@ -601,7 +601,7 @@ else
          do iv=1,nam%nv
             ! Prepare NICAS filter
             nicas_blk(iv)%ig = nam%group_index(iv)
-            nicas_blk(iv)%verbosity = .false.
+            nicas_blk(iv)%verbosity = .true.
             call nicas_blk(iv)%compute_parameters(mpl,rng,nam,geom,rhflt(:,iv))
 
             ! Filter variance
@@ -658,6 +658,9 @@ else
                      drhflt(il0,iv) = half*drhflt(il0,iv)
                      rhflt(il0,iv) = rhflt(il0,iv)-drhflt(il0,iv)
                   end if
+
+                  ! Applied threshold on filtering length-scale
+                  rhflt(il0,iv) = min(rhflt(il0,iv),pi)
                end if
             end do
          end do

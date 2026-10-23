@@ -580,8 +580,6 @@ class NICASSection : public oops::Parameters {
   oops::Parameter<bool> interp_test{"horizontal interpolation test", false, this};
   // Overriding component in file
   oops::Parameter<int> file_component{"overriding component in file", 0, this};
-  // Same horizontal convolution for all levels, no vertical convolution
-  oops::Parameter<bool> same_horizontal{"same horizontal convolution", false, this};
   // Similar levels threshold (relative tolerance on horizontal length-scale)
   oops::Parameter<double> sim_levs_th{"similar levels threshold", 0.0, this};
   // Read/write interpolation in global file

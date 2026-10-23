@@ -750,7 +750,7 @@ type(ens_type), intent(inout) :: ens   !< Ensemble
 integer :: iv,jv
 
 ! Set name
-@:set_name(vbal_run_vbal)
+@:set_name(vbal_cov_run)
 
 ! Allocation
 call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
@@ -1700,10 +1700,14 @@ else
    end if
 
    do iv=1,nam%nv
+      if (any(nam%vbal_block(iv,:)))
+         write(mpl%info,'(a4,a)') '','Compute regressions for '//trim(nam%variables(iv))
+         call mpl%flush
+      end if
       do jv=1,iv
          if (nam%vbal_block(iv,jv)) then
             ! Compute cross-covariance
-            write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
+            write(mpl%info,'(a7,a)') '','Compute cross-covariance with unbalanced ' &
  & //trim(nam%variables(jv))
             call mpl%flush
             if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
@@ -1722,13 +1726,94 @@ else
             write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
             call mpl%flush(newl=.false.)
             call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
-
-            ! Compute regression
-            write(mpl%info,'(a7,a)') '','Compute regression:'
-            call mpl%flush(newl=.false.)
-            call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
          end if
       end do
+
+      ! Compute regression
+      write(mpl%info,'(a4,a)') '','Compute regression:'
+      call mpl%flush(newl=.false.)
+
+      ! Initialization
+      call mpl%prog_init(samp%nc2b)
+
+      do ic2b=1,samp%nc2b
+         do jv=1,iv
+            if (nam%vbal_block(iv,jv)) then
+               ! Check if this column is valid (no missing values, positive diagonal for auto-covariance)
+               valid = mpl%msv%isallnot(auto_c2b(:,:,ic2b)).and.mpl%msv%isallnot(cross_c2b(:,:,ic2b))
+               do il0=1,geom%nl0
+                  if (.not.(auto_c2b(il0,il0,ic2b)>zero)) valid = .false.
+               end do
+
+         if (valid) then
+            ! Compute effective cross-covariance
+            if (nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
+               ! Keep diagonal coefficients only
+               cross_eff = zero
+               do il0=1,geom%nl0
+                  cross_eff(il0,il0) = cross_c2b(il0,il0,ic2b)
+               end do
+            else
+               ! Copy all coefficients
+               cross_eff = cross_c2b(:,:,ic2b)
+            end if
+
+            ! Compute effective auto-coariance inverse
+            if (nam%vbal_diag_auto(vbal_blk%iv,vbal_blk%jv).or.nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
+               ! Diagonal auto-covariance inversion
+               auto_inv = zero
+               do il0=1,geom%nl0
+                  auto_inv(il0,il0) = one/auto_c2b(il0,il0,ic2b)
+               end do
+            else
+               ! Full auto-covariance inversion
+               if (nam%vbal_pseudo_inv) then
+                  if (nam%vbal_pseudo_inv_mmax>0) then
+                     call pseudoinv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv,mmax=nam%vbal_pseudo_inv_mmax)
+                  elseif (nam%vbal_pseudo_inv_var_th>zero) then
+                     call pseudoinv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv,var_th=nam%vbal_pseudo_inv_var_th)
+                  end if
+               else
+                  call syminv(mpl,geom%nl0,auto_c2b(:,:,ic2b),auto_inv)
+               end if
+            end if
+
+            ! Compute the regression
+            vbal_blk%reg_c2b(:,:,ic2b) = matmul(cross_eff,auto_inv)
+         else
+            ! No regression
+            vbal_blk%reg_c2b(:,:,ic2b) = zero
+         end if
+
+         ! Compute explained variance
+         explained_cov = matmul(vbal_blk%reg_c2b(:,:,ic2b),matmul(auto_c2b(:,:,ic2b),transpose(vbal_blk%reg_c2b(:,:,ic2b))))
+         do il0=1,geom%nl0
+            vbal_blk%explained_var_c2b(il0,ic2b) = explained_cov(il0,il0)
+         end do
+
+         ! Update
+         call mpl%prog_print(ic2b)
+      end do
+      call mpl%prog_final
+
+      if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
+         ! Allocation
+         allocate(fld_c1a(samp%nc1a))
+         allocate(fld_c2b(samp%nc2b))
+
+         ! Interpolate regression
+         do il0=1,geom%nl0
+            do jl0=1,geom%nl0
+               fld_c2b = vbal_blk%reg_c2b(jl0,il0,:)
+               call samp%interp_c2b_to_c1a%apply(mpl,fld_c2b,fld_c1a)
+               vbal_blk%reg_c1a(jl0,il0,:) = fld_c1a
+            end do
+         end do
+
+         ! Release memory
+         deallocate(fld_c1a)
+         deallocate(fld_c2b)
+      end if
 
       if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
          do jv=1,iv-1

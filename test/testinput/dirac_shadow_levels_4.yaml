@@ -43,8 +43,6 @@ background error:
         multivariate strategy: univariate
         read local nicas: true
         adjoints test: true
-      nicas:
-        same horizontal convolution: true
       grids:
       - model:
           variables: [snow_depth_shadowLevels_1]

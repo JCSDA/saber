@@ -40,8 +40,6 @@ background error:
         multivariate strategy: univariate
         read local nicas: true
         adjoints test: true
-      nicas:
-        same horizontal convolution: true
   saber outer blocks:
   - saber block name: ShadowLevels
     read:

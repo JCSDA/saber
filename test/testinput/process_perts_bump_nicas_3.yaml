@@ -32,7 +32,6 @@ bands:
           horizontal length-scale:
           - groups: *vars
             value: 4000.0e3
-          same horizontal convolution: true
   output:
     model write:
       filepath: testdata/process_perts_bump_nicas_3/_MPI_-_OMP__filtered_pert_mb%MEM%_wb1

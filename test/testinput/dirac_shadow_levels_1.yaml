@@ -54,7 +54,6 @@ background error:
         - groups:
           - snow_depth_shadowLevels
           value: 0.0
-        same horizontal convolution: true
   saber outer blocks:
   - saber block name: ShadowLevels
     fields metadata:

@@ -193,7 +193,6 @@ type nam_type
    integer :: norm_rand_size                                  !< Normalization randomization size (default is 0, which means exact normalization)
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
    integer :: file_component                                  !< Overriding component in file
-   logical :: same_horizontal                                 !< Same horizontal convolution for all levels, no vertical convolution
    real(kind_real) :: sim_levs_th                             !< Similar levels threshold (relative tolerance on horizontal length-scale)
    logical :: interp_in_global_file                           !< Read/write interpolation in global file
    integer :: nicas_setup_timings                             !< Number of runs for setup timing
@@ -955,7 +954,6 @@ if (conf%get('nicas',section)) then
    call nam%get(section,'normalization randomization size',nam%norm_rand_size,'norm_rand_size')
    call nam%get(section,'horizontal interpolation test',nam%interp_test,'interp_test')
    call nam%get(section,'overriding component in file',nam%file_component,'file_component')
-   call nam%get(section,'same horizontal convolution',nam%same_horizontal,'same_horizontal')
    call nam%get(section,'similar levels threshold',nam%sim_levs_th,'sim_levs_th')
    call nam%get(section,'interpolation in global file',nam%interp_in_global_file,'interp_in_global_file')
    call nam%get(section,'setup timings',nam%nicas_setup_timings,'nicas_setup_timings')
@@ -1432,7 +1430,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end select
    end do
    if ((nam%nicas_si_factor<0.1).or.(nam%nicas_si_factor>1.5)) call nam%abort(mpl,'${subr}$','*nicas_si_factor* out of range')
-   if (nam%same_horizontal.and.nam%write_nicas_steps) call nam%abort(mpl,'${subr}$','*write_nicas_steps* not available with *same_horizontal*')
    if (nam%sim_levs_th<zero) call nam%abort(mpl,'${subr}$','*simlevs_th* should not be negative')
    if (nam%interp_in_global_file.and.(.not.(nam%load_nicas_global.or.nam%write_nicas_global))) &
  & call nam%abort(mpl,'${subr}$','*interp_in_global_file* useless without *load_nicas_global* or *write_nicas_global*')

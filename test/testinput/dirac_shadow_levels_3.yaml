@@ -51,7 +51,6 @@ background error:
       nicas:
         resolution: 4.0
         explicit length-scales: true
-        same horizontal convolution: true
       grids:
       - model:
           variables: [snow_depth_shadowLevels_1]

@@ -1107,7 +1107,7 @@ do ib=1,cv%nb
    do icmp=1,cv%blk(ib)%ncmp
       ! CV size
       n = nicas%blk(ig)%cmp(icmp)%nsa
-      if (nam%same_horizontal) n = n*geom%nl0
+      if (nicas%blk(ig)%cmp(icmp)%same_horizontal) n = n*geom%nl0
 
       ! Allocation and initialization
       call cv%blk(ib)%cmp(icmp)%alloc(mpl,n,lgetsizeonly)
