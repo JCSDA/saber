@@ -42,18 +42,13 @@ class LinearVariableChange: public util::Printable,
   // Constructor/destructor
   LinearVariableChange(const Geometry &,
                        const eckit::Configuration &);
-  ~LinearVariableChange()
-    {}
+  ~LinearVariableChange() = default;
 
-  // Linear variable changes: TL, inverseTL, AD and inverseAD
+  // Linear variable changes: TL and AD
   void changeVarTL(Increment &,
                    const oops::Variables &) const;
-  void changeVarInverseTL(Increment &,
-                          const oops::Variables &) const;
   void changeVarAD(Increment &,
                    const oops::Variables &) const;
-  void changeVarInverseAD(Increment &,
-                          const oops::Variables &) const;
 
   // Trajectory setup
   void changeVarTraj(const State &,
