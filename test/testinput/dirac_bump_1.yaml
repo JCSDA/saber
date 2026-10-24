@@ -138,6 +138,15 @@ background error:
         - air_horizontal_velocity_potential
         atlas file:
           filepath: testdata/convertstate_constant/ensemble_transform
+      inverse ensemble transform:
+        input variables:
+        - air_horizontal_streamfunction
+        - air_horizontal_velocity_potential
+        output variables:
+        - air_horizontal_streamfunction_transformed
+        - air_horizontal_velocity_potential_transformed
+        atlas file:
+          filepath: testdata/convertstate_constant/inverse_ensemble_transform
       localization:
         localization method: SABER
         saber central block:
