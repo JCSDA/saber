@@ -28,19 +28,22 @@ type vbal_blk_type
    character(len=1024) :: name                           !< Name
 
    ! Vertical covariance, subset Sc1
-   real(kind_real),allocatable :: full_cov_c1a(:,:,:)    !< Full covariance on subset Sc1, halo A
+   real(kind_real),allocatable :: xx_cov_c1a(:,:,:)      !< xx-covariance on subset Sc1, halo A
    real(kind_real),allocatable :: seq_avg_c1a_1(:,:)     !< Sequentially updated mean for first variable on subset Sc1, halo A
    real(kind_real),allocatable :: seq_avg_c1a_2(:,:)     !< Sequentially updated mean for second variable on subset Sc1, halo A
-   real(kind_real),allocatable :: seq_cov_c1a(:,:,:)     !< Sequentially updated covariance on subset Sc1, halo A
+   real(kind_real),allocatable :: seq_xx_cov_c1a(:,:,:)  !< Sequentially updated xx-covariance on subset Sc1, halo A
 
    ! Vertical balance, subset Sc1
-   real(kind_real),allocatable :: cov_c1a(:,:,:)         !< Covariance on subset Sc1, halo A
+   real(kind_real),allocatable :: xv_cov_c1a(:,:,:)      !< xv-covariance on subset Sc1, halo A
+   real(kind_real),allocatable :: vv_cov_c1a(:,:,:)      !< vv-covariance on subset Sc1, halo A
    real(kind_real),allocatable :: reg_c1a(:,:,:)         !< Regression on subset Sc1, halo A
    real(kind_real),allocatable :: a_c1a(:,:,:)           !< A matrix on subset Sc1, halo A
 
    ! Vertical balance, subset Sc2
-   real(kind_real),allocatable :: cov_c2a(:,:,:)         !< Covariance on subset Sc2, halo A
-   real(kind_real),allocatable :: cov_c2b(:,:,:)         !< Covariance on subset Sc2, halo B
+   real(kind_real),allocatable :: xv_cov_c2a(:,:,:)      !< xv-covariance on subset Sc2, halo A
+   real(kind_real),allocatable :: vv_cov_c2a(:,:,:)      !< vv-covariance on subset Sc2, halo A
+   real(kind_real),allocatable :: xv_cov_c2b(:,:,:)      !< xv-covariance on subset Sc2, halo B
+   real(kind_real),allocatable :: vv_cov_c2b(:,:,:)      !< vv-covariance on subset Sc2, halo B
    real(kind_real),allocatable :: reg_c2a(:,:,:)         !< Regression on subset Sc2, halo A
    real(kind_real),allocatable :: reg_c2b(:,:,:)         !< Regression on subset Sc2, halo B
    real(kind_real),allocatable :: explained_var_c2a(:,:) !< Explained variance on subset Sc2, halo A
@@ -83,21 +86,25 @@ integer,intent(in) :: jv                       !< Second variable index
 ! Allocation
 if (nam%vbal_block(iv,jv)) allocate(vbal_blk%reg_c2b(geom%nl0,geom%nl0,samp%nc2b))
 if (nam%new_vbal) then
-   if (nam%vbal_block(iv,jv).or.(iv==jv)) then
-      allocate(vbal_blk%cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
-      allocate(vbal_blk%cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
+   if (nam%vbal_block(iv,jv)) then
+      allocate(vbal_blk%xv_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+      allocate(vbal_blk%xv_cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
+      allocate(vbal_blk%explained_var_c2b(geom%nl0,samp%nc2b))
    end if
-   if (nam%vbal_block(iv,jv)) allocate(vbal_blk%explained_var_c2b(geom%nl0,samp%nc2b))
+   if (iv==jv) then
+      allocate(vbal_blk%vv_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+      allocate(vbal_blk%vv_cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
+   end if
    if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
       allocate(vbal_blk%a_c1a(geom%nl0,geom%nl0,samp%nc1a))
       allocate(vbal_blk%reg_c1a(geom%nl0,geom%nl0,samp%nc1a))
    end if
 end if
-if (nam%new_vbal_cov) allocate(vbal_blk%full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+if (nam%new_vbal_cov) allocate(vbal_blk%xx_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
 if (nam%iterative_algo) then
    allocate(vbal_blk%seq_avg_c1a_1(samp%nc1a,geom%nl0))
    allocate(vbal_blk%seq_avg_c1a_2(samp%nc1a,geom%nl0))
-   allocate(vbal_blk%seq_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+   allocate(vbal_blk%seq_xx_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
 end if
 
 end subroutine vbal_blk_alloc
@@ -117,15 +124,18 @@ class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
 @:set_name(vbal_blk_partial_dealloc)
 
 ! Release memory
-if (allocated(vbal_blk%cov_c1a)) deallocate(vbal_blk%cov_c1a)
-if (allocated(vbal_blk%full_cov_c1a)) deallocate(vbal_blk%full_cov_c1a)
-if (allocated(vbal_blk%reg_c1a)) deallocate(vbal_blk%reg_c1a)
-if (allocated(vbal_blk%a_c1a)) deallocate(vbal_blk%a_c1a)
+if (allocated(vbal_blk%xx_cov_c1a)) deallocate(vbal_blk%xx_cov_c1a)
 if (allocated(vbal_blk%seq_avg_c1a_1)) deallocate(vbal_blk%seq_avg_c1a_1)
 if (allocated(vbal_blk%seq_avg_c1a_2)) deallocate(vbal_blk%seq_avg_c1a_2)
-if (allocated(vbal_blk%seq_cov_c1a)) deallocate(vbal_blk%seq_cov_c1a)
-if (allocated(vbal_blk%cov_c2a)) deallocate(vbal_blk%cov_c2a)
-if (allocated(vbal_blk%cov_c2b)) deallocate(vbal_blk%cov_c2b)
+if (allocated(vbal_blk%seq_xx_cov_c1a)) deallocate(vbal_blk%seq_xx_cov_c1a)
+if (allocated(vbal_blk%xv_cov_c1a)) deallocate(vbal_blk%xv_cov_c1a)
+if (allocated(vbal_blk%vv_cov_c1a)) deallocate(vbal_blk%vv_cov_c1a)
+if (allocated(vbal_blk%reg_c1a)) deallocate(vbal_blk%reg_c1a)
+if (allocated(vbal_blk%a_c1a)) deallocate(vbal_blk%a_c1a)
+if (allocated(vbal_blk%xv_cov_c2a)) deallocate(vbal_blk%xv_cov_c2a)
+if (allocated(vbal_blk%vv_cov_c2a)) deallocate(vbal_blk%vv_cov_c2a)
+if (allocated(vbal_blk%xv_cov_c2b)) deallocate(vbal_blk%xv_cov_c2b)
+if (allocated(vbal_blk%vv_cov_c2b)) deallocate(vbal_blk%vv_cov_c2b)
 if (allocated(vbal_blk%reg_c2a)) deallocate(vbal_blk%reg_c2a)
 if (allocated(vbal_blk%explained_var_c2a)) deallocate(vbal_blk%explained_var_c2a)
 if (allocated(vbal_blk%explained_var_c2b)) deallocate(vbal_blk%explained_var_c2b)
@@ -187,11 +197,11 @@ fac1 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
 fac2 = one/real(ie_sub,kind_real)
 
 ! Initialization
-if (ie==1) vbal_blk%full_cov_c1a = zero
+if (ie==1) vbal_blk%xx_cov_c1a = zero
 if (ie_sub==1) then
    vbal_blk%seq_avg_c1a_1 = zero
    vbal_blk%seq_avg_c1a_2 = zero
-   vbal_blk%seq_cov_c1a = zero
+   vbal_blk%seq_xx_cov_c1a = zero
 end if
 
 ! Halo extension
@@ -217,7 +227,7 @@ fld_c1a_2 = fld_c1a_2-vbal_blk%seq_avg_c1a_2
 !$omp parallel do schedule(static) private(il0,jl0)
 do il0=1,geom%nl0
    do jl0=1,geom%nl0
-      vbal_blk%seq_cov_c1a(:,jl0,il0) = vbal_blk%seq_cov_c1a(:,jl0,il0)+fac1*fld_c1a_1(:,jl0)*fld_c1a_2(:,il0)
+      vbal_blk%seq_xx_cov_c1a(:,jl0,il0) = vbal_blk%seq_xx_cov_c1a(:,jl0,il0)+fac1*fld_c1a_1(:,jl0)*fld_c1a_2(:,il0)
    end do
 end do
 !$omp end parallel do
@@ -227,7 +237,7 @@ vbal_blk%seq_avg_c1a_1 = vbal_blk%seq_avg_c1a_1+fac2*fld_c1a_1
 vbal_blk%seq_avg_c1a_2 = vbal_blk%seq_avg_c1a_2+fac2*fld_c1a_2
 
 ! Average covariances
-if (ie_sub==nam%ens_ne/nam%ens_nsub) vbal_blk%full_cov_c1a = vbal_blk%full_cov_c1a+vbal_blk%seq_cov_c1a
+if (ie_sub==nam%ens_ne/nam%ens_nsub) vbal_blk%xx_cov_c1a = vbal_blk%xx_cov_c1a+vbal_blk%seq_xx_cov_c1a
 
 if (ie==nam%ens_ne) then
    ! Normalization
@@ -237,9 +247,9 @@ if (ie==nam%ens_ne) then
       do jl0=1,geom%nl0
          do ic1a=1,samp%nc1a
             if (samp%smask_c1a(ic1a,il0).and.samp%smask_c1a(ic1a,jl0)) then
-               vbal_blk%full_cov_c1a(ic1a,jl0,il0) = vbal_blk%full_cov_c1a(ic1a,jl0,il0)*fac_norm
+               vbal_blk%xx_cov_c1a(ic1a,jl0,il0) = vbal_blk%xx_cov_c1a(ic1a,jl0,il0)*fac_norm
             else
-               vbal_blk%full_cov_c1a(ic1a,jl0,il0) = mpl%msv%valr
+               vbal_blk%xx_cov_c1a(ic1a,jl0,il0) = mpl%msv%valr
             end if
          end do
       end do
@@ -253,7 +263,7 @@ end subroutine vbal_blk_cov_update
 ! Subroutine: vbal_blk_compute_covariance
 !> Compute covariance
 !----------------------------------------------------------------------
-subroutine vbal_blk_compute_covariance(vbal_blk,mpl,nam,geom,samp,ens,ensu)
+subroutine vbal_blk_compute_covariance(vbal_blk,mpl,nam,geom,samp,ens1,ens2,cov_type)
 
 implicit none
 
@@ -263,8 +273,9 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type), intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(samp_type), intent(in) :: samp            !< Sampling
-type(ens_type), intent(in) :: ens              !< Ensemble 1
-type(ens_type), intent(in),optional :: ensu    !< Ensemble 2 (if present, fill cov_c1a; if not, fill full_cov_c1a)
+type(ens_type), intent(in) :: ens1             !< Ensemble 1
+type(ens_type), intent(in) :: ens2             !< Ensemble 2
+character(len=2),intent(in) :: cov_type        !< Covariance type ('xv' or
 
 ! Local variables
 integer :: isub,ie_sub,ie,il0,il0ic1,jl0,ic1a
@@ -273,6 +284,7 @@ real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
 real(kind_real) :: fld_c0b_1(samp%nc0b,geom%nl0),fld_c0b_2(samp%nc0b,geom%nl0)
 real(kind_real) :: fld_c1a_1(samp%nc1a,geom%nl0),fld_c1a_2(samp%nc1a,geom%nl0)
 real(kind_real) :: cov(samp%nc1a,geom%nl0,geom%nl0,vbal_blk%nsub)
+real(kind_real) :: cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
 
 ! Set name
 @:set_name(vbal_blk_compute_covariance)
@@ -291,20 +303,16 @@ do isub=1,vbal_blk%nsub
    end if
 
    ! Compute centered moments
-   do ie_sub=1,ens%ne/vbal_blk%nsub
+   do ie_sub=1,ens1%ne/vbal_blk%nsub
       write(mpl%info,'(i6)') ie_sub
       call mpl%flush(newl=.false.)
 
       ! Full ensemble index
-      ie = ie_sub+(isub-1)*ens%ne/vbal_blk%nsub
+      ie = ie_sub+(isub-1)*ens1%ne/vbal_blk%nsub
 
       ! Get perturbation on subset Sc0
-      call ens%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
-      if (present(ensu)) then
-         call ensu%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
-      else
-         call ens%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
-      end if
+      call ens1%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
+      call ens2%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
 
       ! Halo extension
       call samp%com_c0_AB%ext(mpl,fld_c0a_1,fld_c0b_1)
@@ -338,7 +346,7 @@ do isub=1,vbal_blk%nsub
 end do
 
 ! Normalization
-fac_norm = real(ens%nsub,kind_real)/real(ens%ne-ens%nsub,kind_real)
+fac_norm = real(ens1%nsub,kind_real)/real(ens1%ne-ens1%nsub,kind_real)
 !$omp parallel do schedule(static) private(il0,jl0,ic1a)
 do il0=1,geom%nl0
    do jl0=1,geom%nl0
@@ -357,14 +365,22 @@ end do
 do il0=1,geom%nl0
    do jl0=1,geom%nl0
       do ic1a=1,samp%nc1a
-         if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
-            vbal_blk%full_cov_c1a(ic1a,jl0,il0) = sum(cov(ic1a,jl0,il0,:))/real(vbal_blk%nsub,kind_real)
-         else
-            vbal_blk%cov_c1a(ic1a,jl0,il0) = sum(cov(ic1a,jl0,il0,:))/real(vbal_blk%nsub,kind_real)
-         end if
+          cov_c1a(ic1a,jl0,il0) = sum(cov(ic1a,jl0,il0,:))/real(vbal_blk%nsub,kind_real)
       end do
    end do
 end do
+
+! Copy covariance
+select case (cov_type)
+case ('xx')
+   vbal_blk%xx_cov_c1a = cov_c1a
+case ('xv')
+   vbal_blk%xv_cov_c1a = cov_c1a
+case ('vv')
+   vbal_blk%vv_cov_c1a = cov_c1a
+case default
+   call mpl%abort('${subr}$','wrong covariance type')
+end select
 
 end subroutine vbal_blk_compute_covariance
 
@@ -372,7 +388,7 @@ end subroutine vbal_blk_compute_covariance
 ! Subroutine: vbal_blk_compute_spatial_average
 !> Compute spatial average
 !----------------------------------------------------------------------
-subroutine vbal_blk_compute_spatial_average(vbal_blk,mpl,nam,geom,samp)
+subroutine vbal_blk_compute_spatial_average(vbal_blk,mpl,nam,geom,samp,cov_type)
 
 implicit none
 
@@ -382,22 +398,32 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type), intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(samp_type),intent(in) :: samp             !< Sampling
-
+character(len=2),intent(in) :: cov_type        !< Covariance type ('xv' or 'vv')
 ! Local variables
 integer :: i,jl0,il0,ic1e,ic1u,nc1e,nc1max,ic1a,ic2a,ic2b
 real(kind_real) :: cov_c1a_pack(samp%nc1a,geom%nl0**2)
 real(kind_real) :: cov_c1e(samp%nc1e,geom%nl0,geom%nl0)
 real(kind_real) :: cov_c1e_pack(samp%nc1e,geom%nl0**2)
-real(kind_real),allocatable :: list_cov(:),cov_c2a(:),cov_c2b(:)
+real(kind_real) :: cov_c2b(geom%nl0,geom%nl0,samp%nc2b)
+real(kind_real),allocatable :: list_cov(:),cov_c2a_map(:),cov_c2b_map(:)
 type(samp_flt_type) :: flt
 
 ! Set name
 @:set_name(vbal_blk_compute_spatial_average)
 
 ! Pack data in halo A
-do ic1a=1,samp%nc1a
-   cov_c1a_pack(ic1a,:) = reshape(vbal_blk%cov_c1a(ic1a,:,:),(/geom%nl0**2/))
-end do
+select case (cov_type)
+case ('xv')
+   do ic1a=1,samp%nc1a
+      cov_c1a_pack(ic1a,:) = reshape(vbal_blk%xv_cov_c1a(ic1a,:,:),(/geom%nl0**2/))
+   end do
+case ('vv')
+   do ic1a=1,samp%nc1a
+      cov_c1a_pack(ic1a,:) = reshape(vbal_blk%vv_cov_c1a(ic1a,:,:),(/geom%nl0**2/))
+   end do
+case default
+   call mpl%abort('${subr}$','wrong covariance type')
+end select
 
 ! Halo extension
 call samp%com_c1_AE%ext(mpl,cov_c1a_pack,cov_c1e_pack)
@@ -408,7 +434,7 @@ do ic1e=1,samp%nc1e
 end do
 
 ! Initialization
-vbal_blk%cov_c2b = zero
+cov_c2b = zero
 call mpl%prog_init(samp%nc2b)
 
 do ic2b=1,samp%nc2b
@@ -438,9 +464,9 @@ do ic2b=1,samp%nc2b
          ! Average
          nc1e = count(mpl%msv%isnot(list_cov))
          if (nc1e>0) then
-            vbal_blk%cov_c2b(jl0,il0,ic2b) = sum(list_cov,mask=mpl%msv%isnot(list_cov))/real(nc1e,kind_real)
+            cov_c2b(jl0,il0,ic2b) = sum(list_cov,mask=mpl%msv%isnot(list_cov))/real(nc1e,kind_real)
          else
-            vbal_blk%cov_c2b(jl0,il0,ic2b) = mpl%msv%valr
+            cov_c2b(jl0,il0,ic2b) = mpl%msv%valr
          end if
       end do
    end do
@@ -456,8 +482,8 @@ call mpl%prog_final
 ! Filter covariance
 if (nam%diag_rhflt>zero) then
    ! Allocation
-   allocate(cov_c2a(samp%nc2a))
-   allocate(cov_c2b(samp%nc2b))
+   allocate(cov_c2a_map(samp%nc2a))
+   allocate(cov_c2b_map(samp%nc2b))
 
    ! Setup the filtering halo
    call samp%diag_filter_setup(mpl,nam%diag_rhflt,flt)
@@ -467,26 +493,34 @@ if (nam%diag_rhflt>zero) then
          ! Copy halo A
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
-            cov_c2a(ic2a) = vbal_blk%cov_c2b(jl0,il0,ic2b)
+            cov_c2a_map(ic2a) = cov_c2b(jl0,il0,ic2b)
          end do
 
          ! Filter
-         call samp%diag_filter(mpl,flt,'median',cov_c2a)
-         call samp%diag_filter(mpl,flt,'average',cov_c2a)
+         call samp%diag_filter(mpl,flt,'median',cov_c2a_map)
+         call samp%diag_filter(mpl,flt,'average',cov_c2a_map)
 
          ! Extend to halo B
-         call samp%com_c2_AB%ext(mpl,cov_c2a,cov_c2b)
+         call samp%com_c2_AB%ext(mpl,cov_c2a_map,cov_c2b_map)
 
-         ! Copy halo B
-         vbal_blk%cov_c2b(jl0,il0,:) = cov_c2b
+         ! Copy
+         cov_c2b(jl0,il0,:) = cov_c2b_map
       end do
    end do
 
    ! Release memory
    call flt%dealloc
-   deallocate(cov_c2a)
-   deallocate(cov_c2b)
+   deallocate(cov_c2a_map)
+   deallocate(cov_c2b_map)
 end if
+
+! Copy covariance
+select case (cov_type)
+case ('xv')
+   vbal_blk%xv_cov_c2b = cov_c2b
+case ('vv')
+   vbal_blk%vv_cov_c2b = cov_c2b
+end select
 
 end subroutine vbal_blk_compute_spatial_average
 

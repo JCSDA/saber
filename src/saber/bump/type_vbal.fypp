@@ -275,9 +275,9 @@ integer,intent(in) :: nsub             !< Number of sub-ensembles
 integer,intent(in) :: iproc            !< Task index
 
 ! Local variables
-integer :: ncid,grpid,full_cov_c1a_id
+integer :: ncid,grpid,xx_cov_c1a_id
 integer :: isub,iv,jv
-real(kind_real),allocatable :: full_cov_c1a(:,:,:)
+real(kind_real),allocatable :: xx_cov_c1a(:,:,:)
 character(len=1024) :: grpname,fname_vbal_cov
 
 ! Set name
@@ -296,17 +296,17 @@ do isub=1,nsub
       vbal%nc1a = inquire_dim_size(mpl,ncid,'nc1a',0)
 
       ! Allocation
-      allocate(full_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
+      allocate(xx_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
    end if
 
    do iv=1,nam%nv
       do jv=1,iv
          if (isub==1) then
             ! Allocation
-            allocate(vbal%blk(iv,jv)%full_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
+            allocate(vbal%blk(iv,jv)%xx_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
 
             ! Initialization
-            vbal%blk(iv,jv)%full_cov_c1a = 0.0
+            vbal%blk(iv,jv)%xx_cov_c1a = 0.0
          end if
 
          ! Get group name
@@ -316,13 +316,13 @@ do isub=1,nsub
          grpid = inquire_grp(mpl,ncid,grpname)
 
          ! Inquire variable
-         full_cov_c1a_id = inquire_var(mpl,grpid,'full_cov_c1a')
+         xx_cov_c1a_id = inquire_var(mpl,grpid,'xx_cov_c1a')
 
          ! Read variable
-         call get_var(mpl,grpid,full_cov_c1a_id,full_cov_c1a)
+         call get_var(mpl,grpid,xx_cov_c1a_id,xx_cov_c1a)
 
          ! Average data
-         vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a+full_cov_c1a
+         vbal%blk(iv,jv)%xx_cov_c1a = vbal%blk(iv,jv)%xx_cov_c1a+xx_cov_c1a
       end do
    end do
 
@@ -333,7 +333,7 @@ end do
 ! Normalization
 do iv=1,nam%nv
    do jv=1,iv
-      vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a/real(nsub,kind_real)
+      vbal%blk(iv,jv)%xx_cov_c1a = vbal%blk(iv,jv)%xx_cov_c1a/real(nsub,kind_real)
    end do
 end do
 
@@ -415,7 +415,7 @@ integer,intent(in) :: iproc            !< Task index
 
 ! Local variables
 integer :: ncid,nc1a_id,nl0_1_id,nl0_2_id
-integer :: grpid(nam%nv,nam%nv),full_cov_c1a_id(nam%nv,nam%nv)
+integer :: grpid(nam%nv,nam%nv),xx_cov_c1a_id(nam%nv,nam%nv)
 integer :: iv,jv
 character(len=1024) :: grpname
 
@@ -439,14 +439,14 @@ do iv=1,nam%nv
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
 
       ! Define variable
-      full_cov_c1a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'full_cov_c1a','real',(/nc1a_id,nl0_1_id,nl0_2_id/))
+      xx_cov_c1a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xx_cov_c1a','real',(/nc1a_id,nl0_1_id,nl0_2_id/))
    end do
 end do
 
 do iv=1,nam%nv
    do jv=1,iv
       ! Write variable
-      call put_var(mpl,grpid(iv,jv),full_cov_c1a_id(iv,jv),vbal%blk(iv,jv)%full_cov_c1a)
+      call put_var(mpl,grpid(iv,jv),xx_cov_c1a_id(iv,jv),vbal%blk(iv,jv)%xx_cov_c1a)
    end do
 end do
 
@@ -472,9 +472,9 @@ type(samp_type),intent(in) :: samp     !< Sampling
 integer,intent(in) :: nsub             !< Number of sub-ensembles
 
 ! Local variables
-integer :: ncid,grpid,full_cov_c1_id
+integer :: ncid,grpid,xx_cov_c1_id
 integer :: isub,iv,jv
-real(kind_real) :: full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
+real(kind_real) :: xx_cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
 character(len=1024) :: grpname,fname_vbal_cov
 
 ! Set name
@@ -486,10 +486,10 @@ call vbal%alloc(mpl,nam,geom,samp,nsub)
 do iv=1,nam%nv
    do jv=1,iv
       ! Allocation
-      allocate(vbal%blk(iv,jv)%full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+      allocate(vbal%blk(iv,jv)%xx_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
 
       ! Initialization
-      vbal%blk(iv,jv)%full_cov_c1a = 0.0
+      vbal%blk(iv,jv)%xx_cov_c1a = 0.0
    end do
 end do
 
@@ -510,13 +510,13 @@ do isub=1,nsub
          grpid = inquire_grp(mpl,ncid,grpname)
 
          ! Inquire variable
-         full_cov_c1_id = inquire_var(mpl,grpid,'full_cov_c1')
+         xx_cov_c1_id = inquire_var(mpl,grpid,'xx_cov_c1')
 
          ! Read variable
-         call samp%io_c1%fld_read(mpl,grpid,full_cov_c1_id,full_cov_c1a)
+         call samp%io_c1%fld_read(mpl,grpid,xx_cov_c1_id,xx_cov_c1a)
 
          ! Average data
-         vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a+full_cov_c1a
+         vbal%blk(iv,jv)%xx_cov_c1a = vbal%blk(iv,jv)%xx_cov_c1a+xx_cov_c1a
       end do
    end do
 
@@ -527,7 +527,7 @@ end do
 ! Normalization
 do iv=1,nam%nv
    do jv=1,iv
-      vbal%blk(iv,jv)%full_cov_c1a = vbal%blk(iv,jv)%full_cov_c1a/real(nsub,kind_real)
+      vbal%blk(iv,jv)%xx_cov_c1a = vbal%blk(iv,jv)%xx_cov_c1a/real(nsub,kind_real)
    end do
 end do
 
@@ -550,7 +550,7 @@ type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
 integer :: ncid,nc1_id,nl0_1_id,nl0_2_id
-integer :: grpid(nam%nv,nam%nv),full_cov_c1_id(nam%nv,nam%nv)
+integer :: grpid(nam%nv,nam%nv),xx_cov_c1_id(nam%nv,nam%nv)
 integer :: iv,jv
 character(len=1024) :: grpname
 
@@ -574,14 +574,14 @@ do iv=1,nam%nv
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
 
       ! Define variable
-      full_cov_c1_id(iv,jv) = define_var(mpl,grpid(iv,jv),'full_cov_c1','real',(/nc1_id,nl0_1_id,nl0_2_id/))
+      xx_cov_c1_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xx_cov_c1','real',(/nc1_id,nl0_1_id,nl0_2_id/))
    end do
 end do
 
 do iv=1,nam%nv
    do jv=1,iv
       ! Write variable
-      call samp%io_c1%fld_write(mpl,grpid(iv,jv),full_cov_c1_id(iv,jv),vbal%blk(iv,jv)%full_cov_c1a)
+      call samp%io_c1%fld_write(mpl,grpid(iv,jv),xx_cov_c1_id(iv,jv),vbal%blk(iv,jv)%xx_cov_c1a)
    end do
 end do
 
@@ -622,7 +622,7 @@ nbufi = nbufi+1
 
 do iv=1,nam%nv
    do jv=1,iv
-      ! full_cov_c1a
+      ! xx_cov_c1a
       nbufr = nbufr+vbal%nc1a*geom%nl0*geom%nl0
    end do
 end do
@@ -641,8 +641,8 @@ ibufi = ibufi+1
 
 do iv=1,nam%nv
    do jv=1,iv
-      ! full_cov_c1a
-      bufr(ibufr+1:ibufr+vbal%nc1a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%full_cov_c1a,(/vbal%nc1a*geom%nl0*geom%nl0/))
+      ! xx_cov_c1a
+      bufr(ibufr+1:ibufr+vbal%nc1a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%xx_cov_c1a,(/vbal%nc1a*geom%nl0*geom%nl0/))
       ibufr = ibufr+vbal%nc1a*geom%nl0*geom%nl0
    end do
 end do
@@ -715,9 +715,9 @@ if (.not.allocated(vbal%blk)) call vbal%alloc(mpl,nam,geom)
 
 do iv=1,nam%nv
    do jv=1,iv
-      ! full_cov_c1a
-      allocate(vbal%blk(iv,jv)%full_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
-      vbal%blk(iv,jv)%full_cov_c1a = reshape(bufr(ibufr+1:ibufr+vbal%nc1a*geom%nl0*geom%nl0),(/vbal%nc1a,geom%nl0,geom%nl0/))
+      ! xx_cov_c1a
+      allocate(vbal%blk(iv,jv)%xx_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
+      vbal%blk(iv,jv)%xx_cov_c1a = reshape(bufr(ibufr+1:ibufr+vbal%nc1a*geom%nl0*geom%nl0),(/vbal%nc1a,geom%nl0,geom%nl0/))
       ibufr = ibufr+vbal%nc1a*geom%nl0*geom%nl0
    end do
 end do
@@ -763,7 +763,7 @@ write(mpl%info,'(a)') '--- Compute vertical covariances'
 call mpl%flush
 do iv=1,nam%nv
    do jv=1,iv
-      call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens)
+      call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ens,'xx')
    end do
 end do
 
@@ -1040,8 +1040,13 @@ call mpl%flush
 do iv=1,nam%nv
    do jv=1,iv
       if (nam%vbal_block(iv,jv)) allocate(vbal%blk(iv,jv)%reg_c2a(samp%nc2a,geom%nl0,geom%nl0))
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) allocate(vbal%blk(iv,jv)%cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) allocate(vbal%blk(iv,jv)%explained_var_c2a(samp%nc2a,geom%nl0))
+      if (nam%new_vbal) then
+         if (nam%vbal_block(iv,jv)) then
+            allocate(vbal%blk(iv,jv)%xv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+            allocate(vbal%blk(iv,jv)%explained_var_c2a(samp%nc2a,geom%nl0))
+         end if
+         if (iv==jv) allocate(vbal%blk(iv,jv)%vv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+      end if
    end do
 end do
 if (nam%new_vbal) allocate(explained_var_norm(geom%nl0,samp%nc2b))
@@ -1055,7 +1060,7 @@ do iv=1,nam%nv
          if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
       do il0=1,geom%nl0
-         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
+         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%vv_cov_c2b(il0,il0,:)
       end do
    end if
 
@@ -1068,11 +1073,12 @@ do iv=1,nam%nv
          end do
       end if
 
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
+      if (nam%new_vbal) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
-            vbal%blk(iv,jv)%cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%cov_c2b(:,:,ic2b)
+            if (nam%vbal_block(iv,jv)) vbal%blk(iv,jv)%xv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
+            if (iv==jv) vbal%blk(iv,jv)%vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
          end do
       end if
 
@@ -1128,7 +1134,8 @@ call mpl%update_tag(3)
 do iv=1,nam%nv
    do jv=1,iv
       if (allocated(vbal%blk(iv,jv)%reg_c2a)) deallocate(vbal%blk(iv,jv)%reg_c2a)
-      if (allocated(vbal%blk(iv,jv)%cov_c2a)) deallocate(vbal%blk(iv,jv)%cov_c2a)
+      if (allocated(vbal%blk(iv,jv)%xv_cov_c2a)) deallocate(vbal%blk(iv,jv)%xv_cov_c2a)
+      if (allocated(vbal%blk(iv,jv)%vv_cov_c2a)) deallocate(vbal%blk(iv,jv)%vv_cov_c2a)
       if (allocated(vbal%blk(iv,jv)%explained_var_c2a)) deallocate(vbal%blk(iv,jv)%explained_var_c2a)
    end do
 end do
@@ -1153,7 +1160,8 @@ integer,intent(in) :: iproc            !< Task index
 
 ! Local variables
 integer :: ncid,nc2a_id,nl0_1_id,nl0_2_id
-integer :: grpid(nam%nv,nam%nv),reg_c2a_id(nam%nv,nam%nv),cov_c2a_id(nam%nv,nam%nv),explained_var_c2a_id(nam%nv,nam%nv)
+integer :: grpid(nam%nv,nam%nv),reg_c2a_id(nam%nv,nam%nv),xv_cov_c2a_id(nam%nv,nam%nv),vv_cov_c2a_id(nam%nv,nam%nv)
+integer :: explained_var_c2a_id(nam%nv,nam%nv)
 integer :: iv,jv
 character(len=1024) :: grpname
 
@@ -1178,10 +1186,13 @@ do iv=1,nam%nv
 
       ! Define variables
       if (nam%vbal_block(iv,jv)) reg_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2a', &
- & 'real',(/nc2a_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a', &
- & 'real',(/nc2a_id,nl0_1_id/))
+      if (nam%new_vbal) then
+         if (nam%vbal_block(iv,jv)) then
+            xv_cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xv_cov_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+            explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a','real',(/nc2a_id,nl0_1_id/))
+         end if
+         if (iv==jv) vv_cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+      end if
    end do
 end do
 
@@ -1189,10 +1200,13 @@ end do
 do iv=1,nam%nv
    do jv=1,iv
       if (nam%vbal_block(iv,jv)) call put_var(mpl,grpid(iv,jv),reg_c2a_id(iv,jv),vbal%blk(iv,jv)%reg_c2a)
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) call put_var(mpl,grpid(iv,jv),cov_c2a_id(iv,jv), &
- & vbal%blk(iv,jv)%cov_c2a)
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) call put_var(mpl,grpid(iv,jv),explained_var_c2a_id(iv,jv), &
- & vbal%blk(iv,jv)%explained_var_c2a)
+      if (nam%new_vbal) then
+         if (nam%vbal_block(iv,jv)) then
+            call put_var(mpl,grpid(iv,jv),xv_cov_c2a_id(iv,jv),vbal%blk(iv,jv)%xv_cov_c2a)
+            call put_var(mpl,grpid(iv,jv),explained_var_c2a_id(iv,jv),vbal%blk(iv,jv)%explained_var_c2a)
+         end if
+         if (iv==jv) call put_var(mpl,grpid(iv,jv),vv_cov_c2a_id(iv,jv),vbal%blk(iv,jv)%vv_cov_c2a)
+      end if
    end do
 end do
 
@@ -1323,10 +1337,11 @@ type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
 integer :: ncid,nc2_id,nl0_1_id,nl0_2_id
-integer :: grpid(nam%nv,nam%nv),reg_c2_id(nam%nv,nam%nv),cov_c2_id(nam%nv,nam%nv),explained_var_c2_id(nam%nv,nam%nv)
+integer :: grpid(nam%nv,nam%nv),reg_c2_id(nam%nv,nam%nv),xv_cov_c2_id(nam%nv,nam%nv),vv_cov_c2_id(nam%nv,nam%nv)
+integer :: explained_var_c2_id(nam%nv,nam%nv)
 integer :: iv,jv,il0,ic2a,ic2b
 real(kind_real) :: reg_c2a(samp%nc2a,geom%nl0,geom%nl0)
-real(kind_real),allocatable :: cov_c2a(:,:,:),explained_var_norm(:,:),explained_var_c2a(:,:)
+real(kind_real),allocatable :: xv_cov_c2a(:,:,:),vv_cov_c2a(:,:,:),explained_var_norm(:,:),explained_var_c2a(:,:)
 character(len=1024) :: grpname
 
 ! Set name
@@ -1356,16 +1371,20 @@ do iv=1,nam%nv
 
       ! Define variables
       if (nam%vbal_block(iv,jv)) reg_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv)).and.(.not.nam%from_gsi)) &
- & cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv).and.(.not.nam%from_gsi)) &
- & explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2','real',(/nc2_id,nl0_1_id/))
+      if (nam%new_vbal.and.(.not.nam%from_gsi)) then
+         if (nam%vbal_block(iv,jv)) then
+            xv_cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xv_cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+            explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2','real',(/nc2_id,nl0_1_id/))
+         end if
+         if (iv==jv) vv_cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+      end if
    end do
 end do
 
 ! Allocation
 if (nam%new_vbal.and.(.not.nam%from_gsi)) then
-   allocate(cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+   allocate(xv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+   allocate(vv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
    allocate(explained_var_norm(geom%nl0,samp%nc2b))
    allocate(explained_var_c2a(samp%nc2a,geom%nl0))
 end if
@@ -1378,7 +1397,7 @@ do iv=1,nam%nv
          if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
       do il0=1,geom%nl0
-         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
+         explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%vv_cov_c2b(il0,il0,:)
       end do
    end if
 
@@ -1394,33 +1413,31 @@ do iv=1,nam%nv
          call samp%io_c2%fld_write(mpl,grpid(iv,jv),reg_c2_id(iv,jv),reg_c2a)
       end if
 
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv)).and.(.not.nam%from_gsi)) then
+      if (nam%new_vbal.and.(.not.nam%from_gsi)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
-            cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%cov_c2b(:,:,ic2b)
+            if (nam%vbal_block(iv,jv)) then
+               xv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
+               explained_var_c2a(ic2a,:) = vbal%blk(iv,jv)%explained_var_c2b(:,ic2b)/explained_var_norm(:,ic2b)
+            end if
+            if (iv==jv) vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
          end do
 
          ! Write variable
-         call samp%io_c2%fld_write(mpl,grpid(iv,jv),cov_c2_id(iv,jv),cov_c2a)
-      end if
-
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv).and.(.not.nam%from_gsi)) then
-         ! Horizontal index as first dimension
-         do ic2a=1,samp%nc2a
-            ic2b = samp%c2a_to_c2b(ic2a)
-            explained_var_c2a(ic2a,:) = vbal%blk(iv,jv)%explained_var_c2b(:,ic2b)/explained_var_norm(:,ic2b)
-         end do
-
-         ! Write variable
-         call samp%io_c2%fld_write(mpl,grpid(iv,jv),explained_var_c2_id(iv,jv),explained_var_c2a)
+         if (nam%vbal_block(iv,jv)) then
+            call samp%io_c2%fld_write(mpl,grpid(iv,jv),xv_cov_c2_id(iv,jv),xv_cov_c2a)
+            call samp%io_c2%fld_write(mpl,grpid(iv,jv),explained_var_c2_id(iv,jv),explained_var_c2a)
+         end if
+         if (iv==jv) call samp%io_c2%fld_write(mpl,grpid(iv,jv),vv_cov_c2_id(iv,jv),vv_cov_c2a)
       end if
    end do
 end do
 
 ! Release memory
 if (nam%new_vbal.and.(.not.nam%from_gsi)) then
-   deallocate(cov_c2a)
+   deallocate(xv_cov_c2a)
+   deallocate(vv_cov_c2a)
    deallocate(explained_var_norm)
    deallocate(explained_var_c2a)
 end if
@@ -1465,8 +1482,13 @@ do iv=1,nam%nv
       ! reg_c2a
       if (nam%vbal_block(iv,jv)) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
 
-      ! cov_c2a
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
+      if (nam%new_vbal) then
+         ! xv_cov_c2a
+         if (nam%vbal_block(iv,jv)) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
+
+         ! vv_cov_c2a
+         if (iv==jv) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
+      end if
 
       ! explained_var_c2a
       if (nam%new_vbal.and.nam%vbal_block(iv,jv)) nbufr = nbufr+vbal%nc2a*geom%nl0
@@ -1493,10 +1515,18 @@ do iv=1,nam%nv
          ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
       end if
 
-      ! cov_c2a
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
-         bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
-         ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+
+      if (nam%new_vbal) then
+         if (nam%vbal_block(iv,jv)) then
+             ! xv_cov_c2a
+             bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%xv_cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
+             ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+         end if
+         if (iv==jv) then
+             ! vv_cov_c2a
+             bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%vv_cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
+             ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+         end if
       end if
 
       ! explained_var_c2a
@@ -1582,11 +1612,19 @@ do iv=1,nam%nv
          ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
       end if
 
-      ! cov_c2a
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
-         allocate(vbal%blk(iv,jv)%cov_c2a(vbal%nc2a,geom%nl0,geom%nl0))
-         vbal%blk(iv,jv)%cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
-         ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+      if (nam%new_vbal) then
+         if (nam%vbal_block(iv,jv)) then
+            ! xv_cov_c2a
+            allocate(vbal%blk(iv,jv)%xv_cov_c2a(vbal%nc2a,geom%nl0,geom%nl0))
+            vbal%blk(iv,jv)%xv_cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
+            ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+         end if
+         if (iv==jv) then
+            ! vv_cov_c2a
+            allocate(vbal%blk(iv,jv)%vv_cov_c2a(vbal%nc2a,geom%nl0,geom%nl0))
+            vbal%blk(iv,jv)%vv_cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
+            ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
+         end if
       end if
 
       ! explained_var_c2a
@@ -1716,20 +1754,20 @@ else
             call mpl%flush
             if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
                do ic1a=1,samp%nc1a
-                  vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = 0.0
+                  vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) = 0.0
                   do kv=1,jv
-                     vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%full_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
+                     vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%xx_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
                   end do
                end do
             else
-               call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ensu)
+               call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ensu,'xv')
             end if
 
             ! Spatial average
             write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
             call mpl%flush(newl=.false.)
-            call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
+            call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp,'xv')
          end if
       end do
 
@@ -1746,9 +1784,10 @@ else
          do jv=1,iv
             if (nam%vbal_block(iv,jv)) then
                ! Check if this column is valid (no missing values, positive diagonal for auto-covariance)
-               valid = mpl%msv%isallnot(vbal%blk(jv,jv)%cov_c2b(:,:,ic2b)).and.mpl%msv%isallnot(vbal%blk(iv,jv)%cov_c2b(:,:,ic2b))
+               valid = mpl%msv%isallnot(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b)) &
+ & .and.mpl%msv%isallnot(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))
                do il0=1,geom%nl0
-                  if (.not.(vbal%blk(jv,jv)%cov_c2b(il0,il0,ic2b)>zero)) valid = .false.
+                  if (.not.(vbal%blk(jv,jv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid = .false.
                end do
 
                if (valid) then
@@ -1757,11 +1796,11 @@ else
                      ! Keep diagonal coefficients only
                      cross_eff = zero
                      do il0=1,geom%nl0
-                        cross_eff(il0,il0) = vbal%blk(iv,jv)%cov_c2b(il0,il0,ic2b)
+                        cross_eff(il0,il0) = vbal%blk(iv,jv)%xv_cov_c2b(il0,il0,ic2b)
                      end do
                   else
                      ! Copy all coefficients
-                     cross_eff = vbal%blk(iv,jv)%cov_c2b(:,:,ic2b)
+                     cross_eff = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
                   end if
 
                   ! Compute effective auto-coariance inverse
@@ -1769,18 +1808,20 @@ else
                      ! Diagonal auto-covariance inversion
                      auto_inv = zero
                      do il0=1,geom%nl0
-                        auto_inv(il0,il0) = one/vbal%blk(jv,jv)%cov_c2b(il0,il0,ic2b)
+                        auto_inv(il0,il0) = one/vbal%blk(jv,jv)%vv_cov_c2b(il0,il0,ic2b)
                      end do
                   else
                      ! Full auto-covariance inversion
                      if (nam%vbal_pseudo_inv) then
                         if (nam%vbal_pseudo_inv_mmax>0) then
-                           call pseudoinv(mpl,geom%nl0,vbal%blk(jv,jv)%cov_c2b(:,:,ic2b),auto_inv,mmax=nam%vbal_pseudo_inv_mmax)
+                           call pseudoinv(mpl,geom%nl0,vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b),auto_inv, &
+ & mmax=nam%vbal_pseudo_inv_mmax)
                         elseif (nam%vbal_pseudo_inv_var_th>zero) then
-                           call pseudoinv(mpl,geom%nl0,vbal%blk(jv,jv)%cov_c2b(:,:,ic2b),auto_inv,var_th=nam%vbal_pseudo_inv_var_th)
+                           call pseudoinv(mpl,geom%nl0,vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b),auto_inv, &
+ & var_th=nam%vbal_pseudo_inv_var_th)
                         end if
                      else
-                        call syminv(mpl,geom%nl0,vbal%blk(jv,jv)%cov_c2b(:,:,ic2b),auto_inv)
+                        call syminv(mpl,geom%nl0,vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b),auto_inv)
                      end if
                   end if
 
@@ -1792,7 +1833,7 @@ else
                end if
 
                ! Compute explained variance
-               explained_cov = matmul(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b),matmul(vbal%blk(jv,jv)%cov_c2b(:,:,ic2b), &
+               explained_cov = matmul(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b),matmul(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b), &
  & transpose(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b))))
                do il0=1,geom%nl0
                   vbal%blk(iv,jv)%explained_var_c2b(il0,ic2b) = explained_cov(il0,il0)
@@ -1849,16 +1890,16 @@ else
          write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
          call mpl%flush
          do ic1a=1,samp%nc1a
-            vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = 0.0
+            vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = 0.0
             do kv=1,iv
                do lv=1,iv
                   if (kv>=lv) then
-                     vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%full_cov_c1a(ic1a,:,:), &
+                     vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%xx_cov_c1a(ic1a,:,:), &
  & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
                   else
-                     vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%full_cov_c1a(ic1a,:,:)), &
+                     vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%xx_cov_c1a(ic1a,:,:)), &
  & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
                   end if
                end do
@@ -1902,13 +1943,13 @@ else
          ! Compute auto-covariance
          write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
          call mpl%flush
-         call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu)
+         call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu,ensu,'vv')
       end if
 
       ! Spatial average
       write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
       call mpl%flush(newl=.false.)
-      call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
+      call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp,'vv')
    end do
 end if
 
