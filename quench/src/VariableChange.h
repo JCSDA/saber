@@ -41,8 +41,6 @@ class VariableChange : public util::Printable {
   // Variable changes: direct and inverse
   void changeVar(State &,
                  const oops::Variables &) const;
-  void changeVarInverse(State &,
-                        const oops::Variables &) const;
 
  private:
   // Print

@@ -64,16 +64,4 @@ void VariableChange::changeVar(State & x,
 
 // -----------------------------------------------------------------------------
 
-void VariableChange::changeVarInverse(State & x,
-                                      const oops::Variables & vars_out) const {
-  oops::Log::trace() << classname() << "::changeVarInverse starting" << std::endl;
-
-  // Not implemented yet
-  throw eckit::NotImplemented("changeVarInverse not implemented", Here());
-
-  oops::Log::trace() << classname() << "::changeVarInverse done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 }  // namespace quench
