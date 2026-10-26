@@ -496,7 +496,7 @@ end subroutine vbal_cov_write_local_single
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_cov_read_global
-!> Read global full covariances
+!> Read local full covariances
 !----------------------------------------------------------------------
 subroutine vbal_cov_read_global(vbal,mpl,nam,geom,samp,nsub)
 
