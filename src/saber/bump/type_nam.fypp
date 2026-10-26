@@ -1292,8 +1292,20 @@ if (nam%new_vbal) then
    if ((nam%local_rad>zero).and.(nam%local_dlat>zero)) call nam%abort(mpl,'${subr}$', &
  & '*local_rad* and *local_dlat* cannot be positive at the same time')
    if (nam%vbal_pseudo_inv) then
-      if ((nam%vbal_pseudo_inv_mmax<=0).and.(.not.nam%vbal_pseudo_inv_var_th>zero)) call nam%abort(mpl,'${subr}$', &
- & '*vbal_pseudo_inv_mmax* or *vbal_pseudo_inv_var_th* should be positive for *vbal_pseudo_inv*')
+      if (nam%vbal_pseudo_inv_var_th<zero) call nam%abort(mpl,'${subr}$', &
+ & '*vbal_pseudo_inv_var_th* should not be negative for *vbal_pseudo_inv*')
+      if (nam%vbal_pseudo_inv_var_th>zero) then
+         if (nam%vbal_pseudo_inv_var_th>one) call nam%abort(mpl,'${subr}$', &
+ & '*vbal_pseudo_inv_var_th* should not be larger than one for *vbal_pseudo_inv*')
+      end if
+      if (nam%vbal_pseudo_inv_mmax<0) call nam%abort(mpl,'${subr}$', &
+ & '*vbal_pseudo_inv_mmax* should not be negative for *vbal_pseudo_inv*')
+      if (nam%vbal_pseudo_inv_mmax>0) then
+         if (nam%vbal_pseudo_inv_mmax>nam%nl0) call nam%abort(mpl,'${subr}$', &
+ & '*vbal_pseudo_inv_mmax* should not be larger than *nl0* for *vbal_pseudo_inv*')
+      end if
+      if ((nam%vbal_pseudo_inv_mmax==0).and.(.not.(abs(nam%vbal_pseudo_inv_var_th)>zero))) call nam%abort(mpl,'${subr}$', &
+ & '*vbal_pseudo_inv_mmax* or *vbal_pseudo_inv_var_th* should activated for *vbal_pseudo_inv*')
    end if
 end if
 

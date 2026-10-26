@@ -5,26 +5,81 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of air_horizontal_streamfunction:  0.37233307E+02
-          Norm of air_horizontal_velocity_potential:  0.38597021E+02
-          Norm of air_horizontal_streamfunction:  0.37308292E+02
-          Norm of air_horizontal_velocity_potential:  0.36299515E+02
-          Norm of air_horizontal_streamfunction:  0.32075612E+02
-          Norm of air_horizontal_velocity_potential:  0.37305288E+02
-          Norm of air_horizontal_streamfunction:  0.35309936E+02
-          Norm of air_horizontal_velocity_potential:  0.36710697E+02
-          Norm of air_horizontal_streamfunction:  0.33402672E+02
-          Norm of air_horizontal_velocity_potential:  0.38744960E+02
-          Norm of air_horizontal_streamfunction:  0.34985233E+02
-          Norm of air_horizontal_velocity_potential:  0.35976562E+02
-          Norm of air_horizontal_streamfunction:  0.38553184E+02
-          Norm of air_horizontal_velocity_potential:  0.38922056E+02
-          Norm of air_horizontal_streamfunction:  0.34932604E+02
-          Norm of air_horizontal_velocity_potential:  0.33053419E+02
-          Norm of air_horizontal_streamfunction:  0.36030789E+02
-          Norm of air_horizontal_velocity_potential:  0.35032871E+02
-          Norm of air_horizontal_streamfunction:  0.39353594E+02
-          Norm of air_horizontal_velocity_potential:  0.35617393E+02
+          Norm of air_horizontal_streamfunction:  0.38581342E+02
+          Norm of air_horizontal_velocity_potential:  0.39222641E+02
+          Norm of air_pressure_at_surface:  0.26740085E+02
+          Norm of air_horizontal_streamfunction:  0.37407031E+02
+          Norm of air_horizontal_velocity_potential:  0.37895335E+02
+          Norm of air_pressure_at_surface:  0.27143994E+02
+          Norm of air_horizontal_streamfunction:  0.32646691E+02
+          Norm of air_horizontal_velocity_potential:  0.37185853E+02
+          Norm of air_pressure_at_surface:  0.27739634E+02
+          Norm of air_horizontal_streamfunction:  0.35980174E+02
+          Norm of air_horizontal_velocity_potential:  0.37613799E+02
+          Norm of air_pressure_at_surface:  0.26220171E+02
+          Norm of air_horizontal_streamfunction:  0.35002907E+02
+          Norm of air_horizontal_velocity_potential:  0.40501543E+02
+          Norm of air_pressure_at_surface:  0.24149300E+02
+          Norm of air_horizontal_streamfunction:  0.37068111E+02
+          Norm of air_horizontal_velocity_potential:  0.35971102E+02
+          Norm of air_pressure_at_surface:  0.27911832E+02
+          Norm of air_horizontal_streamfunction:  0.39827873E+02
+          Norm of air_horizontal_velocity_potential:  0.40914169E+02
+          Norm of air_pressure_at_surface:  0.28523533E+02
+          Norm of air_horizontal_streamfunction:  0.35574729E+02
+          Norm of air_horizontal_velocity_potential:  0.35940329E+02
+          Norm of air_pressure_at_surface:  0.28200964E+02
+          Norm of air_horizontal_streamfunction:  0.37292877E+02
+          Norm of air_horizontal_velocity_potential:  0.36949645E+02
+          Norm of air_pressure_at_surface:  0.25372810E+02
+          Norm of air_horizontal_streamfunction:  0.39924264E+02
+          Norm of air_horizontal_velocity_potential:  0.37531569E+02
+          Norm of air_pressure_at_surface:  0.26016500E+02
+          Norm of air_horizontal_streamfunction:  0.40108312E+02
+          Norm of air_horizontal_velocity_potential:  0.36441792E+02
+          Norm of air_pressure_at_surface:  0.25975390E+02
+          Norm of air_horizontal_streamfunction:  0.34455322E+02
+          Norm of air_horizontal_velocity_potential:  0.39935918E+02
+          Norm of air_pressure_at_surface:  0.23500707E+02
+          Norm of air_horizontal_streamfunction:  0.40296398E+02
+          Norm of air_horizontal_velocity_potential:  0.37597721E+02
+          Norm of air_pressure_at_surface:  0.28913408E+02
+          Norm of air_horizontal_streamfunction:  0.37960180E+02
+          Norm of air_horizontal_velocity_potential:  0.40609872E+02
+          Norm of air_pressure_at_surface:  0.28681207E+02
+          Norm of air_horizontal_streamfunction:  0.40752336E+02
+          Norm of air_horizontal_velocity_potential:  0.37622442E+02
+          Norm of air_pressure_at_surface:  0.29193860E+02
+          Norm of air_horizontal_streamfunction:  0.36789362E+02
+          Norm of air_horizontal_velocity_potential:  0.42562567E+02
+          Norm of air_pressure_at_surface:  0.24334639E+02
+          Norm of air_horizontal_streamfunction:  0.38292530E+02
+          Norm of air_horizontal_velocity_potential:  0.35484344E+02
+          Norm of air_pressure_at_surface:  0.29304514E+02
+          Norm of air_horizontal_streamfunction:  0.33249300E+02
+          Norm of air_horizontal_velocity_potential:  0.41564823E+02
+          Norm of air_pressure_at_surface:  0.24138952E+02
+          Norm of air_horizontal_streamfunction:  0.35509054E+02
+          Norm of air_horizontal_velocity_potential:  0.39240522E+02
+          Norm of air_pressure_at_surface:  0.24534222E+02
+          Norm of air_horizontal_streamfunction:  0.40954315E+02
+          Norm of air_horizontal_velocity_potential:  0.39024033E+02
+          Norm of air_pressure_at_surface:  0.24021470E+02
+          Norm of air_horizontal_streamfunction:  0.39510755E+02
+          Norm of air_horizontal_velocity_potential:  0.36902234E+02
+          Norm of air_pressure_at_surface:  0.28801459E+02
+          Norm of air_horizontal_streamfunction:  0.43251195E+02
+          Norm of air_horizontal_velocity_potential:  0.37128856E+02
+          Norm of air_pressure_at_surface:  0.24885600E+02
+          Norm of air_horizontal_streamfunction:  0.35124446E+02
+          Norm of air_horizontal_velocity_potential:  0.37927480E+02
+          Norm of air_pressure_at_surface:  0.24503586E+02
+          Norm of air_horizontal_streamfunction:  0.33286285E+02
+          Norm of air_horizontal_velocity_potential:  0.42907258E+02
+          Norm of air_pressure_at_surface:  0.24643577E+02
+          Norm of air_horizontal_streamfunction:  0.36983045E+02
+          Norm of air_horizontal_velocity_potential:  0.38827386E+02
+          Norm of air_pressure_at_surface:  0.23269406E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Subgrid hash:   1534185147
@@ -37,6 +92,8 @@
        Vertical balance direct/inverse (adjoint) test result:  T
        Vertical balance inverse/direct (adjoint) test result:  T
        Vertical balance block air_horizontal_streamfunction-air_horizontal_velocity_potential adjoint test result:  T
+       Vertical balance block air_horizontal_streamfunction-air_pressure_at_surface adjoint test result:  T
+       Vertical balance block air_horizontal_velocity_potential-air_pressure_at_surface adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
-Norm of output parameter dirac_vbal - 1: 1.0000000000000000e+00
+Norm of output parameter dirac_vbal - 1: 1.0060751105326708e+00

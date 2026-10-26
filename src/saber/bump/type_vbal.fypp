@@ -306,7 +306,7 @@ do isub=1,nsub
             allocate(vbal%blk(iv,jv)%xx_cov_c1a(vbal%nc1a,geom%nl0,geom%nl0))
 
             ! Initialization
-            vbal%blk(iv,jv)%xx_cov_c1a = 0.0
+            vbal%blk(iv,jv)%xx_cov_c1a = zero
          end if
 
          ! Get group name
@@ -489,7 +489,7 @@ do iv=1,nam%nv
       allocate(vbal%blk(iv,jv)%xx_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
 
       ! Initialization
-      vbal%blk(iv,jv)%xx_cov_c1a = 0.0
+      vbal%blk(iv,jv)%xx_cov_c1a = zero
    end do
 end do
 
@@ -1045,7 +1045,7 @@ do iv=1,nam%nv
             allocate(vbal%blk(iv,jv)%xv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
             allocate(vbal%blk(iv,jv)%explained_var_c2a(samp%nc2a,geom%nl0))
          end if
-         if (iv==jv) allocate(vbal%blk(iv,jv)%vv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
+         allocate(vbal%blk(iv,jv)%vv_cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
       end if
    end do
 end do
@@ -1055,7 +1055,7 @@ if (nam%new_vbal) allocate(explained_var_norm(geom%nl0,samp%nc2b))
 do iv=1,nam%nv
    if (nam%new_vbal) then
       ! Compute explained variance normalization
-      explained_var_norm = 0.0
+      explained_var_norm = zero
       do jv=1,iv
          if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
@@ -1078,7 +1078,7 @@ do iv=1,nam%nv
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
             if (nam%vbal_block(iv,jv)) vbal%blk(iv,jv)%xv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
-            if (iv==jv) vbal%blk(iv,jv)%vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
+            vbal%blk(iv,jv)%vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
          end do
       end if
 
@@ -1191,7 +1191,7 @@ do iv=1,nam%nv
             xv_cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xv_cov_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
             explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a','real',(/nc2a_id,nl0_1_id/))
          end if
-         if (iv==jv) vv_cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+         vv_cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
       end if
    end do
 end do
@@ -1205,7 +1205,7 @@ do iv=1,nam%nv
             call put_var(mpl,grpid(iv,jv),xv_cov_c2a_id(iv,jv),vbal%blk(iv,jv)%xv_cov_c2a)
             call put_var(mpl,grpid(iv,jv),explained_var_c2a_id(iv,jv),vbal%blk(iv,jv)%explained_var_c2a)
          end if
-         if (iv==jv) call put_var(mpl,grpid(iv,jv),vv_cov_c2a_id(iv,jv),vbal%blk(iv,jv)%vv_cov_c2a)
+         call put_var(mpl,grpid(iv,jv),vv_cov_c2a_id(iv,jv),vbal%blk(iv,jv)%vv_cov_c2a)
       end if
    end do
 end do
@@ -1376,7 +1376,7 @@ do iv=1,nam%nv
             xv_cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'xv_cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
             explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2','real',(/nc2_id,nl0_1_id/))
          end if
-         if (iv==jv) vv_cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+         vv_cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'vv_cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
       end if
    end do
 end do
@@ -1392,7 +1392,7 @@ end if
 do iv=1,nam%nv
    if (nam%new_vbal.and.(.not.nam%from_gsi)) then
       ! Compute explained variance normalization
-      explained_var_norm = 0.0
+      explained_var_norm = zero
       do jv=1,iv
          if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
@@ -1421,7 +1421,7 @@ do iv=1,nam%nv
                xv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
                explained_var_c2a(ic2a,:) = vbal%blk(iv,jv)%explained_var_c2b(:,ic2b)/explained_var_norm(:,ic2b)
             end if
-            if (iv==jv) vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
+            vv_cov_c2a(ic2a,:,:) = vbal%blk(iv,jv)%vv_cov_c2b(:,:,ic2b)
          end do
 
          ! Write variable
@@ -1429,7 +1429,7 @@ do iv=1,nam%nv
             call samp%io_c2%fld_write(mpl,grpid(iv,jv),xv_cov_c2_id(iv,jv),xv_cov_c2a)
             call samp%io_c2%fld_write(mpl,grpid(iv,jv),explained_var_c2_id(iv,jv),explained_var_c2a)
          end if
-         if (iv==jv) call samp%io_c2%fld_write(mpl,grpid(iv,jv),vv_cov_c2_id(iv,jv),vv_cov_c2a)
+         call samp%io_c2%fld_write(mpl,grpid(iv,jv),vv_cov_c2_id(iv,jv),vv_cov_c2a)
       end if
    end do
 end do
@@ -1487,7 +1487,7 @@ do iv=1,nam%nv
          if (nam%vbal_block(iv,jv)) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
 
          ! vv_cov_c2a
-         if (iv==jv) nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
+         nbufr = nbufr+vbal%nc2a*geom%nl0*geom%nl0
       end if
 
       ! explained_var_c2a
@@ -1522,11 +1522,10 @@ do iv=1,nam%nv
              bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%xv_cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
              ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
          end if
-         if (iv==jv) then
-             ! vv_cov_c2a
-             bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%vv_cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
-             ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
-         end if
+
+         ! vv_cov_c2a
+         bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0) = reshape(vbal%blk(iv,jv)%vv_cov_c2a,(/vbal%nc2a*geom%nl0*geom%nl0/))
+         ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
       end if
 
       ! explained_var_c2a
@@ -1619,12 +1618,11 @@ do iv=1,nam%nv
             vbal%blk(iv,jv)%xv_cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
             ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
          end if
-         if (iv==jv) then
-            ! vv_cov_c2a
-            allocate(vbal%blk(iv,jv)%vv_cov_c2a(vbal%nc2a,geom%nl0,geom%nl0))
-            vbal%blk(iv,jv)%vv_cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
-            ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
-         end if
+
+         ! vv_cov_c2a
+         allocate(vbal%blk(iv,jv)%vv_cov_c2a(vbal%nc2a,geom%nl0,geom%nl0))
+         vbal%blk(iv,jv)%vv_cov_c2a = reshape(bufr(ibufr+1:ibufr+vbal%nc2a*geom%nl0*geom%nl0),(/vbal%nc2a,geom%nl0,geom%nl0/))
+         ibufr = ibufr+vbal%nc2a*geom%nl0*geom%nl0
       end if
 
       ! explained_var_c2a
@@ -1663,12 +1661,11 @@ type(gsi_type),intent(in) :: gsi       !< GSI data
 type(ens_type),intent(inout) :: ens    !< Ensemble
 
 ! Local variables
-integer :: il0,il0i,i_s,ic0a,ic1a,ic2b,iv,jl0,jv,kv,lv,ie,nb,ib,offset
-real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0)
-real(kind_real) :: cross_eff(geom%nl0,geom%nl0),auto_inv(geom%nl0,geom%nl0),explained_cov(geom%nl0,geom%nl0)
-real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:)
-real(kind_real),allocatable :: xv_cov_agg(:,:),vv_cov_agg(:,:),vv_cov_agg_inv(:,:),reg_agg(:,:)
-logical :: valid
+integer :: il0,il0i,i_s,ic0a,ic1a,ic2b,iv,jl0,jv,kv,lv,ie,nb,jb,joffset,kb,koffset
+real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0),explained_cov(geom%nl0,geom%nl0)
+real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:),xv_cov_agg(:,:),vv_cov_agg(:,:),vv_cov_agg_inv(:,:),reg_agg(:,:)
+real(kind_real),allocatable :: a_ik(:,:),cov_kl(:,:),a_jl(:,:)
+logical :: diag_vv,valid(samp%nc2b)
 type(ens_type) :: ensu
 
 ! Set name
@@ -1726,11 +1723,16 @@ else
       call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
       call ensu%alloc(ens%ne,ens%nsub)
    end if
+   if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
+      allocate(a_ik(geom%nl0,geom%nl0))
+      allocate(cov_kl(geom%nl0,geom%nl0))
+      allocate(a_jl(geom%nl0,geom%nl0))
+   end if
 
    if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
       ! Initialize diagonal block of A
       do iv=1,nam%nv
-         vbal%blk(iv,iv)%a_c1a = 0.0
+         vbal%blk(iv,iv)%a_c1a = zero
          do ic1a=1,samp%nc1a
             do il0=1,geom%nl0
                vbal%blk(iv,iv)%a_c1a(il0,il0,ic1a) = 1.0
@@ -1742,20 +1744,24 @@ else
       call ensu%copy(mpl,nam,geom,ens)
    end if
 
-   do iv=1,nam%nv
-      if (any(nam%vbal_block(iv,:))) then
-         write(mpl%info,'(a7,a)') '','Compute regressions for '//trim(nam%variables(iv))
-         call mpl%flush
+   ! Initialization
+   valid = .true.
 
+   ! Process rows sequentially
+   do iv=1,nam%nv
+      write(mpl%info,'(a7,a,i2.2,a)') '','Process row #',iv,':'
+      call mpl%flush
+
+      if (any(nam%vbal_block(iv,:))) then
          do jv=1,iv
             if (nam%vbal_block(iv,jv)) then
-               ! Compute cross-covariance
-               write(mpl%info,'(a7,a)') '','Compute cross-covariance with unbalanced ' &
- & //trim(nam%variables(jv))
+               ! Compute xv-covariance
+               write(mpl%info,'(a10,a)') '','Compute xv-covariance between '//trim(nam%variables(iv)) &
+ & //' and '//trim(nam%variables(jv))
                call mpl%flush
                if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
                   do ic1a=1,samp%nc1a
-                     vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) = 0.0
+                     vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) = zero
                      do kv=1,jv
                         vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%xv_cov_c1a(ic1a,:,:) &
  & +matmul(vbal%blk(iv,kv)%xx_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
@@ -1766,17 +1772,18 @@ else
                end if
 
                ! Spatial average
-               write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
+               write(mpl%info,'(a10,a)') '','Spatial average for xv-covariance between '//trim(nam%variables(iv)) &
+ & //' and '//trim(nam%variables(jv))//':'
                call mpl%flush(newl=.false.)
                call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp,'xv')
             end if
          end do
 
          ! Compute regressions
-         write(mpl%info,'(a7,a)') '','Compute regressions:'
+         write(mpl%info,'(a10,a)') '','Compute regressions:'
          call mpl%flush(newl=.false.)
 
-         ! Count number of blocks in aggregated cross-covariance on this row
+         ! Count number of blocks in aggregated xv-covariance on this row
          nb = 0
          do jv=1,iv
             if (nam%vbal_block(iv,jv)) nb = nb+1
@@ -1792,49 +1799,82 @@ else
          call mpl%prog_init(samp%nc2b)
 
          do ic2b=1,samp%nc2b
-            ! Initialization
-            xv_cov_agg = zero
-            vv_cov_agg = zero
-            ib = 0
-
+            ! Check validity for this point and this row
             do jv=1,iv
                if (nam%vbal_block(iv,jv)) then
-                  ! Update block index
-                  ib = ib+1
-                  offset = (ib-1)*geom%nl0
-
-                  ! Check if this column is valid (no missing values, positive diagonal for auto-covariance)
-                  valid = mpl%msv%isallnot(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b)) &
- & .and.mpl%msv%isallnot(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))
-                  do il0=1,geom%nl0
-                     if (.not.(vbal%blk(jv,jv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid = .false.
+                  ! Non-missing xv-covariance
+                  if (mpl%msv%isany(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
+                  do kv=1,jv
+                     if (nam%vbal_block(iv,kv)) then
+                        ! Non-missing vv-covariance
+                        if (mpl%msv%isany(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
+                        if (kv==jv) then
+                           ! Positive diagonal for diagonal blocks of vv-covariance
+                           do il0=1,geom%nl0
+                              if (.not.(vbal%blk(jv,kv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid(ic2b) = .false.
+                           end do
+                         end if
+                     end if
                   end do
+               end if
+            end do
 
-                  if (valid) then
-                     ! Compute effective cross-covariance
+            if (valid(ic2b)) then
+               ! Initialization
+               xv_cov_agg = zero
+               vv_cov_agg = zero
+               jb = 0
+
+               ! Should the aggregated vv-covariance be diagonal?
+               diag_vv = .false.
+               do jv=1,iv
+                  if (nam%vbal_block(iv,jv).and.(nam%vbal_diag_reg(iv,jv).or.nam%vbal_diag_auto(iv,jv))) diag_vv = .true.
+               end do
+
+               do jv=1,iv
+                  if (nam%vbal_block(iv,jv)) then
+                     ! Update block index
+                     jb = jb+1
+                     joffset = (jb-1)*geom%nl0
+
+                     ! Compute aggregated xv-covariance
                      if (nam%vbal_diag_reg(iv,jv)) then
                         ! Keep diagonal coefficients only
                         do il0=1,geom%nl0
-                           xv_cov_agg(il0,offset+il0) = vbal%blk(iv,jv)%xv_cov_c2b(il0,il0,ic2b)
+                           xv_cov_agg(il0,joffset+il0) = vbal%blk(iv,jv)%xv_cov_c2b(il0,il0,ic2b)
                         end do
                      else
                         ! Copy all coefficients
-                        xv_cov_agg(:,offset+1:offset+geom%nl0) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
+
+                        xv_cov_agg(:,joffset+1:joffset+geom%nl0) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
                      end if
 
-                     ! Compute effective auto-coariance inverse
-                     if (nam%vbal_diag_auto(iv,jv).or.nam%vbal_diag_reg(iv,jv)) then
+                     ! Compute aggregated vv-covariance
+                     if (diag_vv) then
                         ! Keep diagonal coefficients only
                         do il0=1,geom%nl0
-                           vv_cov_agg(offset+il0,offset+il0) = vbal%blk(jv,jv)%vv_cov_c2b(il0,il0,ic2b)
+                           vv_cov_agg(joffset+il0,joffset+il0) = vbal%blk(jv,jv)%vv_cov_c2b(il0,il0,ic2b)
                         end do
                      else
-                        ! Copy all coefficients
-                        vv_cov_agg(offset+1:offset+geom%nl0,offset+1:offset+geom%nl0) = vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b)
+                        ! Initialization
+                        kb = 0
+                        do kv=1,jv
+                           if (nam%vbal_block(iv,kv)) then
+                              ! Update block index
+                              kb = kb+1
+                              koffset = (kb-1)*geom%nl0
+
+                              ! Copy all coefficients
+                              vv_cov_agg(joffset+1:joffset+geom%nl0,koffset+1:koffset+geom%nl0) = &
+ &  vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b)
+                              if (kv<jv) vv_cov_agg(koffset+1:koffset+geom%nl0,joffset+1:joffset+geom%nl0) = &
+ &  vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b)
+                           end if
+                        end do
                      end if
                   end if
-               end if
-            end do
+               end do
+            end if
 
             ! Aggregated vv-covariance inversion
             if (nam%vbal_pseudo_inv) then
@@ -1851,15 +1891,15 @@ else
             reg_agg = matmul(xv_cov_agg,vv_cov_agg_inv)
 
             ! Copy regression to blocks and compute explained variance
-            ib = 0
+            jb = 0
             do jv=1,iv
                if (nam%vbal_block(iv,jv)) then
                   ! Update block index
-                  ib = ib+1
-                  offset = (ib-1)*geom%nl0
+                  jb = jb+1
+                  joffset = (jb-1)*geom%nl0
 
                   ! Copy regression
-                  vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_agg(:,offset+1:offset+geom%nl0)
+                  vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_agg(:,joffset+1:joffset+geom%nl0)
 
                   ! Compute explained variance
                   explained_cov = matmul(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b),matmul(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b), &
@@ -1910,9 +1950,9 @@ else
       if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
          do jv=1,iv-1
             ! Compute A matrix
-            write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
+            write(mpl%info,'(a10,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
             call mpl%flush
-            vbal%blk(iv,jv)%a_c1a = 0.0
+            vbal%blk(iv,jv)%a_c1a = zero
             do ic1a=1,samp%nc1a
                do kv=jv,iv-1
                   if (nam%vbal_block(iv,kv)) then
@@ -1923,29 +1963,36 @@ else
             end do
          end do
 
-         ! Compute auto-covariance
-         write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
-         call mpl%flush
-         do ic1a=1,samp%nc1a
-            vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = 0.0
-            do kv=1,iv
-               do lv=1,iv
-                  if (kv>=lv) then
-                     vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%xx_cov_c1a(ic1a,:,:), &
- & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
-                  else
-                     vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%vv_cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%xx_cov_c1a(ic1a,:,:)), &
- & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
-                  end if
+         do jv=1,iv
+            ! Compute vv-covariance
+            if (jv==iv) then
+               write(mpl%info,'(a10,a)') '','Compute vv-auto-covariance of '//trim(nam%variables(iv))
+            else
+               write(mpl%info,'(a10,a)') '','Compute vv-covariance between '//trim(nam%variables(iv)) &
+ & //' and '//trim(nam%variables(jv))
+            end if
+            call mpl%flush
+            vbal%blk(iv,jv)%vv_cov_c1a = zero
+            do ic1a=1,samp%nc1a
+               do kv=1,iv
+                  a_ik = vbal%blk(iv,kv)%a_c1a(:,:,ic1a)
+                  do lv=1,jv
+                     if (kv>=lv) then
+                        cov_kl = vbal%blk(kv,lv)%xx_cov_c1a(ic1a,:,:)
+                     else
+                        cov_kl = transpose(vbal%blk(lv,kv)%xx_cov_c1a(ic1a,:,:))
+                     end if
+                     a_jl = vbal%blk(jv,lv)%a_c1a(:,:,ic1a)
+                     vbal%blk(iv,jv)%vv_cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%vv_cov_c1a(ic1a,:,:) &
+ & +matmul(a_ik,matmul(cov_kl,transpose(a_jl)))
+                  end do
                end do
             end do
          end do
       else
          ! Unbalance ensemble
          if (any(nam%vbal_block(iv,:))) then
-            write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
+            write(mpl%info,'(a10,a)') '','Unbalance ensemble members: '
             call mpl%flush(newl=.false.)
             do ie=1,ensu%ne
                write(mpl%info,'(i6)') ie
@@ -1977,17 +2024,38 @@ else
             call ensu%compute_mean(mpl,nam,geom)
          end if
 
-         ! Compute auto-covariance
-         write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
-         call mpl%flush
-         call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu,ensu,'vv')
+         do jv=1,iv
+            ! Compute vv-covariance
+            if (jv==iv) then
+               write(mpl%info,'(a10,a)') '','Compute vv-auto-covariance of '//trim(nam%variables(iv))
+            else
+               write(mpl%info,'(a10,a)') '','Compute vv-covariance between '//trim(nam%variables(iv)) &
+ & //' and '//trim(nam%variables(jv))
+            end if
+            call mpl%flush
+            call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ensu,ensu,'vv')
+         end do
       end if
 
-      ! Spatial average
-      write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
-      call mpl%flush(newl=.false.)
-      call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp,'vv')
+      do jv=1,iv
+         ! Spatial average of vv-covariance
+         if (jv==iv) then
+            write(mpl%info,'(a10,a)') '','Spatial average of vv-auto-covariance of '//trim(nam%variables(iv))//':'
+         else
+            write(mpl%info,'(a10,a)') '','Spatial average of vv-covariance between '//trim(nam%variables(iv)) &
+ & //' and '//trim(nam%variables(jv))//':'
+         end if
+         call mpl%flush(newl=.false.)
+         call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp,'vv')
+      end do
    end do
+
+   ! Release memory
+   if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
+      deallocate(a_ik)
+      deallocate(cov_kl)
+      deallocate(a_jl)
+   end if
 end if
 
 ! Write balance operator
@@ -2471,8 +2539,7 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: idir,ic0a,il0
-real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
+integer :: idir
 
 ! Set name
 @:set_name(vbal_test_dirac)
@@ -2480,21 +2547,15 @@ real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 ! Allocation
 allocate(vbal%dirac(geom%nc0a,geom%nl0,nam%nv))
 
+! Generate dirac field
+vbal%dirac = zero
 do idir=1,geom%ndir
-   ! Generate dirac field
-   fld_c0a = zero
-   if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
-
-   ! Apply vertical balance to dirac
-   call vbal%apply(nam,geom,vbal%dirac)
-
-   ! Copy points
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (geom%inbdir(ic0a,il0)==idir) vbal%dirac(ic0a,il0,:) = fld_c0a(ic0a,il0,:)
-      end do
-   end do
+   if (geom%iprocdir(idir)==mpl%myproc) vbal%dirac(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
 end do
+
+! Apply vertical balance to dirac
+! WARNING: unlike other operators, the adjoint is not applied first, in order to check the result of the direct operator only
+call vbal%apply(nam,geom,vbal%dirac)
 
 end subroutine vbal_test_dirac
 

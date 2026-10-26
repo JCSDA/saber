@@ -91,10 +91,8 @@ if (nam%new_vbal) then
       allocate(vbal_blk%xv_cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
       allocate(vbal_blk%explained_var_c2b(geom%nl0,samp%nc2b))
    end if
-   if (iv==jv) then
-      allocate(vbal_blk%vv_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
-      allocate(vbal_blk%vv_cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
-   end if
+   allocate(vbal_blk%vv_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+   allocate(vbal_blk%vv_cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
    if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
       allocate(vbal_blk%a_c1a(geom%nl0,geom%nl0,samp%nc1a))
       allocate(vbal_blk%reg_c1a(geom%nl0,geom%nl0,samp%nc1a))
@@ -285,6 +283,7 @@ real(kind_real) :: fld_c0b_1(samp%nc0b,geom%nl0),fld_c0b_2(samp%nc0b,geom%nl0)
 real(kind_real) :: fld_c1a_1(samp%nc1a,geom%nl0),fld_c1a_2(samp%nc1a,geom%nl0)
 real(kind_real) :: cov(samp%nc1a,geom%nl0,geom%nl0,vbal_blk%nsub)
 real(kind_real) :: cov_c1a(samp%nc1a,geom%nl0,geom%nl0)
+character(len=3) :: indent
 
 ! Set name
 @:set_name(vbal_blk_compute_covariance)
@@ -294,11 +293,16 @@ cov = zero
 
 ! Loop on sub-ensembles
 do isub=1,vbal_blk%nsub
+   if (cov_type=='xx') then
+      indent = 'a7'
+   else
+      indent = 'a13'
+   end if
    if (vbal_blk%nsub==1) then
-      write(mpl%info,'(a10,a)') '','Full ensemble, member:'
+      write(mpl%info,'('//trim(indent)//',a)') '','Full ensemble, member:'
       call mpl%flush(newl=.false.)
    else
-      write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
+      write(mpl%info,'('//trim(indent)//',a,i6,a)') '','Sub-ensemble ',isub,', member:'
       call mpl%flush(newl=.false.)
    end if
 

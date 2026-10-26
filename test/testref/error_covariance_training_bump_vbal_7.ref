@@ -19,4 +19,4 @@
        Vertical balance block air_horizontal_streamfunction-air_pressure_at_surface adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
-Norm of output parameter dirac_vbal - 1: 1.0000000000000000e+00
+Norm of output parameter dirac_vbal - 1: 1.0024559344010813e+00

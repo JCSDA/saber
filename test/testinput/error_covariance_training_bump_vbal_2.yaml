@@ -8,12 +8,16 @@ geometry:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
     levels: 2
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
   halo: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - air_horizontal_streamfunction
   - air_horizontal_velocity_potential
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   ensemble:
@@ -24,8 +28,9 @@ background error:
         state variables:
         - air_horizontal_streamfunction
         - air_horizontal_velocity_potential
+        - air_pressure_at_surface
       pattern: '%mem%'
-      nmembers: 10
+      nmembers: 25
       zero padding: 6
   saber central block:
     saber block name: ID
@@ -49,12 +54,15 @@ background error:
       sampling:
         computation grid size: 500
         diagnostic grid size: 250
-        averaging latitude width: 10.0
+        averaging length-scale: 2000.0e3
       vertical balance:
         vbal:
         - balanced variable: air_horizontal_velocity_potential
           unbalanced variable: air_horizontal_streamfunction
-          diagonal autocovariance: true
+        - balanced variable: air_pressure_at_surface
+          unbalanced variable: air_horizontal_streamfunction
+        - balanced variable: air_pressure_at_surface
+          unbalanced variable: air_horizontal_velocity_potential
       dirac:
       - longitude: 0.0
         latitude: 0.0
