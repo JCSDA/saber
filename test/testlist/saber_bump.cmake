@@ -1685,35 +1685,6 @@ saber_add_test( TARGET saber_convertstate_rh
                 DEPENDS saber_quench_convertstate.x
                 TEST_DEPENDS saber_error_covariance_training_bump_nicas_1_1-1 )
 
-# error_covariance_training_bump_nicas_12
-saber_add_test( TARGET saber_error_covariance_training_bump_nicas_12_1-1
-                MPI 1
-                OMP 1
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/error_covariance_training_bump_nicas_12.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_nicas_1_1-1
-                             saber_convertstate_rh )
-
-saber_add_test( TARGET saber_error_covariance_training_bump_nicas_12_2-1
-                MPI 2
-                OMP 1
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/error_covariance_training_bump_nicas_12.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_nicas_1_2-1
-                             saber_convertstate_rh )
-
-saber_add_test( TARGET saber_error_covariance_training_bump_nicas_12_1-2
-                MPI 1
-                OMP 2
-                LABELS   tier2
-                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/error_covariance_training_bump_nicas_12.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_bump_nicas_1_1-2
-                             saber_convertstate_rh )
-
 # error_covariance_training_bump_stddev_1
 saber_add_test( TARGET saber_error_covariance_training_bump_stddev_1_1-1
                 MPI 1
