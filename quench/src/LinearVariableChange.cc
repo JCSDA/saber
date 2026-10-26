@@ -111,38 +111,6 @@ void LinearVariableChange::changeVarTL(Increment & dx,
 
 // -----------------------------------------------------------------------------
 
-void LinearVariableChange::changeVarInverseTL(Increment & dx,
-                                              const oops::Variables & vars) const {
-  oops::Log::trace() << classname() << "::changeVarInverseTL starting" << std::endl;
-
-  if (!multiplierFset_.empty()) {
-    // Check that output variables are the same as in the map
-    ASSERT(vars.size() == map_.size());
-    for (auto const& it : map_) {
-      ASSERT(vars.has(it.second));
-    }
-
-    // Get fieldset
-    atlas::FieldSet fset;
-    dx.toFieldSet(fset);
-
-    // Change variable name
-    for (auto const& it : map_) {
-      fset[it.first].rename(it.second);
-    }
-
-    // Divide by the read fieldset
-    util::divideFieldSets(fset, multiplierFset_);
-
-    // Back to increment
-    dx.fromFieldSet(fset);
-  }
-
-  oops::Log::trace() << classname() << "::changeVarInverseTL done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void LinearVariableChange::changeVarAD(Increment & dx,
                                        const oops::Variables & vars) const {
   oops::Log::trace() << classname() << "::changeVarAD starting" << std::endl;
@@ -171,38 +139,6 @@ void LinearVariableChange::changeVarAD(Increment & dx,
   }
 
   oops::Log::trace() << classname() << "::changeVarAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void LinearVariableChange::changeVarInverseAD(Increment & dx,
-                                              const oops::Variables & vars) const {
-  oops::Log::trace() << classname() << "::changeVarInverseAD starting" << std::endl;
-
-  if (!multiplierFset_.empty()) {
-    // Check that output variables are the same as in the map
-    ASSERT(vars.size() == map_.size());
-    for (auto const& it : map_) {
-      ASSERT(vars.has(it.first));
-    }
-
-    // Get fieldset
-    atlas::FieldSet fset;
-    dx.toFieldSet(fset);
-
-    // Divide by the read fieldset
-    util::divideFieldSets(fset, multiplierFset_);
-
-    // Change variable name
-    for (auto const& it : map_) {
-      fset[it.second].rename(it.first);
-    }
-
-    // Back to increment
-    dx.fromFieldSet(fset);
-  }
-
-  oops::Log::trace() << classname() << "::changeVarInverseAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

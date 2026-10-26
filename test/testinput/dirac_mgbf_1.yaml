@@ -1,0 +1,49 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 48 
+    ny: 48 
+    dx: 200.0e3 
+    dy: 150.0e3
+    lonlat(centre): [135, 35]
+    projection:
+      type: lambert_conformal_conic
+      latitude0: 40
+      longitude0: 135
+    y_numbering: -1
+  partitioner: checkerboard
+  halo: 1
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 65 
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  - air_pressure_at_surface
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: MGBF_covariance
+    mgbf namelist file: testdata/dirac_mgbf.nml
+dirac:
+  lon:
+  - 135.0
+  lat:
+  - 40.0
+  level:
+  - 30 
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  filepath: testdata/dirac_mgbf_1/_MPI_-_OMP__dirac_%id%
+test:
+  float relative tolerance: 1.5e-06
+  reference filename: testref/dirac_mgbf_1.ref
