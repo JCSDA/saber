@@ -16,9 +16,9 @@ Output state:
     + min    = 3.9999999999999995e+06
     + max    = 4.0000000000000009e+06
     + mean   = 4.0000000000000000e+06
-    + stddev ~ 0
+    + stddev close to zero
   - air_horizontal_velocity_potential (2 levels):
     + min    = 3.9999999999999995e+06
     + max    = 4.0000000000000009e+06
     + mean   = 4.0000000000000000e+06
-    + stddev ~ 0
+    + stddev close to zero

@@ -45,7 +45,7 @@ background error:
       - parameter: rh
         component: 1
         file:
-          filepath: testdata/convertstate_rh/_MPI_-_OMP__cor_rh
+          filepath: testdata/convertstate_rh/cor_rh
       output model files:
       - parameter: dirac_nicas
         file:
