@@ -52,6 +52,7 @@ class LayerSpec : public LayerBase {
 
   // Multiply square-root and adjoint
   size_t ctlVecSize() const override {return nxPerTask_[myrank_]*nyExt_*nz_;}
+  std::string ctlVecHash() const override;
   std::vector<int> ctlVecGlbIndex() const override;
   void multiplySqrt(const atlas::Field &,
                     atlas::Field &,

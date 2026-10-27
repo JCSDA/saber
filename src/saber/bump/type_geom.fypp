@@ -2024,7 +2024,7 @@ real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:)
 real(kind_real),allocatable :: lon_ssa(:),lat_ssa(:),rh_ssa(:),lon_rep(:),lat_rep(:),rh_rep(:),dist_rep(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:),lon_ss(:),lat_ss(:),rh_ss(:)
 logical :: retry,valid
-logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:),rmask(:)
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),rmask(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 type(tree_type) :: tree
@@ -2750,7 +2750,6 @@ allocate(lat_sa(nsa))
 allocate(lon_s(ns))
 allocate(lat_s(ns))
 allocate(order_s(ns))
-allocate(gmask_s(ns))
 
 ! Initialization
 isa = 0
@@ -2777,8 +2776,7 @@ call qsort(ns,lon_s,lat_s,order_s)
 s_to_cx = s_to_cx(order_s)
 
 ! Grid hash
-gmask_s = .true.
-call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
+hash = grid_hash(ns,lon_s,lat_s)
 
 ! Test grid hash
 write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
@@ -2792,7 +2790,6 @@ deallocate(lat_sa)
 deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
-deallocate(gmask_s)
 
 ! Probe out
 @:probe_out()
