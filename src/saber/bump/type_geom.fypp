@@ -1945,7 +1945,7 @@ integer :: nn_index(1)
 integer,allocatable :: order_s(:)
 real(kind_real) :: lonlat(2)
 real(kind_real),allocatable :: lon_s(:),lat_s(:)
-logical,allocatable :: lmask_cx(:),gmask_s(:)
+logical,allocatable :: lmask_cx(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 
@@ -2013,7 +2013,6 @@ if (.not.mpl%main) allocate(s_to_cx(ns))
 allocate(lon_s(ns))
 allocate(lat_s(ns))
 allocate(order_s(ns))
-allocate(gmask_s(ns))
 
 ! Broadcast
 call mpl%f_comm%broadcast(s_to_cx,mpl%rootproc-1)
@@ -2039,8 +2038,7 @@ call qsort(ns,lon_s,lat_s,order_s)
 s_to_cx = s_to_cx(order_s)
 
 ! Grid hash
-gmask_s = .true.
-call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
+hash = grid_hash(ns,lon_s,lat_s)
 
 ! Test grid hash
 write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
@@ -2052,7 +2050,6 @@ call agrid%final()
 deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
-deallocate(gmask_s)
 
 end subroutine geom_initialize_sampling_from_size
 
@@ -2485,8 +2482,7 @@ call qsort(ns,lon_s,lat_s,order_s)
 s_to_c0 = s_to_c0(order_s)
 
 ! Grid hash
-gmask_s = .true.
-call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
+hash = grid_hash(ns,lon_s,lat_s)
 
 ! Test grid hash
 write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
@@ -2496,7 +2492,6 @@ if (ifmt>0) call mpl%flush
 ! Release memory
 deallocate(rh_c0)
 deallocate(order_s)
-deallocate(gmask_s)
 call agrid%final()
 call tree_s%dealloc
 

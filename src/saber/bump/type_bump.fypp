@@ -72,6 +72,7 @@ contains
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
    procedure :: apply_nicas_filter => bump_apply_nicas_filter
    procedure :: get_cv_size => bump_get_cv_size
+   procedure :: get_cv_hash => bump_get_cv_hash
    procedure :: random_cv => bump_random_cv
    procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
@@ -1055,6 +1056,26 @@ call bump%nicas%alloc_cv(bump%mpl,bump%nam,bump%geom,cv,getsizeonly=.true.)
 n = cv%n
 
 end subroutine bump_get_cv_size
+
+!----------------------------------------------------------------------
+! Subroutine: bump_get_cv_hash
+!> Get control variable hash
+!----------------------------------------------------------------------
+subroutine bump_get_cv_hash(bump,conf)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump          !< BUMP
+type(fckit_configuration),intent(inout) :: conf !< FCKIT configuration
+
+! Set name
+@:set_name(bump_get_cv_hash)
+
+! Get hash
+call bump%nicas%get_cv_hash(bump%nam,conf)
+
+end subroutine bump_get_cv_hash
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_random_cv

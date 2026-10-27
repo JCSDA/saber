@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/utils/MD5.h"
 
 #include "oops/base/FieldSets.h"
 #include "oops/util/ConfigFunctions.h"
@@ -669,6 +670,25 @@ size_t BUMP::getCvSize() const {
 
   oops::Log::trace() << classname() << "::getCvSize done" << std::endl;
   return n;
+}
+
+// -----------------------------------------------------------------------------
+
+std::string BUMP::getCvHash() const {
+  oops::Log::trace() << classname() << "::getCvHash starting" << std::endl;
+
+  eckit::MD5 hash;
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    eckit::LocalConfiguration hashConf;
+    bump_get_cv_hash_f90(keyBUMP_[jgrid], hashConf);
+    for (const auto & hashCmp : hashConf.getStringVector("hash")) {
+      hash.add(hashCmp);
+    }
+  }
+  const std::string cvHash = hash.digest();
+
+  oops::Log::trace() << classname() << "::getCvHash done" << std::endl;
+  return cvHash;
 }
 
 // -----------------------------------------------------------------------------

@@ -12,6 +12,8 @@
 
 #include "atlas/array.h"
 
+#include "eckit/utils/MD5.h"
+
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
@@ -38,6 +40,16 @@ LayerSpec::~LayerSpec() {
   fftw_free(yBufC_);
 
   oops::Log::trace() << classname() << "::~LayerSpec done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+std::string LayerSpec::ctlVecHash() const {
+  eckit::MD5 hash;
+  hash.add(nxPerTask_[myrank_]);
+  hash.add(nyExt_);
+  hash.add(nz_);
+  return hash.digest();
 }
 
 // -----------------------------------------------------------------------------

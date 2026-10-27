@@ -50,6 +50,7 @@ class LayerHalo : public LayerBase {
 
   // Multiply square-root and adjoint
   size_t ctlVecSize() const override {return rSize_*nz_;}
+  std::string ctlVecHash() const override;
   std::vector<int> ctlVecGlbIndex() const override;
   void multiplySqrt(const atlas::Field &,
                     atlas::Field &,

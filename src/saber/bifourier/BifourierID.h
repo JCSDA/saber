@@ -53,6 +53,8 @@ class BifourierID : public CentralBlockBase {
 
   size_t ctlVecSize() const override
     {return trans_->ctlVecSize();}
+  std::string ctlVecHash() const override
+    {return trans_->ctlVecHash();}
   void randomCtlVec(atlas::Field & cv,
                     const size_t & offset) const override
     {trans_->randomCtlVec(cv, centralVars(), offset);}

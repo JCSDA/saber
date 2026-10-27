@@ -39,6 +39,8 @@ class BifourierCovariance : public CentralBlockBase {
 
   size_t ctlVecSize() const override
     {return covar_->ctlVecSize();}
+  std::string ctlVecHash() const override
+    {return covar_->ctlVecHash();}
   void randomCtlVec(atlas::Field & cv,
                     const size_t & offset) const override
     {covar_->randomCtlVec(cv, offset);}
