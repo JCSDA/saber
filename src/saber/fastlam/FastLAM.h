@@ -60,6 +60,7 @@ class FastLAM : public CentralBlockBase {
   virtual ~FastLAM();
 
   size_t ctlVecSize() const override {return ctlVecSize_;}
+  std::string ctlVecHash() const override {return ctlVecHash_;}
   void randomCtlVec(atlas::Field &,
                     const size_t &) const override;
   void multiplySqrt(const atlas::Field &,
@@ -125,6 +126,9 @@ class FastLAM : public CentralBlockBase {
   // Control vector size
   size_t ctlVecSize_;
 
+  // Control vector hash
+  std::string ctlVecHash_;
+
   // Remote index
   std::vector<int> glbIndex_;
 
@@ -143,8 +147,8 @@ class FastLAM : public CentralBlockBase {
   // Setup reduced grids
   void setupReducedGrids();
 
-  // Setup control vector size
-  void setupCtlVecSize();
+  // Setup control vector size and hash
+  void setupCtlVecSizeAndHash();
 
   // Setup remote index
   void setupGlbIndex();

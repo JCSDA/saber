@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/utils/MD5.h"
 
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/Logger.h"
@@ -967,8 +968,8 @@ void FastLAM::directCalibration(const oops::FieldSets &) {
     weight_[jBin]->sqrt();
   }
 
-  // Setup control vector size
-  setupCtlVecSize();
+  // Setup control vector size and hash
+  setupCtlVecSizeAndHash();
 
   // Setup remote index
   setupGlbIndex();
@@ -1059,7 +1060,7 @@ void FastLAM::read() {
   }
 
   // Setup control vector size
-  setupCtlVecSize();
+  setupCtlVecSizeAndHash();
 
   // Setup remote index
   setupGlbIndex();
@@ -1728,11 +1729,12 @@ void FastLAM::setupReducedGrids() {
 
 // -----------------------------------------------------------------------------
 
-void FastLAM::setupCtlVecSize() {
-  oops::Log::trace() << classname() << "::setupCtlVecSize starting" << std::endl;
+void FastLAM::setupCtlVecSizeAndHash() {
+  oops::Log::trace() << classname() << "::setupCtlVecSizeAndHash starting" << std::endl;
 
   // Initialization
   ctlVecSize_ = 0;
+  eckit::MD5 hash;
 
   // Loop over bins
   for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
@@ -1742,13 +1744,17 @@ void FastLAM::setupCtlVecSize() {
         || (params_.strategy.value() == "duplicated and weighted")) {
         // Univariate or duplicated and weighted strategy
         ctlVecSize_ += data_[jg][jBin]->ctlVecSize()*groups_[jg].variables_.size();
+        hash.add(data_[jg][jBin]->ctlVecHash());
+        hash.add(groups_[jg].variables_.size());
       } else if (params_.strategy.value() == "duplicated") {
         // Duplicated strategy
         ctlVecSize_ += data_[jg][jBin]->ctlVecSize();
+        hash.add(data_[jg][jBin]->ctlVecHash());
       } else if (params_.strategy.value() == "crossed") {
         // Crossed strategy
         if (jg == 0) {
           ctlVecSize_ += data_[jg][jBin]->ctlVecSize();
+          hash.add(data_[jg][jBin]->ctlVecHash());
         } else {
           ASSERT(data_[jg][jBin]->ctlVecSize() == data_[0][jBin]->ctlVecSize());
         }
@@ -1759,7 +1765,10 @@ void FastLAM::setupCtlVecSize() {
     }
   }
 
-  oops::Log::trace() << classname() << "::setupCtlVecSize done" << std::endl;
+  // Get final hash
+  ctlVecHash_ = hash.digest();
+
+  oops::Log::trace() << classname() << "::setupCtlVecSizeAndHash done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
