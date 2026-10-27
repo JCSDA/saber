@@ -77,6 +77,7 @@ class BUMP {
   void multiplyPsiChiToUV(oops::FieldSet3D &) const;
   void multiplyPsiChiToUVAd(oops::FieldSet3D &) const;
   size_t getCvSize() const;
+  std::string getCvHash() const;
   void randomCv(atlas::Field &, const size_t &) const;
   void multiplyNicasSqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const;
   void multiplyNicasSqrtAd(const oops::FieldSet3D &, atlas::Field &, const size_t &) const;

@@ -237,6 +237,7 @@ class CentralBlockWrapper : public util::Printable {
   // Apply weights for the "duplicated and weighted" strategy
   void applyWeights(oops::FieldSet3D &) const;
   void applyWeightsAD(oops::FieldSet3D &) const;
+  void checkCrossedConsistency() const;
 
   void print(std::ostream &) const {}
 };

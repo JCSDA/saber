@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/utils/MD5.h"
 
 #include "oops/generic/gc99.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -2105,6 +2106,13 @@ void BifourierTransformBase::setupLocalSpectralSpace() {
 
   // Compute control vector size
   ctlVecSize_ = ns_*nvz_;
+
+  // Compute control vector hash
+  eckit::MD5 hash;
+  hash.add(specUid_);
+  hash.add(nvz_);
+  hash.add(myrank_);
+  ctlVecHash_ = hash.digest();
 
   // Compute spectral norm sum
   std::vector<double> spNormSum(nwGlb_, 0.0);
