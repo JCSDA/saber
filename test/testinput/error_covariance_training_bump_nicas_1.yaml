@@ -28,6 +28,7 @@ background error:
       drivers:
         multivariate strategy: crossed
         compute nicas: true
+        write global nicas: true
         adjoints test: true
         internal dirac test: true
         randomization test: true
@@ -61,5 +62,8 @@ background error:
       - parameter: cor_rv
         file:
           filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__cor_rv
+      - parameter: dirac_nicas
+        file:
+          filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__dirac_nicas
 test:
   reference filename: testref/error_covariance_training_bump_nicas_1.ref
