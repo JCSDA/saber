@@ -6,16 +6,16 @@
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter rh - 1: 1.7563598720080119e+08
-             nc1(  1) =                        589
-             nc1(  2) =                        589
-             ns =                             1178
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             ns =                              720
              v%n_s =                             2
-             c%n_s[global] =                 28804
-             nc1(  1) =                        589
-             nc1(  2) =                        589
-             ns =                             1178
+             c%n_s[global] =                 13952
+             nc1(  1) =                        360
+             nc1(  2) =                        360
+             ns =                              720
              v%n_s =                             2
-             c%n_s[global] =                 28804
+             c%n_s[global] =                 13952
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -39,4 +39,4 @@ Norm of input parameter rh - 1: 1.7563598720080119e+08
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of output parameter dirac_nicas - 1: 2.2359569773293182e+00
+Norm of output parameter dirac_nicas - 1: 2.2034334637997182e+00

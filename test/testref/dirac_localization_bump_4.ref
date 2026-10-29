@@ -41,6 +41,18 @@ Input Dirac increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -48,6 +60,18 @@ Input Dirac increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
@@ -59,6 +83,18 @@ Square-root test for block Ensemble passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Adjoint test for block BUMP_NICAS passed
 Adjoint test for the multivariate central block passed
 Square-root test for block BUMP_NICAS passed
@@ -167,6 +203,18 @@ Localization(hybrid1_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Covariance(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -193,6 +241,18 @@ Covariance(hybrid2_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.3000000000000003e+00
@@ -223,6 +283,18 @@ Localization(hybrid2_ensemble) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
@@ -251,6 +323,18 @@ Covariance(hybrid3_SABER) * Increment:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                   Requested distance between points (min/max/avg):  0.150E+04 km /  0.150E+04 km /  0.150E+04 km
+                   Regular sampling grid size:       88 points
+                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.157E+04 km /  0.132E+04 km
+                   Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
+                   Subgrid hash:  -1613954990
+                Subgrid size:       88
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  1536
 Adjoint test for block BUMP_NICAS passed
 Adjoint test for the multivariate central block passed
 Square-root test for block BUMP_NICAS passed

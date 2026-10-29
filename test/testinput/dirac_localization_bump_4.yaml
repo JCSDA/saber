@@ -35,15 +35,12 @@ background error:
         zero padding: 6
       localization:
         localization method: SABER
-        saber central block:
+        saber central block: &centralBlockFull
           saber block name: BUMP_NICAS
           read:
             general:
               testing: true
               universe length-scale: 10000.0e3
-            io:
-              data directory: testdata
-              files prefix: dirac_localization_bump_4/_MPI_-_OMP_
             model:
               groups:
               - group name: group1
@@ -54,9 +51,6 @@ background error:
             drivers:
               multivariate strategy: duplicated and weighted
               compute nicas: true
-              write local nicas: true
-            ensemble sizes:
-              total ensemble size: 25
             nicas:
               resolution: 4.0
               explicit length-scales: true
@@ -110,18 +104,26 @@ background error:
               - eastward_wind
               - northward_wind
               value: 0.5
-            group central block:
+            group central block: &centralBlock1
               saber block name: BUMP_NICAS
               read:
                 general:
                   testing: true
                   universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_4/_MPI_-_OMP_
                 drivers:
                   multivariate strategy: univariate
-                  read local nicas: true
+                  compute nicas: true
+                nicas:
+                  resolution: 4.0
+                  explicit length-scales: true
+                  horizontal length-scale:
+                  - groups:
+                    - group1
+                    value: 6000.0e3
+                  vertical length-scale:
+                  - groups:
+                    - group1
+                    value: 3.0
     weight:
       value: 0.25
   - covariance:
@@ -142,37 +144,7 @@ background error:
           nmembers: 25
           zero padding: 6
       localization:
-        saber central block:
-          saber block name: BUMP_NICAS
-          read:
-            general:
-              testing: true
-              universe length-scale: 10000.0e3
-            io:
-              data directory: testdata
-              files prefix: dirac_localization_bump_4/_MPI_-_OMP_
-            model:
-              groups:
-              - group name: group1
-                variables:
-                - eastward_wind
-                - northward_wind
-                - air_horizontal_streamfunction
-            drivers:
-              multivariate strategy: duplicated and weighted
-              read local nicas: true
-            nicas:
-              common localization weights:
-              - row variables:
-                - eastward_wind
-                column variables:
-                - northward_wind
-                value: 0.5
-              - row variables:
-                - eastward_wind
-                column variables:
-                - air_horizontal_streamfunction
-                value: 0.3
+        saber central block: *centralBlockFull
     weight:
       value: 0.25
   - covariance:
@@ -207,18 +179,7 @@ background error:
               - eastward_wind
               - northward_wind
               value: 0.5
-            group central block:
-              saber block name: BUMP_NICAS
-              read:
-                general:
-                  testing: true
-                  universe length-scale: 10000.0e3
-                io:
-                  data directory: testdata
-                  files prefix: dirac_localization_bump_4/_MPI_-_OMP_
-                drivers:
-                  multivariate strategy: univariate
-                  read local nicas: true
+            group central block: *centralBlock1
     weight:
       value: 0.25
 dirac:
