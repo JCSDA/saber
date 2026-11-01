@@ -60,8 +60,8 @@ Norm of input parameter nicas_a - 2: 7.3584341166431972e+00
           Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6209030
+          Level   2:  0.0000000 -  0.6208536
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of output parameter dirac_nicas - 1: 2.7210288685328945e+00
+Norm of output parameter dirac_nicas - 1: 2.7420397644929171e+00

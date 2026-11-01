@@ -298,9 +298,9 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /   -2.0:  1.0000000
-          Level   1:  0.0098000 -  0.8769821
-          Level   2:  0.0098288 -  0.9442638
-          Level   3:  0.0098383 -  0.9930274
+          Level   1:  0.0098774 -  0.8341272
+          Level   2:  0.0098777 -  0.9351155
+          Level   3:  0.0098544 -  0.9934786
           Level   4:  0.0098358 -  1.0000000
              0.0 /   -2.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
@@ -383,4 +383,4 @@ Norm of output parameter cor_rh - 3: 2.7203616659950030e+08
 Norm of output parameter cor_rv - 1: 1.2904833987685040e+03
 Norm of output parameter cor_rv - 2: 1.2904833987685040e+03
 Norm of output parameter cor_rv - 3: 1.2904833987685040e+03
-Norm of output parameter dirac_nicas - 1: 3.1353491199822404e+01
+Norm of output parameter dirac_nicas - 1: 3.1894710026379688e+01

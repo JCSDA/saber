@@ -249,7 +249,7 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6209030
+          Level   2:  0.0000000 -  0.6208536
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
@@ -270,4 +270,4 @@ Norm of output parameter cor_rh - 1: 2.7135741031923908e+08
 Norm of output parameter cor_rh - 2: 5.8824693210457429e+07
 Norm of output parameter cor_rv - 1: 1.9358909277910544e+02
 Norm of output parameter cor_rv - 2: 4.1565010573423358e+01
-Norm of output parameter nicas_norm - 1: 8.3039717315623491e+01
+Norm of output parameter nicas_norm - 1: 8.2210047677691236e+01
