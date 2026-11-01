@@ -107,26 +107,69 @@ type(samp_type),intent(in) :: samp       !< Sampling
 ! Local variables
 integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vert_coord_id
 integer :: ildwv,ig
-integer :: ic2a(0:nam%nldwv)
-character(len=1024),dimension(0:nam%nldwv) :: filename
+character(len=1024) :: filename
 character(len=1024) :: grpname
 
 ! Set name
 @:set_name(hdiag_write)
 
-! Initialization
-ic2a(0) = mpl%msv%vali
-if (mpl%main) ic2a(0) = 0
-filename(0) = trim(nam%prefix)//'diag'
-do ildwv=1,nam%nldwv
-   ic2a(ildwv) = samp%ldwv_to_c2a(ildwv)
-   filename(ildwv) = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
-end do
+! Global
+if (mpl%main) then
+   ! File name
+   filename = trim(nam%prefix)//'diag'
 
-do ildwv=0,nam%nldwv
-   if (mpl%msv%isnot(ic2a(ildwv))) then
+   ! Open file
+   ncid = create_file(mpl,filename,nam%time_comm,0)
+
+   do ig=1,nam%ng
+      ! Get group name
+      call nam%alias(nam%group_names(ig),grpname)
+
+      ! Define group
+      grpid = define_grp(mpl,ncid,grpname)
+
+      ! Define dimensions
+      nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
+      nc4_id = define_dim(mpl,grpid,'nc4',nam%nc4)
+      nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
+      nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom%nl0)
+      nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom%nl0)
+
+      ! Define coordinates
+      disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+      as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
+      vert_coord_id = define_var(mpl,grpid,'vert_coord','real',(/nl0_1_id/))
+
+      ! Write coordinates
+      call put_var(mpl,grpid,disth_id,geom%disth(1:nam%nc3))
+      call put_var(mpl,grpid,as_id,geom%as(1:nam%nc4))
+      call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
+
+      ! Write ensemble covariance
+      if (nam%compute_cov) call hdiag%cov%blk(ig)%glb%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id)
+
+      ! Write ensemble correlation
+      if (nam%compute_cor) call hdiag%cor%blk(ig)%glb%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id)
+
+      ! Write ensemble localization and hybrid coefficient
+      if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(ig)%glb%write(mpl,nam,geom,grpid, &
+ & nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+   end do
+
+   ! Close file
+   call close_file(mpl,ncid)
+end if
+
+! Local
+do ildwv=1,nam%nldwv
+   if (mpl%msv%isnot(samp%ldwv_to_c2a(ildwv))) then
+      ! File name
+      filename = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
+
       ! Open file
-      ncid = create_file(mpl,filename(ildwv),nam%time_comm,0)
+      ncid = create_file(mpl,filename,nam%time_comm,0)
 
       do ig=1,nam%ng
          ! Get group name
@@ -153,15 +196,15 @@ do ildwv=0,nam%nldwv
          call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
 
          ! Write ensemble covariance
-         if (nam%compute_cov) call hdiag%cov%blk(ic2a(ildwv),ig)%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
+         if (nam%compute_cov) call hdiag%cov%blk(ig)%loc(samp%ldwv_to_c2a(ildwv))%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
  & nl0_1_id,nl0_2_id)
 
          ! Write ensemble correlation
-         if (nam%compute_cor) call hdiag%cor%blk(ic2a(ildwv),ig)%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
+         if (nam%compute_cor) call hdiag%cor%blk(ig)%loc(samp%ldwv_to_c2a(ildwv))%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
  & nl0_1_id,nl0_2_id)
 
          ! Write ensemble localization and hybrid coefficient
-         if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(ic2a(ildwv),ig)%write(mpl,nam,geom,grpid, &
+         if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(ig)%loc(samp%ldwv_to_c2a(ildwv))%write(mpl,nam,geom,grpid, &
  & nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
       end do
 
@@ -193,6 +236,7 @@ character(len=1024) :: grpname
 ! Set name
 @:set_name(hdiag_write_yaml)
 
+! Global
 if (mpl%main) then
    ! Get unit
    lunit = 12
@@ -209,10 +253,10 @@ if (mpl%main) then
       write(lunit,'(a)') trim(grpname)//':'
 
       ! Write ensemble correlation
-      if (nam%compute_cor) call hdiag%cor%blk(0,ig)%write_yaml(mpl,nam,geom,ig,lunit)
+      if (nam%compute_cor) call hdiag%cor%blk(ig)%glb%write_yaml(mpl,nam,geom,ig,lunit)
 
       ! Write ensemble localization and hybrid coefficient
-      if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(0,ig)%write_yaml(mpl,nam,geom,ig,lunit)
+      if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(ig)%glb%write_yaml(mpl,nam,geom,ig,lunit)
    end do
 
    ! Close file
@@ -332,7 +376,7 @@ type(diag_type) :: cor_tmp
 @:set_name(hdiag_from_gsi)
 
 ! Allocation
-allocate(hdiag%cor%blk(0:0,nam%ng))
+allocate(hdiag%cor%blk(nam%ng))
 if (nam%check_dirac) allocate(hdiag%cor%dirac(geom%nc0a,geom%nl0,nam%nv))
 
 do ig=1,nam%ng
@@ -343,42 +387,42 @@ do ig=1,nam%ng
    end do
 
    ! Initialization
-   hdiag%cor%blk(0,ig)%ncmp = size(gsi%a)
-   write(mpl%info,'(a7,a,i1)') '','Number of component for GSI: ',hdiag%cor%blk(0,ig)%ncmp
+   hdiag%cor%blk(ig)%glb%ncmp = size(gsi%a)
+   write(mpl%info,'(a7,a,i1)') '','Number of component for GSI: ',hdiag%cor%blk(ig)%glb%ncmp
    call mpl%flush
 
    ! Allocation
-   allocate(hdiag%cor%blk(0,ig)%a_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(0,ig)%ncmp))
-   allocate(hdiag%cor%blk(0,ig)%s_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(0,ig)%ncmp))
-   allocate(hdiag%cor%blk(0,ig)%rh_c0a(geom%nc0a,geom%nl0))
-   allocate(hdiag%cor%blk(0,ig)%rv_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(0,ig)%ncmp))
+   allocate(hdiag%cor%blk(ig)%glb%a_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(ig)%glb%ncmp))
+   allocate(hdiag%cor%blk(ig)%glb%s_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(ig)%glb%ncmp))
+   allocate(hdiag%cor%blk(ig)%glb%rh_c0a(geom%nc0a,geom%nl0))
+   allocate(hdiag%cor%blk(ig)%glb%rv_c0a(geom%nc0a,geom%nl0,hdiag%cor%blk(ig)%glb%ncmp))
 
    ! Amplitude
-   do icmp=1,hdiag%cor%blk(0,ig)%ncmp
+   do icmp=1,hdiag%cor%blk(ig)%glb%ncmp
       if (gsi%var2d(iv)) then
-         hdiag%cor%blk(0,ig)%a_c0a(:,:,icmp) = mpl%msv%valr
-         hdiag%cor%blk(0,ig)%a_c0a(:,nam%ilev2d,icmp) = gsi%a(icmp)
+         hdiag%cor%blk(ig)%glb%a_c0a(:,:,icmp) = mpl%msv%valr
+         hdiag%cor%blk(ig)%glb%a_c0a(:,nam%ilev2d,icmp) = gsi%a(icmp)
       else
-         hdiag%cor%blk(0,ig)%a_c0a(:,:,icmp) = gsi%a(icmp)
+         hdiag%cor%blk(ig)%glb%a_c0a(:,:,icmp) = gsi%a(icmp)
       end if
    end do
 
    ! Interpolate
    if (gsi%var2d(iv)) then
       ! 2D variable
-      hdiag%cor%blk(0,ig)%rh_c0a = mpl%msv%valr
-      hdiag%cor%blk(0,ig)%rv_c0a = mpl%msv%valr
+      hdiag%cor%blk(ig)%glb%rh_c0a = mpl%msv%valr
+      hdiag%cor%blk(ig)%glb%rv_c0a = mpl%msv%valr
       do ic0a=1,geom%nc0a
          call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
-         hdiag%cor%blk(0,ig)%s_c0a(ic0a,nam%ilev2d,1) = one
-         hdiag%cor%blk(0,ig)%rh_c0a(ic0a,nam%ilev2d) = rlatm*gsi%rh(ilatm,1,1,iv)+rlatp*gsi%rh(ilatp,1,1,iv)
-         do icmp=2,hdiag%cor%blk(0,ig)%ncmp
-            hdiag%cor%blk(0,ig)%s_c0a(ic0a,nam%ilev2d,icmp) = &
+         hdiag%cor%blk(ig)%glb%s_c0a(ic0a,nam%ilev2d,1) = one
+         hdiag%cor%blk(ig)%glb%rh_c0a(ic0a,nam%ilev2d) = rlatm*gsi%rh(ilatm,1,1,iv)+rlatp*gsi%rh(ilatp,1,1,iv)
+         do icmp=2,hdiag%cor%blk(ig)%glb%ncmp
+            hdiag%cor%blk(ig)%glb%s_c0a(ic0a,nam%ilev2d,icmp) = &
  & (rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)) &
- & /hdiag%cor%blk(0,ig)%rh_c0a(ic0a,nam%ilev2d)
+ & /hdiag%cor%blk(ig)%glb%rh_c0a(ic0a,nam%ilev2d)
          end do
-         do icmp=1,hdiag%cor%blk(0,ig)%ncmp
-            hdiag%cor%blk(0,ig)%rv_c0a(ic0a,nam%ilev2d,icmp) = zero
+         do icmp=1,hdiag%cor%blk(ig)%glb%ncmp
+            hdiag%cor%blk(ig)%glb%rv_c0a(ic0a,nam%ilev2d,icmp) = zero
          end do
       end do
    else
@@ -386,22 +430,22 @@ do ig=1,nam%ng
       do ic0a=1,geom%nc0a
          call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
          do il0=1,geom%nl0
-            hdiag%cor%blk(0,ig)%s_c0a(ic0a,il0,1) = one
-            hdiag%cor%blk(0,ig)%rh_c0a(ic0a,il0) = &
+            hdiag%cor%blk(ig)%glb%s_c0a(ic0a,il0,1) = one
+            hdiag%cor%blk(ig)%glb%rh_c0a(ic0a,il0) = &
  &  rlatm*gsi%rlevm(il0)*gsi%rh(ilatm,gsi%l0_to_levm(il0),1,iv) &
  & +rlatm*gsi%rlevp(il0)*gsi%rh(ilatm,gsi%l0_to_levp(il0),1,iv) &
  & +rlatp*gsi%rlevm(il0)*gsi%rh(ilatp,gsi%l0_to_levm(il0),1,iv) &
  & +rlatp*gsi%rlevp(il0)*gsi%rh(ilatp,gsi%l0_to_levp(il0),1,iv)
-            do icmp=2,hdiag%cor%blk(0,ig)%ncmp
-               hdiag%cor%blk(0,ig)%s_c0a(ic0a,il0,icmp) = &
+            do icmp=2,hdiag%cor%blk(ig)%glb%ncmp
+               hdiag%cor%blk(ig)%glb%s_c0a(ic0a,il0,icmp) = &
  & (rlatm*gsi%rlevm(il0)*gsi%rh(ilatm,gsi%l0_to_levm(il0),icmp,iv) &
  & +rlatm*gsi%rlevp(il0)*gsi%rh(ilatm,gsi%l0_to_levp(il0),icmp,iv) &
  & +rlatp*gsi%rlevm(il0)*gsi%rh(ilatp,gsi%l0_to_levm(il0),icmp,iv) &
  & +rlatp*gsi%rlevp(il0)*gsi%rh(ilatp,gsi%l0_to_levp(il0),icmp,iv)) &
- & /hdiag%cor%blk(0,ig)%rh_c0a(ic0a,il0)
+ & /hdiag%cor%blk(ig)%glb%rh_c0a(ic0a,il0)
             end do
-            do icmp=1,hdiag%cor%blk(0,ig)%ncmp
-               hdiag%cor%blk(0,ig)%rv_c0a(ic0a,il0,icmp) = &
+            do icmp=1,hdiag%cor%blk(ig)%glb%ncmp
+               hdiag%cor%blk(ig)%glb%rv_c0a(ic0a,il0,icmp) = &
  &  rlatm*gsi%rlevm(il0)/gsi%rv(ilatm,gsi%l0_to_levm(il0),icmp,iv) &
  & +rlatm*gsi%rlevp(il0)/gsi%rv(ilatm,gsi%l0_to_levp(il0),icmp,iv) &
  & +rlatp*gsi%rlevm(il0)/gsi%rv(ilatp,gsi%l0_to_levm(il0),icmp,iv) &
@@ -413,9 +457,9 @@ do ig=1,nam%ng
 
    ! Meters to radians
    if (gsi%var2d(iv)) then
-      hdiag%cor%blk(0,ig)%rh_c0a(:,nam%ilev2d) = hdiag%cor%blk(0,ig)%rh_c0a(:,nam%ilev2d)/req
+      hdiag%cor%blk(ig)%glb%rh_c0a(:,nam%ilev2d) = hdiag%cor%blk(ig)%glb%rh_c0a(:,nam%ilev2d)/req
    else
-      hdiag%cor%blk(0,ig)%rh_c0a = hdiag%cor%blk(0,ig)%rh_c0a/req
+      hdiag%cor%blk(ig)%glb%rh_c0a = hdiag%cor%blk(ig)%glb%rh_c0a/req
    end if
 end do
 
@@ -424,7 +468,7 @@ call hdiag%cor%test_dirac(mpl,nam,geom)
 
 if (nam%check_dirac.and.allocated(hdiag%gsi_ref)) then
    ! Allocation
-   allocate(cor_tmp%blk(0:0,nam%ng))
+   allocate(cor_tmp%blk(nam%ng))
    allocate(cor_tmp%dirac(geom%nc0a,geom%nl0,nam%nv))
    allocate(fac(-nam%optimality_nfac:nam%optimality_nfac))
    allocate(mse_hor(-nam%optimality_nfac:nam%optimality_nfac))
@@ -432,17 +476,17 @@ if (nam%check_dirac.and.allocated(hdiag%gsi_ref)) then
 
    do ig=1,nam%ng
       ! Initialization
-      cor_tmp%blk(0,ig)%ncmp = hdiag%cor%blk(0,ig)%ncmp
+      cor_tmp%blk(ig)%glb%ncmp = hdiag%cor%blk(ig)%glb%ncmp
 
       ! Allocation
-      allocate(cor_tmp%blk(0,ig)%a_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
-      allocate(cor_tmp%blk(0,ig)%s_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
-      allocate(cor_tmp%blk(0,ig)%rh_c0a(geom%nc0a,geom%nl0))
-      allocate(cor_tmp%blk(0,ig)%rv_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
+      allocate(cor_tmp%blk(ig)%glb%a_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(ig)%glb%ncmp))
+      allocate(cor_tmp%blk(ig)%glb%s_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(ig)%glb%ncmp))
+      allocate(cor_tmp%blk(ig)%glb%rh_c0a(geom%nc0a,geom%nl0))
+      allocate(cor_tmp%blk(ig)%glb%rv_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(ig)%glb%ncmp))
 
       ! Copy amplitude and base horizontal support radius
-      cor_tmp%blk(0,ig)%a_c0a = hdiag%cor%blk(0,ig)%a_c0a
-      cor_tmp%blk(0,ig)%rh_c0a = hdiag%cor%blk(0,ig)%rh_c0a
+      cor_tmp%blk(ig)%glb%a_c0a = hdiag%cor%blk(ig)%glb%a_c0a
+      cor_tmp%blk(ig)%glb%rh_c0a = hdiag%cor%blk(ig)%glb%rh_c0a
    end do
 
    ! Initialization
@@ -459,14 +503,14 @@ if (nam%check_dirac.and.allocated(hdiag%gsi_ref)) then
             if (nam%group_index(iv)==ig) exit
          end do
 
-         do icmp=1,cor_tmp%blk(0,ig)%ncmp
+         do icmp=1,cor_tmp%blk(ig)%glb%ncmp
             ! Copy and multiply length-scales
             if (gsi%var2d(iv)) then
-               cor_tmp%blk(0,ig)%s_c0a(:,nam%ilev2d,icmp) = hdiag%cor%blk(0,ig)%s_c0a(:,nam%ilev2d,icmp)*fac(ifac)
-               cor_tmp%blk(0,ig)%rv_c0a(:,nam%ilev2d,icmp) = hdiag%cor%blk(0,ig)%rv_c0a(:,nam%ilev2d,icmp)*fac(ifac)
+               cor_tmp%blk(ig)%glb%s_c0a(:,nam%ilev2d,icmp) = hdiag%cor%blk(ig)%glb%s_c0a(:,nam%ilev2d,icmp)*fac(ifac)
+               cor_tmp%blk(ig)%glb%rv_c0a(:,nam%ilev2d,icmp) = hdiag%cor%blk(ig)%glb%rv_c0a(:,nam%ilev2d,icmp)*fac(ifac)
             else
-               cor_tmp%blk(0,ig)%s_c0a(:,:,icmp) = hdiag%cor%blk(0,ig)%s_c0a(:,:,icmp)*fac(ifac)
-               cor_tmp%blk(0,ig)%rv_c0a(:,:,icmp) = hdiag%cor%blk(0,ig)%rv_c0a(:,:,icmp)*fac(ifac)
+               cor_tmp%blk(ig)%glb%s_c0a(:,:,icmp) = hdiag%cor%blk(ig)%glb%s_c0a(:,:,icmp)*fac(ifac)
+               cor_tmp%blk(ig)%glb%rv_c0a(:,:,icmp) = hdiag%cor%blk(ig)%glb%rv_c0a(:,:,icmp)*fac(ifac)
             end if
          end do
       end do

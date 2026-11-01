@@ -701,10 +701,10 @@ do ig=1,bump%nam%ng
    do il0=1,bump%geom%nl0
       rh_diag = -one
       rv_diag = -one
-      if (bump%nam%rh(il0,ig)>zero) rh_diag = bump%hdiag%cor%blk(0,ig)%rh_l0(il0) &
- & *bump%hdiag%cor%blk(0,ig)%s_l0(il0,1)/bump%nam%rh(il0,ig)
-      if (bump%nam%rv(il0,ig)>zero) rv_diag = bump%hdiag%cor%blk(0,ig)%rv_l0(il0) &
- & *bump%hdiag%cor%blk(0,ig)%s_l0(il0,1)/bump%nam%rv(il0,ig)
+      if (bump%nam%rh(il0,ig)>zero) rh_diag = bump%hdiag%cor%blk(ig)%glb%rh_l0(il0) &
+ & *bump%hdiag%cor%blk(ig)%glb%s_l0(il0,1)/bump%nam%rh(il0,ig)
+      if (bump%nam%rv(il0,ig)>zero) rv_diag = bump%hdiag%cor%blk(ig)%glb%rv_l0(il0) &
+ & *bump%hdiag%cor%blk(ig)%glb%s_l0(il0,1)/bump%nam%rv(il0,ig)
       write(bump%mpl%test,'(a10,a,i3,a,f6.3,a,f6.3)') '','Level ',il0,' ~> ',rh_diag,' / ',rv_diag
       call bump%mpl%flush
    end do
@@ -1432,9 +1432,9 @@ do iv=1,bump%nam%nv
    select case (trim(param))
    case ('cor_a')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%cor%blk(0,ig)%a_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor%blk(ig)%glb%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%cor%blk(ig)%glb%a_c0a(:,:,icmp)
       found = .true.
    case ('cor_rh')
       if (bump%nam%forced_radii) then
@@ -1443,50 +1443,50 @@ do iv=1,bump%nam%nv
          end do
       else
          if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%cor%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-         fld_c0a = bump%hdiag%cor%blk(0,ig)%rh_c0a
+         if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+         fld_c0a = bump%hdiag%cor%blk(ig)%glb%rh_c0a
          do il0=1,bump%geom%nl0
             do ic0a=1,bump%geom%nc0a
-               if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*bump%hdiag%cor%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+               if (bump%geom%gmask_c0a(ic0a,il0).and.bump %mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*bump%hdiag%cor%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
             end do
          end do
       end if
       found = .true.
    case ('cor_rh1')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%cor%blk(0,ig)%D11_c0a
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%cor%blk(ig)%glb%D11_c0a
       do il0=1,bump%geom%nl0
          do ic0a=1,bump%geom%nc0a
             if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%cor%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%cor%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
          end do
       end do
       found = .true.
    case ('cor_rh2')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%cor%blk(0,ig)%D22_c0a
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%cor%blk(ig)%glb%D22_c0a
       do il0=1,bump%geom%nl0
          do ic0a=1,bump%geom%nc0a
             if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%cor%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%cor%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
          end do
       end do
       found = .true.
    case ('cor_rhc')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%cor%blk(0,ig)%D12_c0a
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%cor%blk(ig)%glb%D12_c0a
       found = .true.
    case ('cor_ecc')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor%blk(0,ig)%ecc_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%cor%blk(0,ig)%ecc_c0a
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%ecc_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%cor%blk(ig)%glb%ecc_c0a
       found = .true.
    case ('cor_rv')
       if (bump%nam%forced_radii) then
@@ -1495,9 +1495,9 @@ do iv=1,bump%nam%nv
          end do
       else
          if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%cor%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%cor%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-         fld_c0a = bump%hdiag%cor%blk(0,ig)%rv_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%cor%blk(ig)%glb%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+         fld_c0a = bump%hdiag%cor%blk(ig)%glb%rv_c0a(:,:,icmp)
       end if
       found = .true.
    case ('dirac_diag_cor')
@@ -1506,9 +1506,9 @@ do iv=1,bump%nam%nv
       found = .true.
    case ('loc_a')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%a_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc%blk(ig)%glb%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%a_c0a(:,:,icmp)
       found = .true.
    case ('loc_rh')
       if (bump%nam%forced_radii) then
@@ -1517,50 +1517,50 @@ do iv=1,bump%nam%nv
          end do
       else
          if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%loc%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%loc%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-         fld_c0a = bump%hdiag%loc%blk(0,ig)%rh_c0a
+         if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+         fld_c0a = bump%hdiag%loc%blk(ig)%glb%rh_c0a
          do il0=1,bump%geom%nl0
             do ic0a=1,bump%geom%nc0a
                if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*bump%hdiag%loc%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+ & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*bump%hdiag%loc%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
             end do
          end do
       end if
       found = .true.
    case ('loc_rh1')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%D11_c0a
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%D11_c0a
       do il0=1,bump%geom%nl0
          do ic0a=1,bump%geom%nc0a
             if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%loc%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%loc%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
          end do
       end do
       found = .true.
    case ('loc_rh2')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc%blk(0,ig)%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%D22_c0a
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%D22_c0a
       do il0=1,bump%geom%nl0
          do ic0a=1,bump%geom%nc0a
             if (bump%geom%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
- & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%loc%blk(0,ig)%s_c0a(ic0a,il0,icmp)*req
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*bump%hdiag%loc%blk(ig)%glb%s_c0a(ic0a,il0,icmp)*req
          end do
       end do
       found = .true.
    case ('loc_rhc')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%D12_c0a
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%D12_c0a
       found = .true.
    case ('loc_ecc')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%ecc_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%ecc_c0a
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%ecc_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%ecc_c0a
       found = .true.
    case ('loc_rv')
       if (bump%nam%forced_radii) then
@@ -1569,9 +1569,9 @@ do iv=1,bump%nam%nv
          end do
       else
          if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%loc%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%loc%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
-         fld_c0a = bump%hdiag%loc%blk(0,ig)%rv_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%loc%blk(ig)%glb%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+         fld_c0a = bump%hdiag%loc%blk(ig)%glb%rv_c0a(:,:,icmp)
       end if
       found = .true.
    case ('dirac_diag_loc')
@@ -1580,15 +1580,15 @@ do iv=1,bump%nam%nv
       found = .true.
    case ('hyb_coef_1')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%hyb_coef_1_c0a)) call bump%mpl%abort('${subr}$', &
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%hyb_coef_1_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%hyb_coef_1_c0a
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%hyb_coef_1_c0a
       found = .true.
    case ('hyb_coef_2')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc%blk(0,ig)%hyb_coef_2_c0a)) call bump%mpl%abort('${subr}$', &
+      if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%hyb_coef_2_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc%blk(0,ig)%hyb_coef_2_c0a
+      fld_c0a = bump%hdiag%loc%blk(ig)%glb%hyb_coef_2_c0a
       found = .true.
    end select
 

@@ -1,0 +1,1365 @@
+#:include 'generics.fypp'
+!----------------------------------------------------------------------
+! Module: type_avg_set
+!> Averaged statistics block derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_avg_set
+
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+use tools_const, only: zero,one,two,three
+use tools_func, only: add,divide,histogram,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_kinds, only: kind_real,huge_real
+use tools_netcdf, only: define_dim,define_var,inquire_var,put_var,get_var
+use tools_repro, only: sup,inf
+use type_geom, only: geom_type
+use type_mom_blk, only: mom_blk_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+use type_samp, only: samp_type
+
+implicit none
+
+! Averaged statistics set derived type
+type avg_set_type
+   integer :: ne                                           !< Ensemble size
+   integer :: nsub                                         !< Sub-ensembles number
+   integer :: ic2a                                         !< Subset Sc2 index, halo A
+   real(kind_real),allocatable :: nc1a(:,:,:,:)            !< Number of points in subset Sc1 on halo A
+   real(kind_real),allocatable :: m11(:,:,:,:)             !< Covariance average
+   real(kind_real),allocatable :: m11m11(:,:,:,:,:,:)      !< Product of covariances average
+   real(kind_real),allocatable :: m2m2(:,:,:,:,:,:)        !< Product of variances average
+   real(kind_real),allocatable :: m22(:,:,:,:,:)           !< Fourth-order centered moment average
+   real(kind_real),allocatable :: nc1a_cor(:,:,:,:)        !< Number of points in subset Sc1 on halo A with valid correlations
+   real(kind_real),allocatable :: cor(:,:,:,:)             !< Correlation average
+   real(kind_real),allocatable :: cor_var(:,:,:,:)         !< Correlation variance
+   real(kind_real),allocatable :: m11asysq(:,:,:,:)        !< Squared asymptotic covariance average
+   real(kind_real),allocatable :: m2m2asy(:,:,:,:)         !< Product of asymptotic variances average
+   real(kind_real),allocatable :: m22asy(:,:,:,:)          !< Asymptotic fourth-order centered moment average
+   real(kind_real),allocatable :: m11sq(:,:,:,:)           !< Squared covariance average for several ensemble sizes
+   real(kind_real),allocatable :: nc1a_wgt(:,:,:,:)        !< Weight for the number of points in subset Sc1 on halo A
+   real(kind_real),allocatable :: m11_wgt(:,:,:,:)         !< Weight for the covariance average
+   real(kind_real),allocatable :: nc1a_cor_wgt(:,:,:,:)    !< Weight for the number of points in subset Sc1 on halo A with valid correlations
+   real(kind_real),allocatable :: cor_wgt(:,:,:,:)         !< Weight for the correlation average
+   real(kind_real),allocatable :: cor_var_wgt(:,:,:,:)     !< Weight for the correlation variance
+   real(kind_real),allocatable :: m11asysq_wgt(:,:,:,:)    !< Weight for the squared asymptotic covariance average
+   real(kind_real),allocatable :: m11sq_wgt(:,:,:,:)       !< Weight for the squared covariance average for several ensemble sizes
+   real(kind_real),allocatable :: m11_bins(:,:,:,:,:)      !< Covariance histrogram bins
+   real(kind_real),allocatable :: m11_hist(:,:,:,:,:)      !< Covariance histrogram values
+   real(kind_real),allocatable :: m11m11_bins(:,:,:,:,:)   !< Product of covariances  histrogram bins
+   real(kind_real),allocatable :: m11m11_hist(:,:,:,:,:)   !< Product of covariances  histrogram values
+   real(kind_real),allocatable :: m2m2_bins(:,:,:,:,:)     !< Product of variances  histrogram bins
+   real(kind_real),allocatable :: m2m2_hist(:,:,:,:,:)     !< Product of variances  histrogram values
+   real(kind_real),allocatable :: m22_bins(:,:,:,:,:)      !< Fourth-order centered moment  histrogram bins
+   real(kind_real),allocatable :: m22_hist(:,:,:,:,:)      !< Fourth-order centered moment  histrogram values
+   real(kind_real),allocatable :: cor_bins(:,:,:,:,:)      !< Correlation histrogram bins
+   real(kind_real),allocatable :: cor_hist(:,:,:,:,:)      !< Correlation histrogram values
+contains
+   procedure :: avg_set_alloc_var
+   procedure :: avg_set_alloc_grp
+   generic :: alloc => avg_set_alloc_var,avg_set_alloc_grp
+   procedure :: dealloc => avg_set_dealloc
+   procedure :: read => avg_set_read
+   procedure :: write => avg_set_write
+   procedure :: write_hist => avg_set_write_hist
+   procedure :: compute_global => avg_set_compute_global
+   procedure :: compute_local => avg_set_compute_local
+   procedure :: compute_asy => avg_set_compute_asy
+   procedure :: init_group => avg_set_init_group
+   procedure :: accumul_group => avg_set_accumul_group
+   procedure :: norm_group => avg_set_norm_group
+end type avg_set_type
+
+private
+public :: avg_set_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_alloc_var
+!> Allocation
+!----------------------------------------------------------------------
+subroutine avg_set_alloc_var(avg_set,mpl,nam,geom,ne,nsub,ic2a)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+integer,intent(in) :: ne                     !< Ensemble size
+integer,intent(in) :: nsub                   !< Sub-ensembles number
+integer,intent(in),optional :: ic2a          !< Local index
+
+! Set name
+@:set_name(avg_set_alloc_var)
+
+! Set attributes
+avg_set%ne = ne
+avg_set%nsub = nsub
+if (present(ic2a)) then
+   avg_set%ic2a = ic2a
+else
+   avg_set%ic2a = mpl%msv%vali
+end if
+
+! Allocation
+!if (.not.allocated(avg_set%nc1a)) then TODO(Benjamin)
+   allocate(avg_set%nc1a(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11m11(nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub,avg_set%nsub))
+   allocate(avg_set%m2m2(nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub,avg_set%nsub))
+   allocate(avg_set%m22(nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub))
+   allocate(avg_set%nc1a_cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%cor_var(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11asysq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m2m2asy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m22asy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11sq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   if (mpl%msv%is(avg_set%ic2a).and.(nam%avg_nbins>0)) then
+      allocate(avg_set%m11_bins(nam%avg_nbins+1,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m11_hist(nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m11m11_bins(nam%avg_nbins+1,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m11m11_hist(nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m2m2_bins(nam%avg_nbins+1,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m2m2_hist(nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m22_bins(nam%avg_nbins+1,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%m22_hist(nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%cor_bins(nam%avg_nbins+1,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_set%cor_hist(nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   end if
+!end if
+
+end subroutine avg_set_alloc_var
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_alloc_grp
+!> Allocation
+!----------------------------------------------------------------------
+subroutine avg_set_alloc_grp(avg_set,mpl,nam,geom,ic2a)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+integer,intent(in),optional :: ic2a          !< Local index
+
+! Set name
+@:set_name(avg_set_alloc_grp)
+
+! Set attribute
+avg_set%ne = 0
+avg_set%nsub = 0
+if (present(ic2a)) then
+   avg_set%ic2a = ic2a
+else
+   avg_set%ic2a = mpl%msv%vali
+end if
+
+! Allocation
+!if (.not.allocated(avg_set%nc1a)) then TODO(Benjamin)
+   allocate(avg_set%nc1a(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%nc1a_cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%cor_var(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11asysq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(avg_set%m11sq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+!end if
+
+end subroutine avg_set_alloc_grp
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine avg_set_dealloc(avg_set)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+
+! Set name
+@:set_name(avg_set_dealloc)
+
+! Allocation
+if (allocated(avg_set%nc1a)) deallocate(avg_set%nc1a)
+if (allocated(avg_set%m11)) deallocate(avg_set%m11)
+if (allocated(avg_set%m11m11)) deallocate(avg_set%m11m11)
+if (allocated(avg_set%m2m2)) deallocate(avg_set%m2m2)
+if (allocated(avg_set%nc1a_cor)) deallocate(avg_set%nc1a_cor)
+if (allocated(avg_set%cor)) deallocate(avg_set%cor)
+if (allocated(avg_set%cor_var)) deallocate(avg_set%cor_var)
+if (allocated(avg_set%m11asysq)) deallocate(avg_set%m11asysq)
+if (allocated(avg_set%m2m2asy)) deallocate(avg_set%m2m2asy)
+if (allocated(avg_set%m11sq)) deallocate(avg_set%m11sq)
+if (allocated(avg_set%m11_bins)) deallocate(avg_set%m11_bins)
+if (allocated(avg_set%m11_hist)) deallocate(avg_set%m11_hist)
+if (allocated(avg_set%m11m11_bins)) deallocate(avg_set%m11m11_bins)
+if (allocated(avg_set%m11m11_hist)) deallocate(avg_set%m11m11_hist)
+if (allocated(avg_set%m2m2_bins)) deallocate(avg_set%m2m2_bins)
+if (allocated(avg_set%m2m2_hist)) deallocate(avg_set%m2m2_hist)
+if (allocated(avg_set%m22_bins)) deallocate(avg_set%m22_bins)
+if (allocated(avg_set%m22_hist)) deallocate(avg_set%m22_hist)
+if (allocated(avg_set%cor_bins)) deallocate(avg_set%cor_bins)
+if (allocated(avg_set%cor_hist)) deallocate(avg_set%cor_hist)
+
+end subroutine avg_set_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_read
+!> Read
+!----------------------------------------------------------------------
+subroutine avg_set_read(avg_set,mpl,grpid)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics set
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: grpid                  !< Group ID
+
+! Local variables
+integer :: m11_id,m11sq_id
+
+! Set name
+@:set_name(avg_set_read)
+
+! Get variables
+m11_id = inquire_var(mpl,grpid,'m11')
+m11sq_id = inquire_var(mpl,grpid,'m11sq')
+
+! Read data
+call get_var(mpl,grpid,m11_id,avg_set%m11)
+call get_var(mpl,grpid,m11sq_id,avg_set%m11sq)
+
+end subroutine avg_set_read
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_write
+!> Write
+!----------------------------------------------------------------------
+subroutine avg_set_write(avg_set,mpl,nc3_id,nc4_id,nl0r_id,nl0_id,grpid)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(in) :: avg_set !< Averaged statistics set
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+integer,intent(in) :: nc3_id              !< Dimension nc3 ID
+integer,intent(in) :: nc4_id              !< Dimension nc4 ID
+integer,intent(in) :: nl0r_id             !< Dimension nl0r ID
+integer,intent(in) :: nl0_id              !< Dimension nl0 ID
+integer,intent(in) :: grpid               !< Group ID
+
+! Local variables
+integer :: m11_id,m11sq_id
+
+! Set name
+@:set_name(avg_set_write)
+
+! Define or get variables
+m11_id = define_var(mpl,grpid,'m11','real',(/nc3_id,nc4_id,nl0r_id,nl0_id/))
+m11sq_id = define_var(mpl,grpid,'m11sq','real',(/nc3_id,nc4_id,nl0r_id,nl0_id/))
+
+! Write variables
+call put_var(mpl,grpid,m11_id,avg_set%m11)
+call put_var(mpl,grpid,m11sq_id,avg_set%m11sq)
+
+end subroutine avg_set_write
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_write_hist
+!> Write histograms
+!----------------------------------------------------------------------
+subroutine avg_set_write_hist(avg_set,mpl,nam,geom,grpid)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+integer,intent(in) :: grpid                  !< Group ID
+
+! Local variables
+integer :: nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vert_coord_id,l0rl0_to_l0_id
+integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
+integer :: cor_bins_id,cor_hist_id
+
+! Set name
+@:set_name(avg_set_write_hist)
+
+! Check consistency
+if (.not.(mpl%msv%is(avg_set%ic2a).and.(nam%avg_nbins>0))) then
+   call mpl%abort('${subr}$','histogram is not allocated, it cannot be written')
+end if
+
+! Define dimensions
+nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
+nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
+nl0_id = define_dim(mpl,grpid,'nl0',geom%nl0)
+nbinsp1_id = define_dim(mpl,grpid,'nbinsp1',nam%avg_nbins+1)
+nbins_id = define_dim(mpl,grpid,'nbins',nam%avg_nbins)
+
+! Define coordinates
+disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+vert_coord_id = define_var(mpl,grpid,'vert_coord','real',(/nl0_id/))
+
+! Define variables
+l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_id/))
+m11_bins_id = define_var(mpl,grpid,'m11_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11_hist_id = define_var(mpl,grpid,'m11_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_bins_id = define_var(mpl,grpid,'m11m11_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m11m11_hist_id = define_var(mpl,grpid,'m11m11_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_bins_id = define_var(mpl,grpid,'m2m2_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m2m2_hist_id = define_var(mpl,grpid,'m2m2_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m22_bins_id = define_var(mpl,grpid,'m22_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+m22_hist_id = define_var(mpl,grpid,'m22_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+cor_bins_id = define_var(mpl,grpid,'cor_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
+cor_hist_id = define_var(mpl,grpid,'cor_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+
+! Write coordinates
+call put_var(mpl,grpid,disth_id,geom%disth(1:nam%nc3))
+call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
+
+! Write variables
+call put_var(mpl,grpid,l0rl0_to_l0_id,geom%l0rl0_to_l0)
+call put_var(mpl,grpid,m11_bins_id,avg_set%m11_bins)
+call put_var(mpl,grpid,m11_hist_id,avg_set%m11_hist)
+call put_var(mpl,grpid,m11m11_bins_id,avg_set%m11m11_bins)
+call put_var(mpl,grpid,m11m11_hist_id,avg_set%m11m11_hist)
+call put_var(mpl,grpid,m2m2_bins_id,avg_set%m2m2_bins)
+call put_var(mpl,grpid,m2m2_hist_id,avg_set%m2m2_hist)
+call put_var(mpl,grpid,m22_bins_id,avg_set%m22_bins)
+call put_var(mpl,grpid,m22_hist_id,avg_set%m22_hist)
+call put_var(mpl,grpid,cor_bins_id,avg_set%cor_bins)
+call put_var(mpl,grpid,cor_hist_id,avg_set%cor_hist)
+
+end subroutine avg_set_write_hist
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_compute_global
+!> Compute globally averaged statistics via spatial-angular erogodicity assumption
+!----------------------------------------------------------------------
+subroutine avg_set_compute_global(avg_set,mpl,nam,geom,samp,mom_blk)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(samp_type),intent(in) :: samp           !< Sampling
+type(mom_blk_type),intent(in) :: mom_blk     !< Moments
+
+! Local variables
+integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset,ntmp
+real(kind_real) :: m2_1,m2_2
+real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
+real(kind_real) :: norm,den,gen_kurt
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),list_cor_save(:,:,:,:,:)
+real(kind_real),allocatable :: list1(:),list2(:)
+real(kind_real),allocatable :: sbuf(:),rbuf(:)
+logical :: valid
+
+! Set name
+@:set_name(avg_set_compute_global)
+
+! Check consistency
+if (mpl%msv%isnot(avg_set%ic2a)) then
+   call mpl%abort('${subr}$','compute_global only for the global set')
+end if
+
+! Allocation
+allocate(list_m11(samp%nc1a))
+allocate(list_m11m11(samp%nc1a,avg_set%nsub,avg_set%nsub))
+allocate(list_m2m2(samp%nc1a,avg_set%nsub,avg_set%nsub))
+allocate(list_m22(samp%nc1a,avg_set%nsub))
+allocate(list_cor(samp%nc1a))
+if (nam%loc_option=='nice_without_table') allocate(list_cor_save(samp%nc1a,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+
+! Average
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      jl0 = geom%l0rl0_to_l0(jl0r,il0)
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            ! Fill lists
+            !$omp parallel do schedule(static) private(ic1a,valid,den,gen_kurt,m2_1,m2_2,isub,jsub)
+            do ic1a=1,samp%nc1a
+               ! Check mask validity
+               valid = samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jc4,jl0)
+
+               if (valid) then
+                  ! Check general kurtosis
+                  do isub=1,avg_set%nsub
+                     den = two*mom_blk%m11(ic1a,jc3,jc4,jl0r,il0,isub)**2+mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jc4, &
+ & jl0,isub)
+                     if (den>zero) then
+                        gen_kurt = three*mom_blk%m22(ic1a,jc3,jc4,jl0r,il0,isub)/den
+                        if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                     else
+                        valid = .false.
+                     end if
+                  end do
+               end if
+
+               if (valid) then
+                  ! Averages for diagnostics
+                  list_m11(ic1a) = sum(mom_blk%m11(ic1a,jc3,jc4,jl0r,il0,:))/real(avg_set%nsub,kind_real)
+                  do isub=1,avg_set%nsub
+                     do jsub=1,avg_set%nsub
+                        list_m11m11(ic1a,jsub,isub) = mom_blk%m11(ic1a,jc3,jc4,jl0r,il0,isub)*mom_blk%m11(ic1a,jc3,jc4,jl0r,il0 &
+ & ,jsub)
+                        list_m2m2(ic1a,jsub,isub) = mom_blk%m2_1(ic1a,il0,isub)*mom_blk%m2_2(ic1a,jc3,jc4,jl0,jsub)
+                     end do
+                     list_m22(ic1a,isub) = mom_blk%m22(ic1a,jc3,jc4,jl0r,il0,isub)
+                  end do
+
+                  ! Correlation
+                  m2_1 = sum(mom_blk%m2_1(ic1a,il0,:))/real(avg_set%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1a,jc3,jc4,jl0,:))/real(avg_set%nsub,kind_real)
+                  if ((m2_1>zero).and.(m2_2>zero)) then
+                     list_cor(ic1a) = list_m11(ic1a)/sqrt(m2_1*m2_2)
+                     if (sup(abs(list_cor(ic1a)),one)) list_cor(ic1a) = mpl%msv%valr
+                  else
+                     list_cor(ic1a) = mpl%msv%valr
+                  end if
+               else
+                  ! Missing value
+                  list_m11(ic1a) = mpl%msv%valr
+                  do isub=1,avg_set%nsub
+                     do jsub=1,avg_set%nsub
+                        list_m11m11(ic1a,jsub,isub) = mpl%msv%valr
+                        list_m2m2(ic1a,jsub,isub) = mpl%msv%valr
+                     end do
+                     list_m22(ic1a,isub) = mpl%msv%valr
+                  end do
+                  list_cor(ic1a) = mpl%msv%valr
+               end if
+            end do
+            !$omp end parallel do
+
+            ! Number of valid points
+            if (samp%nc1a>0) then
+               nc1a = zss_count(mpl%msv%isnot(list_m11))
+               nc1a_cor = zss_count(mpl%msv%isnot(list_cor))
+            else
+               nc1a = 0
+               nc1a_cor = 0
+            end if
+            avg_set%nc1a(jc3,jc4,jl0r,il0) = real(nc1a,kind_real)
+            avg_set%nc1a_cor(jc3,jc4,jl0r,il0) = real(nc1a_cor,kind_real)
+
+            ! Average
+            if (nc1a>0) then
+               avg_set%m11(jc3,jc4,jl0r,il0) = zss_sum(list_m11,mask=mpl%msv%isnot(list_m11))
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = zss_sum(list_m11m11(:,jsub,isub), &
+ & mask=mpl%msv%isnot(list_m11m11(:,jsub,isub)))
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = zss_sum(list_m2m2(:,jsub,isub), &
+ & mask=mpl%msv%isnot(list_m2m2(:,jsub,isub)))
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = zss_sum(list_m22(:,isub),mask=mpl%msv%isnot(list_m22(:,isub)))
+               end do
+            else
+               avg_set%m11(jc3,jc4,jl0r,il0) = zero
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = zero
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = zero
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = zero
+               end do
+            end if
+            if (nc1a_cor>0) then
+               avg_set%cor(jc3,jc4,jl0r,il0) = zss_sum(list_cor,mask=mpl%msv%isnot(list_cor))
+            else
+               avg_set%cor(jc3,jc4,jl0r,il0) = zero
+            end if
+
+            if (nam%avg_nbins>0) then
+               ! Allocation
+               n1 = samp%nc1a*avg_set%nsub
+               n2 = samp%nc1a*avg_set%nsub**2
+               allocate(list1(n1))
+               allocate(list2(n2))
+
+               ! Get min/max values for each task
+               if (nc1a>0) then
+                  min_m11 = zss_minval(list_m11,mask=mpl%msv%isnot(list_m11))
+                  max_m11 = zss_maxval(list_m11,mask=mpl%msv%isnot(list_m11))
+                  min_m11m11 = zss_minval(list_m11m11,mask=mpl%msv%isnot(list_m11m11))
+                  max_m11m11 = zss_maxval(list_m11m11,mask=mpl%msv%isnot(list_m11m11))
+                  min_m2m2 = zss_minval(list_m2m2,mask=mpl%msv%isnot(list_m2m2))
+                  max_m2m2 = zss_maxval(list_m2m2,mask=mpl%msv%isnot(list_m2m2))
+                  min_m22 = zss_minval(list_m22,mask=mpl%msv%isnot(list_m22))
+                  max_m22 = zss_maxval(list_m22,mask=mpl%msv%isnot(list_m22))
+                else
+                  min_m11 = huge_real
+                  max_m11 = -huge_real
+                  min_m11m11 = huge_real
+                  max_m11m11 = -huge_real
+                  min_m2m2 = huge_real
+                  max_m2m2 = -huge_real
+                  min_m22 = huge_real
+                  max_m22 = -huge_real
+               end if
+               if (nc1a>0) then
+                  min_cor = zss_minval(list_cor,mask=mpl%msv%isnot(list_cor))
+                  max_cor = zss_maxval(list_cor,mask=mpl%msv%isnot(list_cor))
+               else
+                  min_m11 = huge_real
+                  max_cor = -huge_real
+               end if
+
+               ! Gather min/max values
+               call mpl%f_comm%allreduce(min_m11,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m11,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m11m11,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m11m11,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m2m2,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m2m2,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_m22,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_m22,fckit_mpi_max())
+               call mpl%f_comm%allreduce(min_cor,fckit_mpi_min())
+               call mpl%f_comm%allreduce(max_cor,fckit_mpi_max())
+
+               ! Compute histograms on each task
+               call histogram(mpl,samp%nc1a,list_m11,nam%avg_nbins,min_m11,max_m11,avg_set%m11_bins(:,jc3,jc4,jl0r,il0), &
+ & avg_set%m11_hist(:,jc3,jc4,jl0r,il0))
+               list2 = reshape(list_m11m11,(/n2/))
+               call histogram(mpl,n2,list2,nam%avg_nbins,min_m11m11,max_m11m11,avg_set%m11m11_bins(:,jc3,jc4,jl0r,il0), &
+ & avg_set%m11m11_hist(:,jc3,jc4,jl0r,il0))
+               list2 = reshape(list_m2m2,(/n2/))
+               call histogram(mpl,n2,list2,nam%avg_nbins,min_m2m2,max_m2m2,avg_set%m2m2_bins(:,jc3,jc4,jl0r,il0), &
+ & avg_set%m2m2_hist(:,jc3,jc4,jl0r,il0))
+               list1 = reshape(list_m22,(/n1/))
+               call histogram(mpl,n1,list1,nam%avg_nbins,min_m22,max_m22,avg_set%m22_bins(:,jc3,jc4,jl0r,il0), &
+ & avg_set%m22_hist(:,jc3,jc4,jl0r,il0))
+               call histogram(mpl,samp%nc1a,list_cor,nam%avg_nbins,min_cor,max_cor,avg_set%cor_bins(:,jc3,jc4,jl0r,il0), &
+ & avg_set%cor_hist(:,jc3,jc4,jl0r,il0))
+
+               ! Release memory
+               deallocate(list1)
+               deallocate(list2)
+            end if
+
+            ! Save correlation to compute variance later
+            if (nam%loc_option=='nice_without_table') list_cor_save(:,jc3,jc4,jl0r,il0) = list_cor
+         end do
+      end do
+   end do
+end do
+
+! Release memory
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+deallocate(list_m22)
+deallocate(list_cor)
+
+if (mpl%nproc>1) then
+   ! Get packing size
+   ntmp = nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+   npack = (5+avg_set%nsub+2*avg_set%nsub**2)*ntmp
+   if (nam%avg_nbins>0) npack = npack+5*nam%avg_nbins*ntmp
+
+   ! Allocation
+   allocate(sbuf(npack))
+   allocate(rbuf(npack))
+
+   ! Pack data
+   offset = 0
+   sbuf = zero
+   sbuf(offset+1:offset+ntmp) = reshape(avg_set%nc1a,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp) = reshape(avg_set%m11,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp*avg_set%nsub**2) = reshape(avg_set%m11m11,(/ntmp*avg_set%nsub**2/))
+   offset = offset+ntmp*avg_set%nsub**2
+   sbuf(offset+1:offset+ntmp*avg_set%nsub**2) = reshape(avg_set%m2m2,(/ntmp*avg_set%nsub**2/))
+   offset = offset+ntmp*avg_set%nsub**2
+   sbuf(offset+1:offset+ntmp*avg_set%nsub) = reshape(avg_set%m22,(/ntmp*avg_set%nsub/))
+   offset = offset+ntmp*avg_set%nsub
+   sbuf(offset+1:offset+ntmp) = reshape(avg_set%nc1a_cor,(/ntmp/))
+   offset = offset+ntmp
+   sbuf(offset+1:offset+ntmp) = reshape(avg_set%cor,(/ntmp/))
+   offset = offset+ntmp
+   if (nam%avg_nbins>0) then
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_set%m11_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_set%m11m11_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_set%m2m2_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_set%m22_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+      sbuf(offset+1:offset+nam%avg_nbins*ntmp) = reshape(avg_set%cor_hist,(/nam%avg_nbins*ntmp/))
+      offset = offset+nam%avg_nbins*ntmp
+   end if
+
+   ! Reduce data
+   call mpl%f_comm%allreduce(sbuf,rbuf,fckit_mpi_sum())
+
+   ! Unpack data
+   offset = 0
+   avg_set%nc1a = reshape(rbuf(offset+1:offset+ntmp),(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+   offset = offset+ntmp
+   avg_set%m11 = reshape(rbuf(offset+1:offset+ntmp),(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+   offset = offset+ntmp
+   avg_set%m11m11 = reshape(rbuf(offset+1:offset+ntmp*avg_set%nsub**2), &
+ & (/nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub,avg_set%nsub/))
+   offset = offset+ntmp*avg_set%nsub**2
+   avg_set%m2m2 = reshape(rbuf(offset+1:offset+ntmp*avg_set%nsub**2), &
+ & (/nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub,avg_set%nsub/))
+   offset = offset+ntmp*avg_set%nsub**2
+   avg_set%m22 = reshape(rbuf(offset+1:offset+ntmp*avg_set%nsub), &
+ & (/nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_set%nsub/))
+   offset = offset+ntmp*avg_set%nsub
+   avg_set%nc1a_cor = reshape(rbuf(offset+1:offset+ntmp),(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+   offset = offset+ntmp
+   avg_set%cor = reshape(rbuf(offset+1:offset+ntmp),(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+   offset = offset+ntmp
+   if (nam%avg_nbins>0) then
+      avg_set%m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
+ & (/nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      offset = offset+nam%avg_nbins*ntmp
+      avg_set%m11m11_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
+ & (/nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      offset = offset+nam%avg_nbins*ntmp
+      avg_set%m2m2_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
+ & (/nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      offset = offset+nam%avg_nbins*ntmp
+      avg_set%m22_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
+ & (/nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      offset = offset+nam%avg_nbins*ntmp
+      avg_set%cor_hist = reshape(rbuf(offset+1:offset+nam%avg_nbins*ntmp), &
+ & (/nam%avg_nbins,nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      offset = offset+nam%avg_nbins*ntmp
+   end if
+
+   ! Release memory
+   deallocate(sbuf)
+   deallocate(rbuf)
+end if
+
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4,isub,jsub,norm) shared(geom,avg_set)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (avg_set%nc1a(jc3,jc4,jl0r,il0)>zero) then
+               norm = one/avg_set%nc1a(jc3,jc4,jl0r,il0)
+               avg_set%m11(jc3,jc4,jl0r,il0) = avg_set%m11(jc3,jc4,jl0r,il0)*norm
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)*norm
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)*norm
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = avg_set%m22(jc3,jc4,jl0r,il0,isub)*norm
+               end do
+            else
+               avg_set%m11(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = mpl%msv%valr
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = mpl%msv%valr
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = mpl%msv%valr
+               end do
+            end if
+            if (avg_set%nc1a_cor(jc3,jc4,jl0r,il0)>zero) then
+               avg_set%cor(jc3,jc4,jl0r,il0) = avg_set%cor(jc3,jc4,jl0r,il0)/avg_set%nc1a_cor(jc3,jc4,jl0r,il0)
+            else
+               avg_set%cor(jc3,jc4,jl0r,il0) = mpl%msv%valr
+            end if
+            if (nam%avg_nbins>0) then
+               if (sum(avg_set%m11_hist(:,jc3,jc4,jl0r,il0))>zero) avg_set%m11_hist(:,jc3,jc4,jl0r,il0) = &
+ & avg_set%m11_hist(:,jc3,jc4,jl0r,il0)/sum(avg_set%m11_hist(:,jc3,jc4,jl0r,il0))
+               if (sum(avg_set%m11m11_hist(:,jc3,jc4,jl0r,il0))>zero) avg_set%m11m11_hist(:,jc3,jc4,jl0r,il0) = &
+ & avg_set%m11m11_hist(:,jc3,jc4,jl0r,il0)/sum(avg_set%m11m11_hist(:,jc3,jc4,jl0r,il0))
+               if (sum(avg_set%m2m2_hist(:,jc3,jc4,jl0r,il0))>zero) avg_set%m2m2_hist(:,jc3,jc4,jl0r,il0) = &
+ & avg_set%m2m2_hist(:,jc3,jc4,jl0r,il0)/sum(avg_set%m2m2_hist(:,jc3,jc4,jl0r,il0))
+               if (sum(avg_set%m22_hist(:,jc3,jc4,jl0r,il0))>zero) avg_set%m22_hist(:,jc3,jc4,jl0r,il0) = &
+ & avg_set%m22_hist(:,jc3,jc4,jl0r,il0)/sum(avg_set%m22_hist(:,jc3,jc4,jl0r,il0))
+               if (sum(avg_set%cor_hist(:,jc3,jc4,jl0r,il0))>zero) avg_set%cor_hist(:,jc3,jc4,jl0r,il0) = &
+ & avg_set%cor_hist(:,jc3,jc4,jl0r,il0)/sum(avg_set%cor_hist(:,jc3,jc4,jl0r,il0))
+            end if
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+if (nam%loc_option=='nice_without_table') then
+   ! Correlation variance
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Count valid points 
+               nc1a_cor = zss_count(mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+
+               ! Remove mean
+               do ic1a=1,samp%nc1a
+                  if (mpl%msv%isnot(list_cor_save(ic1a,jc3,jc4,jl0r,il0))) list_cor_save(ic1a,jc3,jc4,jl0r,il0) =  &
+ & list_cor_save(ic1a,jc3,jc4,jl0r,il0)-avg_set%cor(jc3,jc4,jl0r,il0)
+               end do
+
+               if (nc1a_cor>0) then
+                  ! Save squared perturbation
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = zss_sum(list_cor_save(:,jc3,jc4,jl0r,il0)**2, &
+ & mask=mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+               else
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = zero
+               end if
+            end do
+         end do
+      end do
+   end do
+
+   if (mpl%nproc>1) then
+      ! Allocation
+      allocate(sbuf(ntmp))
+      allocate(rbuf(ntmp))
+
+      ! Pack data
+      sbuf = reshape(avg_set%cor_var,(/ntmp/))
+
+      ! Reduce data
+      call mpl%f_comm%allreduce(sbuf,rbuf,fckit_mpi_sum())
+
+      ! Unpack data
+      avg_set%cor_var = reshape(rbuf,(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+
+      ! Release memory
+      deallocate(sbuf)
+      deallocate(rbuf)
+   end if
+
+   ! Normalize
+   !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4) shared(geom,avg_set)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (avg_set%nc1a_cor(jc3,jc4,jl0r,il0)>one) then
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = avg_set%cor_var(jc3,jc4,jl0r,il0)/(avg_set%nc1a_cor(jc3,jc4,jl0r,il0)-one)
+               else
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+
+   ! Release memory
+   deallocate(list_cor_save)
+else
+   ! Missing value
+   avg_set%cor_var = mpl%msv%valr
+end if
+
+end subroutine avg_set_compute_global
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_compute_local
+!> Compute locally averaged statistics via spatial-angular erogodicity assumption
+!----------------------------------------------------------------------
+subroutine avg_set_compute_local(avg_set,mpl,nam,geom,samp,mom_blk)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(samp_type),intent(in) :: samp           !< Sampling
+type(mom_blk_type),intent(in) :: mom_blk     !< Moments
+
+! Local variables
+integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,nc1max,ic1d,ic1u,i,iloc,nloc,nc1a,nc1a_cor
+integer,allocatable :: loc_to_c1d(:)
+real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),list_cor_save(:,:,:,:,:)
+logical :: valid
+logical,allocatable :: lvalid(:),lvalid_cor(:)
+
+! Set name
+@:set_name(avg_set_compute_local)
+
+! Check consistency
+if (mpl%msv%is(avg_set%ic2a)) then
+   call mpl%abort('${subr}$','compute_local only for the local sets')
+end if
+
+! Associate
+associate(ic2a=>avg_set%ic2a)
+
+! Compact the local mask
+allocate(loc_to_c1d(samp%nc1d))
+nloc = 0
+do ic1d=1,samp%nc1d
+   if (samp%local_mask(samp%c1d_to_c1u(ic1d),ic2a)) then
+      nloc = nloc+1
+      loc_to_c1d(nloc) = ic1d
+   end if
+end do
+
+! Allocation
+nc1max = zss_count(samp%local_mask(:,ic2a))
+if (nam%loc_option=='nice_without_table') allocate(list_cor_save(nc1max,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+
+! Average
+!$omp parallel default(shared) private(il0,jl0,jl0r,jc3,jc4,isub,jsub,i,iloc,ic1d,ic1u,valid,den,gen_kurt), &
+!$omp&         private(m2_1,m2_2,nc1a,nc1a_cor,list_m11,list_m11m11,list_m2m2,list_m22,list_cor,lvalid,lvalid_cor)
+
+! Per-thread allocation
+allocate(list_m11(nc1max))
+allocate(list_m11m11(nc1max,avg_set%nsub,avg_set%nsub))
+allocate(list_m2m2(nc1max,avg_set%nsub,avg_set%nsub))
+allocate(list_m22(nc1max,avg_set%nsub))
+allocate(list_cor(nc1max))
+allocate(lvalid(nc1max))
+allocate(lvalid_cor(nc1max))
+
+!$omp do schedule(static)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      jl0 = geom%l0rl0_to_l0(jl0r,il0)
+
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            ! Initialization
+            i = 0
+
+            ! Fill lists
+            do iloc=1,nloc
+               ! Indices
+               ic1d = loc_to_c1d(iloc)
+               ic1u = samp%c1d_to_c1u(ic1d)
+
+               ! Check mask validity
+               valid = samp%smask_c1u(ic1u,il0).and.samp%smask_c1dc3(ic1d,jc3,jc4,jl0)
+
+               if (valid) then
+                  ! Check generalized kurtosis
+                  do isub=1,avg_set%nsub
+                     den = two*mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,isub)**2 &
+ & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jc4,jl0,isub)
+                     if (abs(den)>zero) then
+                        gen_kurt = three*mom_blk%m22(ic1d,jc3,jc4,jl0r,il0,isub)/den
+                        if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                     else
+                        valid = .false.
+                     end if
+                  end do
+               end if
+
+               if (valid) then
+                  ! Update
+                  i = i+1
+
+                  ! Initialization
+                  list_cor(i) = mpl%msv%valr
+
+                  ! Averages for diagnostics
+                  list_m11(i) = sum(mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,:))/real(avg_set%nsub,kind_real)
+                  do isub=1,avg_set%nsub
+                     do jsub=1,avg_set%nsub
+                        list_m11m11(i,jsub,isub) = mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,isub)*mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,jsub)
+                        list_m2m2(i,jsub,isub) = mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jc4,jl0,jsub)
+                     end do
+                     list_m22(i,isub) = mom_blk%m22(ic1d,jc3,jc4,jl0r,il0,isub)
+                  end do
+
+                  ! Correlation
+                  m2_1 = sum(mom_blk%m2_1(ic1d,il0,:))/real(avg_set%nsub,kind_real)
+                  m2_2 = sum(mom_blk%m2_2(ic1d,jc3,jc4,jl0,:))/real(avg_set%nsub,kind_real)
+                  if ((m2_1>zero).and.(m2_2>zero)) then
+                     list_cor(i) = list_m11(i)/sqrt(m2_1*m2_2)
+                     if (sup(abs(list_cor(i)),one)) list_cor(i) = mpl%msv%valr
+                  end if
+               end if
+            end do
+
+            ! Number of valid points
+            lvalid(1:i) = mpl%msv%isnot(list_m11(1:i))
+            lvalid_cor(1:i) = mpl%msv%isnot(list_cor(1:i))
+            nc1a = zss_count(lvalid(1:i))
+            nc1a_cor = zss_count(lvalid_cor(1:i))
+            avg_set%nc1a(jc3,jc4,jl0r,il0) = real(nc1a,kind_real)
+            avg_set%nc1a_cor(jc3,jc4,jl0r,il0) = real(nc1a_cor,kind_real)
+
+            ! Average
+            if (nc1a>0) then
+               avg_set%m11(jc3,jc4,jl0r,il0) = sum(list_m11(1:i),mask=lvalid(1:i))
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = sum(list_m11m11(1:i,jsub,isub),mask=lvalid(1:i))
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = sum(list_m2m2(1:i,jsub,isub),mask=lvalid(1:i))
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = sum(list_m22(1:i,isub),mask=lvalid(1:i))
+               end do
+            else
+               avg_set%m11(jc3,jc4,jl0r,il0) = zero
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = zero
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = zero
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = zero
+               end do
+            end if
+            if (nc1a_cor>0) then
+               avg_set%cor(jc3,jc4,jl0r,il0) = sum(list_cor(1:i),mask=lvalid_cor(1:i))
+             else
+               avg_set%cor(jc3,jc4,jl0r,il0) = zero
+            end if
+
+            ! Save correlation to compute variance later
+            if (nam%loc_option=='nice_without_table') then
+               list_cor_save(1:i,jc3,jc4,jl0r,il0) = list_cor(1:i)
+               list_cor_save(i+1:nc1max,jc3,jc4,jl0r,il0) = mpl%msv%valr
+            end if
+         end do
+      end do
+   end do
+end do
+!$omp end do
+
+! Per-thread release
+deallocate(list_m11)
+deallocate(list_m11m11)
+deallocate(list_m2m2)
+deallocate(list_m22)
+deallocate(list_cor)
+deallocate(lvalid)
+deallocate(lvalid_cor)
+!$omp end parallel
+
+! Release memory
+deallocate(loc_to_c1d)
+
+! Normalize
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4,isub,jsub,norm) shared(geom,avg_set)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (avg_set%nc1a(jc3,jc4,jl0r,il0)>zero) then
+               norm = one/avg_set%nc1a(jc3,jc4,jl0r,il0)
+               avg_set%m11(jc3,jc4,jl0r,il0) = avg_set%m11(jc3,jc4,jl0r,il0)*norm
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)*norm
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)*norm
+                   end do
+                   avg_set%m22(jc3,jc4,jl0r,il0,isub) = avg_set%m22(jc3,jc4,jl0r,il0,isub)*norm
+               end do
+            else
+               avg_set%m11(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = mpl%msv%valr
+                     avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub) = mpl%msv%valr
+                  end do
+                  avg_set%m22(jc3,jc4,jl0r,il0,isub) = mpl%msv%valr
+               end do
+            end if
+            if (avg_set%nc1a_cor(jc3,jc4,jl0r,il0)>zero) then
+               avg_set%cor(jc3,jc4,jl0r,il0) = avg_set%cor(jc3,jc4,jl0r,il0)/avg_set%nc1a_cor(jc3,jc4,jl0r,il0)
+            else
+               avg_set%cor(jc3,jc4,jl0r,il0) = mpl%msv%valr
+            end if
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+
+if (nam%loc_option=='nice_without_table') then
+   ! Correlation variance
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Count valid points 
+               nc1a_cor = zss_count(mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+
+               ! Remove mean
+               do i=1,nc1max
+                  if (mpl%msv%isnot(list_cor_save(i,jc3,jc4,jl0r,il0))) list_cor_save(i,jc3,jc4,jl0r,il0) =  &
+ & list_cor_save(i,jc3,jc4,jl0r,il0)-avg_set%cor(jc3,jc4,jl0r,il0)
+               end do
+
+               if (nc1a_cor>0) then
+                  ! Save squared perturbation
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = zss_sum(list_cor_save(:,jc3,jc4,jl0r,il0)**2, &
+ & mask=mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+               else
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = zero
+               end if
+            end do
+         end do
+      end do
+   end do
+
+   ! Normalize
+   !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4) shared(geom,avg_set)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (avg_set%nc1a_cor(jc3,jc4,jl0r,il0)>one) then
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = avg_set%cor_var(jc3,jc4,jl0r,il0)/(avg_set%nc1a_cor(jc3,jc4,jl0r,il0)-one)
+               else
+                  avg_set%cor_var(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+
+   ! Release memory
+   deallocate(list_cor_save)
+else
+   ! Missing value
+   avg_set%cor_var = mpl%msv%valr
+end if
+
+! End associate
+end associate
+
+end subroutine avg_set_compute_local
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_compute_asy
+!> Compute asymptotic statistics
+!----------------------------------------------------------------------
+subroutine avg_set_compute_asy(avg_set,mpl,nam,geom,ne)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics block
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+integer,intent(in) :: ne                     !< Ensemble size
+
+! Local variables
+integer :: il0,jl0r,jc3,jc4,isub,jsub,n
+real(kind_real) :: P1,P3,P4,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16,P17
+real(kind_real),allocatable :: m11asysq_gau(:,:),m2m2asy_gau(:,:),m11asysq(:,:),m2m2asy(:,:),m22asy(:)
+
+! Set name
+@:set_name(avg_set_compute_asy)
+
+! Associate
+associate(ic2a=>avg_set%ic2a)
+
+if (mpl%msv%is(ic2a).or.nam%local_diag) then
+   ! Ensemble size-dependent coefficients
+   n = ne
+   P1 = one/real(n,kind_real)
+   P3 = one/real(n*(n-1),kind_real)
+   P4 = one/real(n-1,kind_real)
+   P14 = real(n**2-2*n+2,kind_real)/real(n*(n-1),kind_real)
+   P16 = real(n,kind_real)/real(n-1,kind_real)
+
+   ! Ensemble/sub-ensemble size-dependent coefficients
+   n = avg_set%ne/avg_set%nsub
+   P7 = real((n-1)*(n**2-3*n+1),kind_real)/real(n*(n-2)*(n-3),kind_real)
+   P8 = real(n-1,kind_real)/real(n*(n-2)*(n-3),kind_real)
+   P9 = -real(n,kind_real)/real((n-2)*(n-3),kind_real)
+   P10 = -real((n-1)*(2*n-3),kind_real)/real(n*(n-2)*(n-3),kind_real)
+   P11 = real(n*(n**2-2*n+3),kind_real)/real((n-1)*(n-2)*(n-3),kind_real)
+   P12 = real(n*(n-1),kind_real)/real((n-2)*(n+1),kind_real)
+   P13 = -real(n-1,kind_real)/real((n-2)*(n+1),kind_real)
+   P15 = real((n-1)**2,kind_real)/real(n*(n-3),kind_real)
+   P17 = real((n-1)**2,kind_real)/real((n-2)*(n+1),kind_real)
+
+   ! Asymptotic statistics
+   !$omp parallel default(shared) private(il0,jl0r,jc3,jc4,isub,jsub), &
+   !$omp&         private(m11asysq_gau,m2m2asy_gau,m11asysq,m2m2asy,m22asy)
+
+   ! Per-thread allocation
+   allocate(m11asysq_gau(avg_set%nsub,avg_set%nsub))
+   allocate(m2m2asy_gau(avg_set%nsub,avg_set%nsub))
+   allocate(m11asysq(avg_set%nsub,avg_set%nsub))
+   allocate(m2m2asy(avg_set%nsub,avg_set%nsub))
+   allocate(m22asy(avg_set%nsub))
+
+   !$omp do schedule(static)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Asymptotic statistics
+               do isub=1,avg_set%nsub
+                  do jsub=1,avg_set%nsub
+                     if (isub==jsub) then
+                        ! Diagonal terms
+
+                        ! Gaussian approximation
+                        m11asysq_gau(jsub,isub) = P17*avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) &
+ & +P13*avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)
+                        m2m2asy_gau(jsub,isub) = two*P13*avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) &
+ & +P12*avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)
+
+                        ! General case
+                        m11asysq(jsub,isub) = P15*avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) &
+ & +P8*avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)+P9*avg_set%m22(jc3,jc4,jl0r,il0,jsub)
+                        m2m2asy(jsub,isub) = two*P8*avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub) &
+ & +P7*avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)+P9*avg_set%m22(jc3,jc4,jl0r,il0,jsub)
+                        m22asy(jsub) = P10*(two*avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)+avg_set%m2m2(jc3,jc4,jl0r,il0,jsub, &
+ & isub))+P11*avg_set%m22(jc3,jc4,jl0r,il0,jsub)
+                     else
+                        ! Off-diagonal terms
+                        m11asysq(jsub,isub) = avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)
+                        m2m2asy(jsub,isub) = avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)
+                     end if
+                  end do
+               end do
+
+               ! Sum
+               if (nam%gau_approx) then
+                  ! Gaussian approximation
+                  avg_set%m11asysq(jc3,jc4,jl0r,il0) = sum(m11asysq_gau)/real(avg_set%nsub**2,kind_real)
+                  avg_set%m2m2asy(jc3,jc4,jl0r,il0) = sum(m2m2asy_gau)/real(avg_set%nsub**2,kind_real)
+               else
+                  ! General case
+                  avg_set%m11asysq(jc3,jc4,jl0r,il0) = sum(m11asysq)/real(avg_set%nsub**2,kind_real)
+                  avg_set%m2m2asy(jc3,jc4,jl0r,il0) = sum(m2m2asy)/real(avg_set%nsub**2,kind_real)
+               end if
+               avg_set%m22asy(jc3,jc4,jl0r,il0) = sum(m22asy)/real(avg_set%nsub,kind_real)
+
+               ! Check positivity
+               if (.not.(avg_set%m11asysq(jc3,jc4,jl0r,il0)>zero)) avg_set%m11asysq(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               if (.not.(avg_set%m2m2asy(jc3,jc4,jl0r,il0)>zero)) avg_set%m2m2asy(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               if (.not.(avg_set%m22asy(jc3,jc4,jl0r,il0)>zero)) avg_set%m22asy(jc3,jc4,jl0r,il0) = mpl%msv%valr
+
+               ! Check Cauchy-Schwarz inequality
+               if (inf(avg_set%m2m2asy(jc3,jc4,jl0r,il0),avg_set%m11asysq(jc3,jc4,jl0r,il0))) avg_set%m11asysq(jc3,jc4,jl0r,il0) &
+ & = mpl%msv%valr
+
+               ! Squared covariance average
+               if (nam%gau_approx) then
+                  ! Gaussian approximation
+                  if (mpl%msv%isnot(avg_set%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_set%m2m2asy(jc3,jc4,jl0r,il0))) then
+                     avg_set%m11sq(jc3,jc4,jl0r,il0) = P16*avg_set%m11asysq(jc3,jc4,jl0r,il0)+P4*avg_set%m2m2asy(jc3,jc4,jl0r,il0)
+                  else
+                     avg_set%m11sq(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  end if
+               else
+                  ! General case
+                  if (mpl%msv%isnot(avg_set%m22asy(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_set%m11asysq(jc3,jc4,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg_set%m2m2asy(jc3,jc4,jl0r,il0))) then
+                     avg_set%m11sq(jc3,jc4,jl0r,il0) = P1*avg_set%m22asy(jc3,jc4,jl0r,il0)+P14*avg_set%m11asysq(jc3,jc4,jl0r,il0) &
+ & +P3*avg_set%m2m2asy(jc3,jc4,jl0r,il0)
+                  else
+                     avg_set%m11sq(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  end if
+               end if
+
+               ! Check value
+               if (mpl%msv%isnot(avg_set%m11sq(jc3,jc4,jl0r,il0))) then
+                  ! Positive sampling noise variance
+                  if (inf(avg_set%m11sq(jc3,jc4,jl0r,il0),avg_set%m11asysq(jc3,jc4,jl0r,il0))) avg_set%m11sq(jc3,jc4,jl0r,il0) &
+ & = mpl%msv%valr
+
+                  ! Holder's inequality
+                  if (inf(avg_set%m11sq(jc3,jc4,jl0r,il0),avg_set%m11(jc3,jc4,jl0r,il0)**2)) avg_set%m11sq(jc3,jc4,jl0r,il0) &
+ & = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end do
+
+   ! Per-thread release
+   deallocate(m11asysq_gau)
+   deallocate(m2m2asy_gau)
+   deallocate(m11asysq)
+   deallocate(m2m2asy)
+   deallocate(m22asy)
+   !$omp end parallel
+end if
+
+! End associate
+end associate
+
+end subroutine avg_set_compute_asy
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_init_group
+!> Initialize group statistics
+!----------------------------------------------------------------------
+subroutine avg_set_init_group(avg_set,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics group
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+
+! Set name
+@:set_name(avg_set_init_group)
+
+! Allocation
+allocate(avg_set%nc1a_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%m11_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%nc1a_cor_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%cor_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%cor_var_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%m11asysq_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(avg_set%m11sq_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+
+! Initialization
+avg_set%nc1a = zero
+avg_set%m11 = zero
+avg_set%nc1a_cor = zero
+avg_set%cor = zero
+avg_set%cor_var = zero
+avg_set%m11asysq = zero
+avg_set%m11sq = zero
+avg_set%nc1a_wgt = zero
+avg_set%m11_wgt = zero
+avg_set%nc1a_cor_wgt = zero
+avg_set%cor_wgt = zero
+avg_set%cor_var_wgt = zero
+avg_set%m11asysq_wgt = zero
+avg_set%m11sq_wgt = zero
+
+end subroutine avg_set_init_group
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_accumul_group
+!> Accumulate group statistics
+!----------------------------------------------------------------------
+subroutine avg_set_accumul_group(avg_set,mpl,nam,geom,avg_set_var)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics group
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+type(avg_set_type),intent(in) :: avg_set_var !< Averaged statistics variable
+
+! Local variables
+integer :: il0,jl0r,jc3,jc4
+real(kind_real) :: wgt
+
+! Set name
+@:set_name(avg_set_accumul_group)
+
+!$omp parallel do schedule(static) private(il0,jl0r,wgt,jc3,jc4)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      ! Weight
+      if (avg_set_var%m2m2asy(1,1,jl0r,il0)>zero) then
+         wgt = one/avg_set_var%m2m2asy(1,1,jl0r,il0)
+      else
+         wgt = zero
+      end if
+
+      ! Compute sum
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            call add(mpl,avg_set_var%nc1a(jc3,jc4,jl0r,il0),avg_set%nc1a(jc3,jc4,jl0r,il0), &
+ & avg_set%nc1a_wgt(jc3,jc4,jl0r,il0),wgt)
+            call add(mpl,avg_set_var%m11(jc3,jc4,jl0r,il0),avg_set%m11(jc3,jc4,jl0r,il0), &
+ & avg_set%m11_wgt(jc3,jc4,jl0r,il0),wgt)
+            call add(mpl,avg_set_var%nc1a_cor(jc3,jc4,jl0r,il0),avg_set%nc1a_cor(jc3,jc4,jl0r,il0), &
+ & avg_set%nc1a_cor_wgt(jc3,jc4,jl0r,il0))
+            call add(mpl,avg_set_var%cor(jc3,jc4,jl0r,il0),avg_set%cor(jc3,jc4,jl0r,il0), &
+ & avg_set%cor_wgt(jc3,jc4,jl0r,il0))
+            call add(mpl,avg_set_var%cor_var(jc3,jc4,jl0r,il0),avg_set%cor_var(jc3,jc4,jl0r,il0), &
+ & avg_set%cor_var_wgt(jc3,jc4,jl0r,il0))
+            call add(mpl,avg_set_var%m11asysq(jc3,jc4,jl0r,il0),avg_set%m11asysq(jc3,jc4,jl0r,il0), &
+ & avg_set%m11asysq_wgt(jc3,jc4,jl0r,il0),wgt)
+            call add(mpl,avg_set_var%m11sq(jc3,jc4,jl0r,il0),avg_set%m11sq(jc3,jc4,jl0r,il0), &
+ & avg_set%m11sq_wgt(jc3,jc4,jl0r,il0),wgt)
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+end subroutine avg_set_accumul_group
+
+!----------------------------------------------------------------------
+! Subroutine: avg_set_norm_group
+!> Normalize group statistics
+!----------------------------------------------------------------------
+subroutine avg_set_norm_group(avg_set,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(avg_set_type),intent(inout) :: avg_set !< Averaged statistics group
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(nam_type),intent(in) :: nam             !< Namelist
+type(geom_type),intent(in) :: geom           !< Geometry
+
+! Local variables
+integer :: il0,jl0r,jc3,jc4
+
+! Set name
+@:set_name(avg_set_norm_group)
+
+! Normalization
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            call divide(mpl,avg_set%nc1a(jc3,jc4,jl0r,il0),avg_set%nc1a_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%m11(jc3,jc4,jl0r,il0),avg_set%m11_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%nc1a_cor(jc3,jc4,jl0r,il0),avg_set%nc1a_cor_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%cor(jc3,jc4,jl0r,il0),avg_set%cor_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%cor_var(jc3,jc4,jl0r,il0),avg_set%cor_var_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%m11asysq(jc3,jc4,jl0r,il0),avg_set%m11asysq_wgt(jc3,jc4,jl0r,il0))
+            call divide(mpl,avg_set%m11sq(jc3,jc4,jl0r,il0),avg_set%m11sq_wgt(jc3,jc4,jl0r,il0))
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+! Release memory
+deallocate(avg_set%nc1a_wgt)
+deallocate(avg_set%m11_wgt)
+deallocate(avg_set%nc1a_cor_wgt)
+deallocate(avg_set%cor_wgt)
+deallocate(avg_set%cor_var_wgt)
+deallocate(avg_set%m11asysq_wgt)
+deallocate(avg_set%m11sq_wgt)
+
+end subroutine avg_set_norm_group
+
+end module type_avg_set

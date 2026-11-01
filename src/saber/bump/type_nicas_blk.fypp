@@ -976,7 +976,7 @@ do icmp=1,nicas_blk%ncmp
       end do
       call mpl%f_comm%allreduce(nover,fckit_mpi_sum())
       if (nover>0) then
-         rover = real(nover,kind_real)/real(geom%nc0_gmask(il0),kind_real)*hundred
+         rover = real(nover,kind_real)/real(geom%gmask_c0_size(il0),kind_real)*hundred
          write(message,'(a,f6.2,a,i3,a,a,a,i1)') 'rh over universe radius (',rover,'%) for NICAS at level ',il0,' of block ', &
  & trim(nam%group_names(ig)),', component ',icmp
          call mpl%warning('${subr}$',message)
@@ -1000,7 +1000,7 @@ do icmp=1,nicas_blk%ncmp
       end do
       call mpl%f_comm%allreduce(nover,fckit_mpi_sum())
       if (nover>0) then
-         rover = real(nover,kind_real)/real(geom%nc0_gmask(il0),kind_real)*hundred
+         rover = real(nover,kind_real)/real(geom%gmask_c0_size(il0),kind_real)*hundred
          write(message,'(a,f6.2,a,i3,a,a,a,i1)') 'rhs over universe radius (',rover,'%) for NICAS at level ',il0,' of block ', &
  & trim(nam%group_names(ig)),', component ',icmp
          call mpl%warning('${subr}$',message)

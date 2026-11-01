@@ -1,0 +1,1319 @@
+#:include 'generics.fypp'
+!----------------------------------------------------------------------
+! Module: type_diag_set
+!> Diagnostic block derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE, IRIT and Meteorologisk Institutt
+!----------------------------------------------------------------------
+module type_diag_set
+
+!$ use omp_lib
+use tools_const, only: zero,tenth,half,one,ten,pi,req
+use tools_cor_var, only: eval
+use tools_fit, only: condmax,diag_iso,diag_tensor,diag_iso_full,diag_tensor_full,tensor_d2r,tensor_d2e,tensor_check_cond, &
+ & fast_fit,ver_smooth
+use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum,write_yaml_profile
+use tools_kinds, only: kind_real
+use tools_netcdf, only: define_grp,define_dim,define_var,put_var
+use tools_repro, only: inf,infeq,supeq
+use tools_wrfda
+use type_avg_set, only: avg_set_type
+use type_geom, only: geom_type
+use type_minim, only: minim_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+use type_samp, only: samp_type
+
+implicit none
+
+! Diagnostic set derived type
+type diag_set_type
+   integer :: ic2a                                      !< Local index
+   character(len=1024) :: prefix                        !< Prefix
+   integer :: ncmp                                      !< Number of components
+
+   real(kind_real),allocatable :: frob_wgt(:,:,:,:)     !< Weight to approximate the Frobenius norm
+
+   real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
+   real(kind_real),allocatable :: valid(:,:,:,:)        !< Number of valid couples
+
+   real(kind_real),allocatable :: vert_coord(:)         !< Generalized vertical coordinate
+   real(kind_real),allocatable :: fit(:,:,:,:)          !< Fit
+   real(kind_real),allocatable :: fit_detail(:,:,:,:,:) !< Multi-components fit detail
+
+   real(kind_real),allocatable :: a_l0(:,:)             !< Amplitude, profiles
+   real(kind_real),allocatable :: s_l0(:,:)             !< Scaling factor, profiles
+   real(kind_real),allocatable :: rh_l0(:)              !< Base horizontal support radius, profiles
+   real(kind_real),allocatable :: D11_l0(:)             !< Base horizontal direct tensor, coefficient 11, profiles
+   real(kind_real),allocatable :: D22_l0(:)             !< Base horizontal direct tensor, coefficient 22, profiles
+   real(kind_real),allocatable :: D12_l0(:)             !< Base horizontal direct tensor, coefficient 12 (normalized), profiles
+   real(kind_real),allocatable :: ecc_l0(:)             !< Base horizontal direct tensor, eccentricity, profiles
+   real(kind_real),allocatable :: rv_l0(:)              !< Base vertical support radius, profiles
+   real(kind_real),allocatable :: hyb_coef_1_raw(:)     !< Raw hybrid coefficient 1
+   real(kind_real),allocatable :: hyb_coef_1(:)         !< Hybrid coefficient 1
+   real(kind_real),allocatable :: hyb_coef_2_raw(:)     !< Raw hybrid coefficient 2
+   real(kind_real),allocatable :: hyb_coef_2(:)         !< Hybrid coefficient 2
+
+   real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitude, subset Sc0, halo A
+   real(kind_real),allocatable :: s_c0a(:,:,:)          !< Scaling factor, subset Sc0, halo A
+   real(kind_real),allocatable :: rh_c0a(:,:)           !< Base horizontal support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: D11_c0a(:,:)          !< Base horizontal direct tensor, component 11, subset Sc0, halo A
+   real(kind_real),allocatable :: D22_c0a(:,:)          !< Base horizontal direct tensor, component 22, subset Sc0, halo A
+   real(kind_real),allocatable :: D12_c0a(:,:)          !< Base horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
+   real(kind_real),allocatable :: ecc_c0a(:,:)          !< Base horizontal direct tensor, eccentricity, subset Sc0, halo A
+   real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Base vertical support radius, subset Sc0, halo A
+   real(kind_real),allocatable :: hyb_coef_1_c0a(:,:)   !< Hybrid coefficient 1, subset Sc0, halo A
+   real(kind_real),allocatable :: hyb_coef_2_c0a(:,:)   !< Hybrid coefficient 2, subset Sc0, halo A
+contains
+   procedure :: alloc => diag_set_alloc
+   procedure :: partial_dealloc => diag_set_partial_dealloc
+   procedure :: dealloc => diag_set_dealloc
+   procedure :: write => diag_set_write
+   procedure :: write_yaml => diag_set_write_yaml
+   procedure :: filter_ver => diag_set_filter_ver
+   procedure :: build_fit => diag_set_build_fit
+   procedure :: fitting => diag_set_fitting
+   procedure :: diag_set_localization_from_nam
+   procedure :: diag_set_localization
+   generic :: localization => diag_set_localization_from_nam,diag_set_localization
+   procedure :: hybridization => diag_set_hybridization
+end type diag_set_type
+
+integer,parameter :: nalpha = 15                    !< Number of iterations for the NICE optimization
+real(kind_real),parameter :: D12max = 0.9_kind_real !< Maximum (absolute) value of the D12 tensor coefficient
+
+private
+public :: diag_set_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_alloc
+!> Allocation
+!----------------------------------------------------------------------
+subroutine diag_set_alloc(diag_set,mpl,nam,geom,samp,prefix,ic2a)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(samp_type),intent(in) :: samp             !< Sampling
+character(len=*),intent(in) :: prefix          !< Block prefix
+integer,intent(in),optional :: ic2a            !< Local index
+
+! Local variables
+integer :: jc3
+
+! Set name
+@:set_name(diag_set_alloc)
+
+! Set attributes
+if (present(ic2a)) then
+   diag_set%ic2a = ic2a
+else
+   diag_set%ic2a = mpl%msv%vali
+end if
+diag_set%prefix = prefix
+diag_set%ncmp = nam%fit_ncmp
+
+! Allocation
+allocate(diag_set%frob_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(diag_set%raw(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(diag_set%valid(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(diag_set%vert_coord(geom%nl0))
+allocate(diag_set%fit(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(diag_set%hyb_coef_1_raw(geom%nl0))
+allocate(diag_set%hyb_coef_1(geom%nl0))
+allocate(diag_set%hyb_coef_2_raw(geom%nl0))
+allocate(diag_set%hyb_coef_2(geom%nl0))
+
+! Initialization
+diag_set%raw = mpl%msv%valr
+diag_set%valid = mpl%msv%valr
+diag_set%fit = mpl%msv%valr
+diag_set%hyb_coef_1_raw = mpl%msv%valr
+diag_set%hyb_coef_1 = mpl%msv%valr
+diag_set%hyb_coef_2_raw = mpl%msv%valr
+diag_set%hyb_coef_2 = mpl%msv%valr
+
+! Define weight to approximate the Frobenius norm
+do jc3=1,nam%nc3
+   diag_set%frob_wgt(jc3,:,:,:) = pi*(geom%disth(jc3)+half*nam%dc)**2
+   if (jc3>1) diag_set%frob_wgt(jc3,:,:,:) = diag_set%frob_wgt(jc3,:,:,:)-sum(diag_set%frob_wgt(1:jc3-1,1,1,1))
+end do
+
+! Vertical coordinate and distance
+if (mpl%msv%is(diag_set%ic2a)) then
+   diag_set%vert_coord = geom%vert_coordavg
+else
+   diag_set%vert_coord = samp%vert_coord_c2a(ic2a,:)
+end if
+
+end subroutine diag_set_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine diag_set_partial_dealloc(diag_set)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+
+! Set name
+@:set_name(diag_set_partial_dealloc)
+
+! Release memory
+if (allocated(diag_set%frob_wgt)) deallocate(diag_set%frob_wgt)
+if (allocated(diag_set%raw)) deallocate(diag_set%raw)
+if (allocated(diag_set%valid)) deallocate(diag_set%valid)
+if (allocated(diag_set%vert_coord)) deallocate(diag_set%vert_coord)
+if (allocated(diag_set%fit)) deallocate(diag_set%fit)
+if (allocated(diag_set%fit_detail)) deallocate(diag_set%fit_detail)
+if (allocated(diag_set%a_l0)) deallocate(diag_set%a_l0)
+if (allocated(diag_set%s_l0)) deallocate(diag_set%s_l0)
+if (allocated(diag_set%rh_l0)) deallocate(diag_set%rh_l0)
+if (allocated(diag_set%D11_l0)) deallocate(diag_set%D11_l0)
+if (allocated(diag_set%D22_l0)) deallocate(diag_set%D22_l0)
+if (allocated(diag_set%D12_l0)) deallocate(diag_set%D12_l0)
+if (allocated(diag_set%ecc_l0)) deallocate(diag_set%ecc_l0)
+if (allocated(diag_set%rv_l0)) deallocate(diag_set%rv_l0)
+if (allocated(diag_set%hyb_coef_1_raw)) deallocate(diag_set%hyb_coef_1_raw)
+if (allocated(diag_set%hyb_coef_1)) deallocate(diag_set%hyb_coef_1)
+if (allocated(diag_set%hyb_coef_2_raw)) deallocate(diag_set%hyb_coef_2_raw)
+if (allocated(diag_set%hyb_coef_2)) deallocate(diag_set%hyb_coef_2)
+
+end subroutine diag_set_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine diag_set_dealloc(diag_set)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+
+! Set name
+@:set_name(diag_set_dealloc)
+
+! Release memory
+call diag_set%partial_dealloc
+if (allocated(diag_set%rh_c0a)) deallocate(diag_set%rh_c0a)
+if (allocated(diag_set%D11_c0a)) deallocate(diag_set%D11_c0a)
+if (allocated(diag_set%D22_c0a)) deallocate(diag_set%D22_c0a)
+if (allocated(diag_set%D12_c0a)) deallocate(diag_set%D12_c0a)
+if (allocated(diag_set%ecc_c0a)) deallocate(diag_set%ecc_c0a)
+if (allocated(diag_set%rv_c0a)) deallocate(diag_set%rv_c0a)
+if (allocated(diag_set%hyb_coef_1_c0a)) deallocate(diag_set%hyb_coef_1_c0a)
+if (allocated(diag_set%hyb_coef_2_c0a)) deallocate(diag_set%hyb_coef_2_c0a)
+
+end subroutine diag_set_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_write
+!> Write
+!----------------------------------------------------------------------
+subroutine diag_set_write(diag_set,mpl,nam,geom,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+integer,intent(in) :: ncid                     !< NetCDF ID
+integer,intent(in) :: nc3_id                   !< NetCDF ID
+integer,intent(in) :: nc4_id                   !< NetCDF ID
+integer,intent(in) :: nl0r_id                  !< NetCDF ID
+integer,intent(in) :: nl0_1_id                 !< NetCDF ID
+integer,intent(in) :: nl0_2_id                 !< NetCDF ID
+
+! Local variables
+integer :: grpid,ncmp_id,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
+integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
+integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,ecc_l0_id,rv_l0_id
+integer :: hyb_coef_1_raw_id,hyb_coef_1_id,hyb_coef_2_raw_id,hyb_coef_2_id
+integer :: il0,jl0r,jl0,jl0rz,icmp
+
+! Set name
+@:set_name(diag_set_write)
+
+! Associate
+associate(ic2a=>diag_set%ic2a)
+
+! Define group
+grpid = define_grp(mpl,ncid,diag_set%prefix)
+
+! Define variables
+if (mpl%msv%isanynot(diag_set%raw)) then
+   raw_id = define_var(mpl,grpid,'raw','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
+   raw_hor_id = define_var(mpl,grpid,'raw_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
+   raw_zs_id = define_var(mpl,grpid,'raw_zs','real',(/nl0_2_id,nl0_1_id/))
+   valid_id = define_var(mpl,grpid,'valid','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
+   l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_1_id/))
+end if
+if (mpl%msv%isanynot(diag_set%fit)) then
+   fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
+   fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
+   fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
+   if (diag_set%ncmp>1) ncmp_id = define_dim(mpl,grpid,'ncmp',diag_set%ncmp)
+   if ((diag_set%ncmp>1).and.(nam%write_hdiag_detail)) then
+      fit_detail_id = define_var(mpl,grpid,'fit_detail','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id,ncmp_id/))
+      fit_detail_hor_id = define_var(mpl,grpid,'fit_detail_hor','real',(/nc3_id,nc4_id,nl0_1_id,ncmp_id/))
+      fit_detail_zs_id = define_var(mpl,grpid,'fit_detail_zs','real',(/nl0_2_id,nl0_1_id,ncmp_id/))
+   end if
+   if (diag_set%ncmp==1) then
+      rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id/))
+      if (nam%nc4>1) then
+         D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
+         D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id/))
+         D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
+         ecc_l0_id = define_var(mpl,grpid,'ecc_l0','real',(/nl0_1_id/))
+      end if
+      rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id/))
+   else
+      a_l0_id = define_var(mpl,grpid,'a_l0','real',(/nl0_1_id,ncmp_id/))
+      rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id,ncmp_id/))
+      if (nam%nc4>1) then
+         D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id,ncmp_id/))
+         D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id,ncmp_id/))
+         D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id,ncmp_id/))
+         ecc_l0_id = define_var(mpl,grpid,'ecc_l0','real',(/nl0_1_id/))
+      end if
+      rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id,ncmp_id/))
+   end if
+end if
+if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) hyb_coef_1_raw_id = define_var(mpl,grpid,'hyb_coef_1_raw','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_set%hyb_coef_1)) hyb_coef_1_id = define_var(mpl,grpid,'hyb_coef_1','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_set%hyb_coef_2_raw)) hyb_coef_2_raw_id = define_var(mpl,grpid,'hyb_coef_2_raw','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_set%hyb_coef_2)) hyb_coef_2_id = define_var(mpl,grpid,'hyb_coef_2','real',(/nl0_1_id/))
+
+! Write variables
+if (mpl%msv%isanynot(diag_set%raw)) then
+   call put_var(mpl,grpid,raw_id,diag_set%raw)
+   do il0=1,geom%nl0
+      jl0rz = geom%il0rz(il0)
+      call put_var(mpl,grpid,raw_hor_id,diag_set%raw(:,:,jl0rz,il0),(/1,1,il0/))
+   end do
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
+         call put_var(mpl,grpid,raw_zs_id,diag_set%raw(1,1,jl0r,il0),(/jl0,il0/))
+      end do
+   end do
+   call put_var(mpl,grpid,valid_id,diag_set%valid)
+   call put_var(mpl,grpid,l0rl0_to_l0_id,geom%l0rl0_to_l0)
+end if
+if (mpl%msv%isanynot(diag_set%fit)) then
+   call put_var(mpl,grpid,fit_id,diag_set%fit)
+   do il0=1,geom%nl0
+      jl0rz = geom%il0rz(il0)
+      call put_var(mpl,grpid,fit_hor_id,diag_set%fit(:,:,jl0rz,il0),(/1,1,il0/))
+   end do
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
+         call put_var(mpl,grpid,fit_zs_id,diag_set%fit(1,1,jl0r,il0),(/jl0,il0/))
+      end do
+   end do
+   if ((diag_set%ncmp>1).and.(nam%write_hdiag_detail)) then
+      call put_var(mpl,grpid,fit_detail_id,diag_set%fit_detail)
+      do icmp=1,diag_set%ncmp
+         do il0=1,geom%nl0
+            jl0rz = geom%il0rz(il0)
+            call put_var(mpl,grpid,fit_detail_hor_id,diag_set%fit_detail(:,:,jl0rz,il0,icmp),(/1,1,il0,icmp/))
+         end do
+         do il0=1,geom%nl0
+            do jl0r=1,nam%nl0r
+               jl0 = geom%l0rl0_to_l0(jl0r,il0)
+               call put_var(mpl,grpid,fit_detail_zs_id,diag_set%fit_detail(1,1,jl0r,il0,icmp),(/jl0,il0,icmp/))
+            end do
+         end do
+      end do
+   end if
+   if (diag_set%ncmp==1) then
+      call put_var(mpl,grpid,rh_l0_id,diag_set%rh_l0*req)
+      if (nam%nc4>1) then
+         call put_var(mpl,grpid,D11_l0_id,diag_set%D11_l0*req**2)
+         call put_var(mpl,grpid,D22_l0_id,diag_set%D22_l0*req**2)
+         call put_var(mpl,grpid,D12_l0_id,diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*req**2)
+         call put_var(mpl,grpid,ecc_l0_id,diag_set%ecc_l0)
+      end if
+      call put_var(mpl,grpid,rv_l0_id,diag_set%rv_l0)
+   else
+      call put_var(mpl,grpid,a_l0_id,diag_set%a_l0)
+      do icmp=1,diag_set%ncmp
+         call put_var(mpl,grpid,rh_l0_id,diag_set%rh_l0*diag_set%s_l0(:,icmp)*req)
+         if (nam%nc4>1) then
+            call put_var(mpl,grpid,D11_l0_id,diag_set%D11_l0*diag_set%s_l0(:,icmp)**2*req**2)
+            call put_var(mpl,grpid,D22_l0_id,diag_set%D22_l0*diag_set%s_l0(:,icmp)**2*req**2)
+            call put_var(mpl,grpid,D12_l0_id,diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*diag_set%s_l0(:,icmp)**2*req**2)
+         end if
+         call put_var(mpl,grpid,rv_l0_id,diag_set%rv_l0*diag_set%s_l0(:,icmp))
+      end do
+      if (nam%nc4>1) call put_var(mpl,grpid,ecc_l0_id,diag_set%ecc_l0)
+   end if
+end if
+if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) call put_var(mpl,grpid,hyb_coef_1_raw_id,diag_set%hyb_coef_1_raw)
+if (mpl%msv%isanynot(diag_set%hyb_coef_1)) call put_var(mpl,grpid,hyb_coef_1_id,diag_set%hyb_coef_1)
+if (mpl%msv%isanynot(diag_set%hyb_coef_2_raw)) call put_var(mpl,grpid,hyb_coef_2_raw_id,diag_set%hyb_coef_2_raw)
+if (mpl%msv%isanynot(diag_set%hyb_coef_2)) call put_var(mpl,grpid,hyb_coef_2_id,diag_set%hyb_coef_2)
+
+! End associate
+end associate
+
+end subroutine diag_set_write
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_write_yaml
+!> Write yaml
+!----------------------------------------------------------------------
+subroutine diag_set_write_yaml(diag_set,mpl,nam,geom,ig,lunit)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+integer,intent(in) :: ig                       !< Group index
+integer,intent(in) :: lunit                    !< I/O unit
+
+! Local variables
+integer :: il0,icmp
+
+! Set name
+@:set_name(diag_set_write_yaml)
+
+! Associate
+associate(ic2a=>diag_set%ic2a)
+
+! Write group
+write(lunit,'(a2,a)') '',trim(diag_set%prefix)//':'
+
+! Write variables
+if (diag_set%ncmp==1) then
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_set%rh_l0*req)
+   if (nam%nc4>1) then
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0',diag_set%D11_l0*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0',diag_set%D22_l0*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
+ & diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*req**2)
+      call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_set%ecc_l0)
+   end if
+   call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_set%rv_l0)
+else
+   do icmp=1,diag_set%ncmp
+      ! Write component
+      write(lunit,'(a4,a,i1,a)') '','component ',icmp,':'
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'a_l0',diag_set%a_l0(:,icmp))
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_set%rh_l0*diag_set%s_l0(:,icmp)*req)
+      if (nam%nc4>1) then
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D11_l0', &
+ & diag_set%D11_l0*diag_set%s_l0(:,icmp)**2*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D22_l0', &
+ & diag_set%D22_l0*diag_set%s_l0(:,icmp)**2*req**2)
+         call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'D12_l0', &
+ & diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*diag_set%s_l0(:,icmp)**2*req**2)
+      end if
+      call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_set%rv_l0*diag_set%s_l0(:,icmp))
+   end do
+   call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_set%ecc_l0)
+end if
+if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_set%hyb_coef_1_raw
+if (mpl%msv%isanynot(diag_set%hyb_coef_1)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_set%hyb_coef_1_raw
+if (mpl%msv%isanynot(diag_set%hyb_coef_2_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 2: ',diag_set%hyb_coef_2_raw
+if (mpl%msv%isanynot(diag_set%hyb_coef_2)) write(lunit,'(a4,a,e10.4)') '','hybrid coefficient 2: ',diag_set%hyb_coef_2
+
+! End associate
+end associate
+
+end subroutine diag_set_write_yaml
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_filter_ver
+!> Vertical filtering
+!----------------------------------------------------------------------
+subroutine diag_set_filter_ver(diag_set,mpl,nam,geom,hyb_coef_only)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+logical,intent(in) :: hyb_coef_only            !< Filter hybridization coefficient only
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(diag_set_filter_ver)
+
+if (hyb_coef_only) then
+   call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%hyb_coef_1)
+   call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%hyb_coef_2)
+else
+   do icmp=1,diag_set%ncmp
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%a_l0(:,icmp))
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%s_l0(:,icmp))
+   end do
+   call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%rh_l0)
+   if (nam%nc4>1) then
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%D11_l0)
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%D22_l0)
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%D12_l0)
+      call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%ecc_l0)
+   end if
+   call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag_set%rv_l0)
+end if
+
+end subroutine diag_set_filter_ver
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_build_fit
+!> Build fit function
+!----------------------------------------------------------------------
+subroutine diag_set_build_fit(diag_set,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+
+! Local variables
+integer :: icmp,norm
+real(kind_real) :: rmse
+real(kind_real),allocatable :: fit_iso(:,:,:)
+
+! Set name
+@:set_name(diag_set_build_fit)
+
+! Allocation
+if (nam%nc4==1) allocate(fit_iso(nam%nc3,nam%nl0r,geom%nl0))
+
+! Compute full fit
+if (nam%nc4==1) then
+   call diag_iso_full(mpl,nam%nc3,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
+ & diag_set%vert_coord,diag_set%ncmp,diag_set%a_l0,diag_set%s_l0, &
+ & diag_set%rh_l0,diag_set%rv_l0,fit_iso)
+   diag_set%fit(:,1,:,:) = fit_iso
+else
+   call diag_tensor_full(mpl,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
+ & geom%as,diag_set%vert_coord,diag_set%ncmp,diag_set%a_l0,diag_set%s_l0, &
+ & diag_set%D11_l0,diag_set%D22_l0,diag_set%D12_l0,diag_set%rv_l0,diag_set%fit)
+end if
+
+! Detail for multi-component case
+if (nam%write_hdiag_detail) then
+   ! Allocation
+   allocate(diag_set%fit_detail(nam%nc3,nam%nc4,nam%nl0r,geom%nl0,diag_set%ncmp))
+
+   do icmp=1,diag_set%ncmp
+      ! Compute full fit
+      if (nam%nc4==1) then
+         call diag_iso_full(mpl,nam%nc3,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
+ & diag_set%vert_coord,icmp,diag_set%a_l0(:,1:icmp),diag_set%s_l0(:,1:icmp), &
+ & diag_set%rh_l0,diag_set%rv_l0,fit_iso)
+         diag_set%fit_detail(:,1,:,:,icmp) = fit_iso
+      else
+         call diag_tensor_full(mpl,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,geom%l0rl0_to_l0, &
+ & geom%disth,geom%as,diag_set%vert_coord,icmp,diag_set%a_l0(:,1:icmp),diag_set%s_l0(:,1:icmp), &
+ & diag_set%D11_l0,diag_set%D22_l0,diag_set%D12_l0,diag_set%rv_l0, &
+ & diag_set%fit_detail(:,:,:,:,icmp))
+      end if
+   end do
+end if
+
+! Release memory
+if (nam%nc4==1) deallocate(fit_iso)
+
+end subroutine diag_set_build_fit
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_fitting
+!> Compute a fit of a raw function
+!----------------------------------------------------------------------
+subroutine diag_set_fitting(diag_set,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+
+! Local variables
+integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc3,jc4,icmp,jcmp
+integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
+real(kind_real) :: a,m2(geom%nl0),rh_span
+real(kind_real),allocatable :: raw_copy(:,:,:,:),raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:)
+real(kind_real),allocatable :: fit_hor(:,:),fit_ver(:)
+real(kind_real),allocatable :: a_l1(:,:),s_l1(:,:),rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
+logical :: valid
+type(minim_type) :: minim
+
+! Set name
+@:set_name(diag_set_fitting)
+
+! Check for 2D variable
+do il0=1,geom%nl0
+   ! Get zero separation level
+   jl0rz = geom%il0rz(il0)
+
+   ! Get value at zero separation
+   m2(il0) = diag_set%raw(1,1,jl0rz,il0)
+end do
+if ((count(m2>zero)==1).and.(m2(nam%ilev2d)>zero)) then
+   ilev2d = nam%ilev2d
+else
+   ilev2d = mpl%msv%vali
+end if
+
+! Number of effective levels
+if (mpl%msv%isnot(ilev2d)) then
+   nl0r = 1
+else
+   nl0r = nam%nl0r
+end if
+
+! Count interpolation levels
+if (mpl%msv%isnot(ilev2d)) then
+   nl1 = 1
+else
+   call vert_interp_size(geom%nl0,nam%fit_dl0,nl1)
+end if
+
+! Allocation
+allocate(il0_interp(nl1))
+allocate(il1inf(geom%nl0))
+allocate(il1sup(geom%nl0))
+allocate(rinf(geom%nl0))
+allocate(rsup(geom%nl0))
+
+! Get interpolation levels and weights
+if (mpl%msv%isnot(ilev2d)) then
+   il0_interp(1) = ilev2d
+else
+   call vert_interp_setup(geom%nl0,nam%fit_dl0,nl1,il0_interp,il1inf,il1sup,rinf,rsup)
+end if
+
+! Allocation
+allocate(minim%disth(nam%nc3))
+allocate(minim%as(nam%nc4))
+allocate(minim%distv(nl0r))
+
+! Minimization parameters initialization
+minim%nc3 = nam%nc3
+minim%nc4 = nam%nc4
+minim%nl0r = nl0r
+minim%disth = geom%disth(1:nam%nc3)
+minim%as = geom%as(1:nam%nc4)
+minim%hooke_rho = half
+minim%hooke_tol = 1.0e-4_kind_real
+minim%hooke_itermax = 10
+
+! Maximum horizontal span
+rh_span = half*pi
+
+! Allocation
+allocate(raw_copy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+allocate(rh_c4l1(nam%nc4,nl1))
+allocate(a_l1(nl1,diag_set%ncmp))
+allocate(s_l1(nl1,diag_set%ncmp))
+allocate(rh_l1(nl1))
+if (nam%nc4>1) then
+   allocate(D11_l1(nl1))
+   allocate(D22_l1(nl1))
+   allocate(D12_l1(nl1))
+end if
+allocate(rv_l1(nl1))
+allocate(raw_hor(nam%nc3,nam%nc4))
+allocate(raw_ver(nl0r))
+allocate(distv(nl0r))
+allocate(fit_hor(nam%nc3,nam%nc4))
+allocate(fit_ver(nl0r))
+
+! Copy raw data
+raw_copy = diag_set%raw
+
+! Clean raw data
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (inf(raw_copy(jc3,jc4,jl0r,il0),nam%diag_raw_th)) raw_copy(jc3,jc4,jl0r,il0) = mpl%msv%valr
+         end do
+      end do
+   end do
+end do
+
+do il1=1,nl1
+   ! Index
+   il0 = il0_interp(il1)
+
+   ! Get zero separation level and min/max levels
+   jl0rz = geom%il0rz(il0)
+
+   ! Horizontal fit for each angular sector
+   do jc4=1,nam%nc4
+      ! Fast horizontal fit
+      call fast_fit(mpl,nam%nc3,1,geom%disth,'hor',raw_copy(:,jc4,jl0rz,il0),rh_c4l1(jc4,il1))
+
+      if (mpl%msv%isnot(rh_c4l1(jc4,il1))) then
+         ! Optimized horizontal fit
+
+         ! Allocation
+         minim%nx = 1
+         minim%ny = nam%nc3
+         call minim%alloc
+
+         ! Guess and bounds
+         minim%guess(1) = rh_c4l1(jc4,il1)
+         minim%binf(1) = zero
+         minim%bsup(1) = ten*rh_c4l1(jc4,il1)
+
+         ! Observations
+         minim%obs(1:nam%nc3) = raw_copy(:,jc4,jl0rz,il0)
+
+         ! Compute fit
+         minim%cost_function = 'rh'
+         call minim%compute(mpl)
+
+         ! Get parameter, apply bounds
+         rh_c4l1(jc4,il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+
+         ! Release memory
+         call minim%partial_dealloc
+      end if
+   end do
+
+   if (nam%nc4==1) then
+      ! One angular sector only
+      rh_l1(il1) = rh_c4l1(1,il1)
+   else
+      ! Horizontal tensor fit
+      if (mpl%msv%isallnot(rh_c4l1(:,il1)).and.all(rh_c4l1(:,il1)>zero)) then
+         ! Average value
+         rh_l1(il1) = sqrt(sum(rh_c4l1(:,il1)**2)/real(nam%nc4,kind_real))
+
+         ! Allocation
+         minim%nx = 3
+         minim%ny = nam%nc3*nam%nc4
+         call minim%alloc
+
+         ! Guess and bounds
+         minim%guess = (/rh_l1(il1)**2,rh_l1(il1)**2,zero/)
+         minim%binf = (/rh_l1(il1)**2/sqrt(condmax),rh_l1(il1)**2/sqrt(condmax),-D12max/)
+         minim%bsup = (/rh_l1(il1)**2*sqrt(condmax),rh_l1(il1)**2*sqrt(condmax),D12max/)
+
+         ! Observations
+         minim%obs = reshape(raw_copy(:,:,jl0rz,il0),(/minim%ny/))
+
+         ! Compute fit
+         minim%cost_function = 'tensor'
+         call minim%compute(mpl)
+
+         ! Get parameters, apply bounds
+         D11_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+         D22_l1(il1) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+         D12_l1(il1) = max(minim%binf(3),min(minim%x(3),minim%bsup(3)))
+
+         ! Check tensor conditioning
+         call tensor_check_cond(D11_l1(il1),D22_l1(il1),D12_l1(il1),valid)
+         if (.not.valid) then
+            D11_l1(il1) = mpl%msv%valr
+            D22_l1(il1) = mpl%msv%valr
+            D12_l1(il1) = mpl%msv%valr
+         end if
+
+         ! Get corresponding length-scale
+         call tensor_d2r(mpl,D11_l1(il1),D22_l1(il1),D12_l1(il1),rh_l1(il1))
+
+         ! Release memory
+         call minim%partial_dealloc
+      else
+         ! Missing values
+         rh_l1(il1) = mpl%msv%valr
+         D11_l1(il1) = mpl%msv%valr
+         D22_l1(il1) = mpl%msv%valr
+         D12_l1(il1) = mpl%msv%valr
+      end if
+   end if
+
+   ! Check that horizontal length-scale is not too large
+   if (supeq(rh_l1(il1),rh_span)) then
+      rh_l1(il1) = mpl%msv%valr
+      if (nam%nc4>1) then
+         D11_l1(il1) = mpl%msv%valr
+         D22_l1(il1) = mpl%msv%valr
+         D12_l1(il1) = mpl%msv%valr
+      end if
+   end if
+
+   if (nl0r==1) then
+      ! No vertical fit
+      distv(1) = zero
+      rv_l1(il1) = zero
+   else
+      ! Raw vertical function, averaged over angular sectors
+      raw_ver = sum(raw_copy(1,:,:,il0),dim=1)/real(nam%nc4,kind_real)
+
+      ! Vertical distance
+      do jl0r=1,nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
+         distv(jl0r) = abs(diag_set%vert_coord(il0)-diag_set%vert_coord(jl0))
+      end do
+
+      ! Fast vertical fit
+      call fast_fit(mpl,nl0r,jl0rz,distv,'ver',raw_ver,rv_l1(il1))
+
+      if (mpl%msv%isnot(rv_l1(il1))) then
+         ! Optimized vertical fit
+
+         ! Vertical distance
+         minim%distv = distv
+
+         ! Allocation
+         minim%nx = 1
+         minim%ny = nl0r
+         call minim%alloc
+
+         ! Guess and bounds
+         minim%guess(1) = rv_l1(il1)
+         minim%binf(1) = zero
+         minim%bsup(1) = ten*rv_l1(il1)
+
+         ! Observations
+         minim%obs(1:nl0r) = raw_ver
+
+         ! Compute fit
+         minim%cost_function = 'rv'
+         call minim%compute(mpl)
+
+         ! Get parameter, apply bounds
+         rv_l1(il1) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+
+         ! Release memory
+         call minim%partial_dealloc
+      end if
+   end if
+
+   if (mpl%msv%isnot(rh_l1(il1)).and.mpl%msv%isnot(rv_l1(il1))) then
+      ! Both horizontal and vertical fits succeed
+      if (diag_set%ncmp==1) then
+         ! One component only, simple copy
+         a_l1(il1,1) = one
+         s_l1(il1,1) = one
+      else
+         ! Multiple component optimization
+
+         ! Initialization
+         if (nam%nc4==1) then
+            minim%rh = rh_l1(il1)
+         else
+            minim%D11 = D11_l1(il1)
+            minim%D22 = D22_l1(il1)
+            minim%D12 = D12_l1(il1)
+         end if
+         minim%rv = rv_l1(il1)
+
+         do icmp=1,diag_set%ncmp
+            ! Amplitude, horizontal and vertical raw functions
+            a = one
+            raw_hor = raw_copy(:,:,jl0rz,il0)
+            raw_ver = sum(raw_copy(1,:,1:nl0r,il0),dim=1)/real(nam%nc4,kind_real)
+
+            ! Remove previous components from raw functions
+            do jcmp=1,icmp-1
+               a = a-a_l1(il1,jcmp)
+               if (nam%nc4==1) then
+                  call diag_iso(mpl,nam%nc3,geom%disth,'hor',s_l1(il1,jcmp),rh_l1(il1),fit_hor(:,1))
+               else
+                  call diag_tensor(mpl,nam%nc3,nam%nc4,geom%disth,geom%as,s_l1(il1,jcmp),D11_l1(il1),D22_l1(il1),D12_l1(il1), &
+ & fit_hor)
+               end if
+               raw_hor = raw_hor-a_l1(il1,jcmp)*fit_hor
+               call diag_iso(mpl,nl0r,distv,'ver',s_l1(il1,jcmp),rv_l1(il1),fit_ver)
+               raw_ver = raw_ver-a_l1(il1,jcmp)*fit_ver
+            end do
+
+            if (inf(a,tenth)) then
+               ! Amplitude is too small: unstable optimization
+               a_l1(il1,icmp) = zero
+               s_l1(il1,icmp) = s_l1(il1,icmp-1)
+
+               ! Adjust amplitude of the previous component
+               a_l1(il1,icmp-1) = a_l1(il1,icmp-1)+a
+            else
+               ! Allocation
+               if (icmp<diag_set%ncmp) then
+                  minim%nx = 2
+               else
+                  minim%nx = 1
+               end if
+               minim%ny = nam%nc3*nam%nc4+nl0r
+               call minim%alloc
+
+               ! Guess and bounds
+               if (icmp==1) then
+                  ! First component
+                  minim%guess(1) = one
+                  minim%binf(1) = tenth
+                  minim%bsup(1) = ten
+
+                  ! Ensure that scaling cannot lead to very large horizontal length-scale
+                  if (rh_l1(il1)>zero) minim%bsup(1) = min(minim%bsup(1),rh_span/rh_l1(il1))
+               else
+                  minim%guess(1) = half*s_l1(il1,icmp-1)
+                  minim%binf(1) = tenth*s_l1(il1,icmp-1)
+                  minim%bsup(1) = s_l1(il1,icmp-1)
+               end if
+               if (icmp<diag_set%ncmp) then
+                  minim%guess(2) = half*a
+                  minim%binf(2) = zero
+                  minim%bsup(2) = a
+               else
+                  minim%a = a
+               end if
+
+               ! Observations
+               minim%obs(1:nam%nc3*nam%nc4) = reshape(raw_hor,(/nam%nc3*nam%nc4/))
+               minim%obs(nam%nc3*nam%nc4+1:nam%nc3*nam%nc4+nl0r) = raw_ver
+
+               ! Compute fit
+               minim%cost_function = 'component'
+               call minim%compute(mpl)
+
+               ! Get parameters, apply bounds
+               s_l1(il1,icmp) = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
+               if ((icmp==1).and.infeq(s_l1(il1,icmp),one)) then
+                  ! A single component is better
+                  s_l1(il1,icmp) = one
+                  a_l1(il1,icmp) = one
+               else
+                 if (icmp<diag_set%ncmp) then
+                    a_l1(il1,icmp) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+                 else
+                    a_l1(il1,icmp) = minim%a
+                 end if
+               end if
+
+               ! Release memory
+               call minim%partial_dealloc
+            end if
+         end do
+      end if
+   else
+      ! Either horizontal fit or vertical fit failed
+      a_l1(il1,:) = mpl%msv%valr
+      s_l1(il1,:) = mpl%msv%valr
+   end if
+end do
+
+! Allocation
+allocate(diag_set%a_l0(geom%nl0,diag_set%ncmp))
+allocate(diag_set%s_l0(geom%nl0,diag_set%ncmp))
+allocate(diag_set%rh_l0(geom%nl0))
+if (nam%nc4>1) then
+   allocate(diag_set%D11_l0(geom%nl0))
+   allocate(diag_set%D22_l0(geom%nl0))
+   allocate(diag_set%D12_l0(geom%nl0))
+   allocate(diag_set%ecc_l0(geom%nl0))
+end if
+allocate(diag_set%rv_l0(geom%nl0))
+
+! Initialization
+diag_set%a_l0 = mpl%msv%valr
+diag_set%s_l0 = mpl%msv%valr
+diag_set%rh_l0 = mpl%msv%valr
+if (nam%nc4>1) then
+   diag_set%D11_l0 = mpl%msv%valr
+   diag_set%D22_l0 = mpl%msv%valr
+   diag_set%D12_l0 = mpl%msv%valr
+   diag_set%ecc_l0 = mpl%msv%valr
+end if
+diag_set%rv_l0 = mpl%msv%valr
+
+! Interpolate parameters
+if (mpl%msv%isnot(ilev2d)) then
+   ! No vertical interpolation for 2D variables
+   do icmp=1,diag_set%ncmp
+      diag_set%a_l0(ilev2d,icmp) = a_l1(1,icmp)
+      diag_set%s_l0(ilev2d,icmp) = s_l1(1,icmp)
+   end do
+   if (nam%nc4==1) then
+      diag_set%rh_l0(ilev2d) = rh_l1(1)
+   else
+      diag_set%D11_l0(ilev2d) = D11_l1(1)
+      diag_set%D22_l0(ilev2d) = D22_l1(1)
+      diag_set%D12_l0(ilev2d) = D12_l1(1)
+      call tensor_d2r(mpl,diag_set%D11_l0(ilev2d),diag_set%D22_l0(ilev2d),diag_set%D12_l0(ilev2d),diag_set%rh_l0(ilev2d))
+      call tensor_d2e(mpl,diag_set%D11_l0(ilev2d),diag_set%D22_l0(ilev2d),diag_set%D12_l0(ilev2d),diag_set%ecc_l0(ilev2d))
+   end if
+   diag_set%rv_l0(ilev2d) = rv_l1(1)
+else
+   ! Vertical interpolation
+   do icmp=1,diag_set%ncmp
+      call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%a_l0(:,icmp))
+      call vert_interp(mpl,nl1,s_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%s_l0(:,icmp))
+   end do
+   if (nam%nc4==1) then
+      call vert_interp(mpl,nl1,rh_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%rh_l0)
+   else
+      call vert_interp(mpl,nl1,D11_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%D11_l0)
+      call vert_interp(mpl,nl1,D22_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%D22_l0)
+      call vert_interp(mpl,nl1,D12_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%D12_l0)
+      do il0=1,geom%nl0
+         call tensor_d2r(mpl,diag_set%D11_l0(il0),diag_set%D22_l0(il0),diag_set%D12_l0(il0),diag_set%rh_l0(il0))
+         call tensor_d2e(mpl,diag_set%D11_l0(il0),diag_set%D22_l0(il0),diag_set%D12_l0(il0),diag_set%ecc_l0(il0))
+      end do
+   end if
+   call vert_interp(mpl,nl1,rv_l1,geom%nl0,il1inf,il1sup,rinf,rsup,diag_set%rv_l0)
+end if
+
+! Release memory
+deallocate(il0_interp)
+deallocate(il1inf)
+deallocate(il1sup)
+deallocate(rinf)
+deallocate(rsup)
+deallocate(rh_c4l1)
+deallocate(a_l1)
+deallocate(s_l1)
+deallocate(rh_l1)
+if (nam%nc4>1) then
+   deallocate(D11_l1)
+   deallocate(D22_l1)
+   deallocate(D12_l1)
+end if
+deallocate(rv_l1)
+deallocate(raw_hor)
+deallocate(raw_ver)
+deallocate(distv)
+call minim%dealloc
+
+end subroutine diag_set_fitting
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_localization_from_nam
+!> Diag_set localization
+!----------------------------------------------------------------------
+subroutine diag_set_localization_from_nam(diag_set,mpl,nam,geom,ig)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+integer,intent(in) :: ig                       !< Group index
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(diag_set_localization_from_nam)
+
+! Raw function
+diag_set%raw = mpl%msv%valr
+diag_set%valid = mpl%msv%valr
+
+! Allocation
+allocate(diag_set%a_l0(geom%nl0,diag_set%ncmp))
+allocate(diag_set%s_l0(geom%nl0,diag_set%ncmp))
+allocate(diag_set%rh_l0(geom%nl0))
+if (nam%nc4>1) then
+   allocate(diag_set%D11_l0(geom%nl0))
+   allocate(diag_set%D22_l0(geom%nl0))
+   allocate(diag_set%D12_l0(geom%nl0))
+   allocate(diag_set%ecc_l0(geom%nl0))
+end if
+allocate(diag_set%rv_l0(geom%nl0))
+
+! Copy parameters
+do icmp=1,diag_set%ncmp
+   if (icmp==1) then
+      diag_set%a_l0(:,icmp) = one
+      diag_set%s_l0(:,icmp) = one
+   else
+      diag_set%a_l0(:,icmp) = zero
+      diag_set%s_l0(:,icmp) = zero
+   end if
+end do
+diag_set%rh_l0 = nam%rh(1:geom%nl0,ig)
+if (nam%nc4>1) then
+   diag_set%D11_l0 = nam%rh(1:geom%nl0,ig)
+   diag_set%D22_l0 = nam%rh(1:geom%nl0,ig)
+   diag_set%D12_l0 = nam%rh(1:geom%nl0,ig)
+   diag_set%ecc_l0 = nam%rh(1:geom%nl0,ig)
+end if
+diag_set%rv_l0 = nam%rv(1:geom%nl0,ig)
+
+end subroutine diag_set_localization_from_nam
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_localization
+!> Diag_set localization
+!----------------------------------------------------------------------
+subroutine diag_set_localization(diag_set,mpl,nam,geom,avg_set,cor_set,ne)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(avg_set_type),intent(in) :: avg_set       !< Averaged statistics block
+type(diag_set_type),intent(in) :: cor_set      !< Correlation diagnostic block
+integer,intent(in) :: ne                       !< Ensemble size
+
+! Local variables
+integer :: il0,jl0r,jc3,jc4,gamma_star,gamma,ialpha
+real(kind_real) :: P4,S_rho,norm,alpha,dalpha,alpha_star
+
+! Set name
+@:set_name(diag_set_localization)
+
+! Compute noise level for the NICE metho
+if (nam%loc_option=='nice_with_table') then
+   ! Use look-up table
+   S_rho = zero
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(cor_set%raw(jc3,jc4,jl0r,il0))) S_rho = S_rho+diag_set%frob_wgt(jc3,jc4,jl0r,il0)* &
+ & eval(mpl,cor_set%fit(jc3,jc4,jl0r,il0),ne)
+            end do
+         end do
+      end do
+   end do
+else if (nam%loc_option=='nice_without_table') then
+   ! Use ergodicity assumption
+   S_rho = zss_sum(diag_set%frob_wgt*avg_set%cor_var,mask=mpl%msv%isnot(avg_set%cor_var))
+end if
+
+if (nam%loc_option=='from_squared_correlation') then
+   ! Ensemble size-dependent coefficient
+   P4 = one/real(ne-1,kind_real)
+
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_set,cor_set,P4)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(cor_set%fit(jc3,jc4,jl0r,il0))) then
+                  ! Compute localization from correlation
+                  diag_set%raw(jc3,jc4,jl0r,il0) = cor_set%fit(jc3,jc4,jl0r,il0)**2/((1.0+P4)*cor_set%fit(jc3,jc4,jl0r,il0)**2+P4)
+                  diag_set%valid(jc3,jc4,jl0r,il0) = cor_set%valid(jc3,jc4,jl0r,il0)
+               else
+                  ! Missing value
+                  diag_set%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  diag_set%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+else if ((nam%loc_option=='nice_with_table').or.(nam%loc_option=='nice_without_table')) then
+   ! Determine smallest positive, even integer gamma that violates de discrepancy principle
+   gamma_star = 0
+   do gamma=2,10,2
+      norm = zss_sum(diag_set%frob_wgt*cor_set%raw*(one-cor_set%fit**gamma),mask=mpl%msv%isnot(cor_set%raw) &
+ & .and.mpl%msv%isnot(cor_set%fit))
+      if (norm > S_rho) then
+         gamma_star = gamma
+         exit
+      end if
+   end do
+   if (gamma_star>0) then
+      ! Linear interpolation (bisection method)
+      alpha = half
+      dalpha = half
+      alpha_star = mpl%msv%valr
+      norm = zss_sum(diag_set%frob_wgt*cor_set%raw*(one-(alpha*cor_set%fit**gamma_star &
+ & +(one-alpha)*cor_set%fit**(gamma_star-2))),mask=mpl%msv%isnot(cor_set%raw).and.mpl%msv%isnot(cor_set%fit))
+      if (norm < S_rho) then
+         dalpha = half*abs(dalpha)
+      else
+         dalpha = -half*abs(dalpha)
+      end if
+      do ialpha=1,nalpha
+         alpha = alpha+dalpha
+         norm = zss_sum(diag_set%frob_wgt*cor_set%raw*(one-(alpha*cor_set%fit**gamma_star &
+ & +(one-alpha)*cor_set%fit**(gamma_star-2))),mask=mpl%msv%isnot(cor_set%raw).and.mpl%msv%isnot(cor_set%fit))
+         if (norm < S_rho) then
+            dalpha = half*abs(dalpha)
+            alpha_star = alpha
+         else
+            dalpha = -half*abs(dalpha)
+         end if
+      end do
+      if (mpl%msv%isnot(alpha_star)) then
+         ! Build localization
+         !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_set,avg_set,cor_set,alpha_star,gamma_star)
+         do il0=1,geom%nl0
+            do jl0r=1,nam%nl0r
+               do jc4=1,nam%nc4
+                  do jc3=1,nam%nc3
+                     if (mpl%msv%isnot(cor_set%fit(jc3,jc4,jl0r,il0))) then
+                        ! NICE localization
+                        diag_set%raw(jc3,jc4,jl0r,il0) = alpha_star*cor_set%fit(jc3,jc4,jl0r,il0)**gamma_star &
+ & +(one-alpha_star)*cor_set%fit(jc3,jc4,jl0r,il0)**(gamma_star-2)
+                        diag_set%valid(jc3,jc4,jl0r,il0) = avg_set%nc1a_cor(jc3,jc4,jl0r,il0)
+                     else
+                        ! Missing value
+                        diag_set%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                        diag_set%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                     end if
+                  end do
+               end do
+            end do
+         end do
+         !$omp end parallel do
+      else
+         ! Missing value
+         call mpl%warning('${subr}$','impossible to find a suitable alpha_star')
+         diag_set%raw = mpl%msv%valr
+      end if
+   else
+      ! Missing value
+      call mpl%warning('${subr}$','impossible to find a positive gamma_star')
+      diag_set%raw = mpl%msv%valr
+   end if
+else if (nam%loc_option=='default') then
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_set,avg_set)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(avg_set%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_set%m11sq(jc3,jc4,jl0r,il0))) then
+                  ! Compute localization from asymptotic moments
+                  diag_set%raw(jc3,jc4,jl0r,il0) = avg_set%m11asysq(jc3,jc4,jl0r,il0)/avg_set%m11sq(jc3,jc4,jl0r,il0)
+                  diag_set%valid(jc3,jc4,jl0r,il0) = avg_set%nc1a(jc3,jc4,jl0r,il0)
+               else
+                  ! Missing value
+                  diag_set%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  diag_set%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+end if
+
+! Hybrid weights
+diag_set%hyb_coef_1 = mpl%msv%valr
+diag_set%hyb_coef_2 = mpl%msv%valr
+
+end subroutine diag_set_localization
+
+!----------------------------------------------------------------------
+! Subroutine: diag_set_hybridization
+!> Diag_set hybridization
+!----------------------------------------------------------------------
+subroutine diag_set_hybridization(diag_set,mpl,nam,geom,avg1_set,avg2_set)
+
+implicit none
+
+! Passed variables
+class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block (hybridization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(avg_set_type),intent(in) :: avg1_set      !< Averaged statistics block for ensemble 1
+type(avg_set_type),intent(in) :: avg2_set      !< Averaged statistics block for ensemble 2
+
+! Local variables
+integer :: il0,jl0r,jl0,jc3,jc4
+real(kind_real) :: a,bc,d,e,f,num,num_1,num_2,den,wgt
+
+! Set name
+@:set_name(diag_set_hybridization)
+
+do il0=1,geom%nl0
+   ! Compute hybrid weights terms
+   a = zero
+   bc = zero
+   d = zero
+   e = zero
+   f = zero
+   do jl0r=1,nam%nl0r
+      jl0 = geom%l0rl0_to_l0(jl0r,il0)
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (mpl%msv%isnot(diag_set%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_set%m11sq(jc3,jc4,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg1_set%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_set%m11(jc3,jc4,jl0r,il0)) &
+ & .and.mpl%msv%isnot(avg2_set%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_set%m11asysq(jc3,jc4,jl0r,il0))) then
+               wgt = diag_set%frob_wgt(jc3,jc4,jl0r,il0)
+               a = a+wgt*diag_set%fit(jc3,jc4,jl0r,il0)**2*avg1_set%m11sq(jc3,jc4,jl0r,il0)
+               bc = bc+wgt*diag_set%fit(jc3,jc4,jl0r,il0)*avg1_set%m11(jc3,jc4,jl0r,il0)*avg2_set%m11(jc3,jc4,jl0r,il0)
+               select case (nam%hybrid_source)
+               case ('randomized static')
+                  d = d+wgt*avg2_set%m11(jc3,jc4,jl0r,il0)**2
+               case ('lowres ensemble')
+                  d = d+wgt*avg2_set%m11sq(jc3,jc4,jl0r,il0)
+               end select
+               e = e+wgt*diag_set%fit(jc3,jc4,jl0r,il0)*avg1_set%m11asysq(jc3,jc4,jl0r,il0)
+               f = f+wgt*avg1_set%m11(jc3,jc4,jl0r,il0)*avg2_set%m11(jc3,jc4,jl0r,il0)
+            end if
+         end do
+      end do
+   end do
+
+   ! Compute hybrid weights
+   num_1 = e*d-bc*f
+   num_2 = a*f-e*bc
+   den = a*d-bc**2
+
+   if (den>zero) then
+      ! Raw hybrid weights
+      diag_set%hyb_coef_1_raw(il0) = num_1/den
+      diag_set%hyb_coef_2_raw(il0) = num_2/den
+
+      ! Normalization (to keep a correct variance)
+      num = avg1_set%m11(1,1,geom%il0rz(il0),il0)
+      den = diag_set%hyb_coef_1_raw(il0)*avg1_set%m11(1,1,geom%il0rz(il0),il0) &
+ & +diag_set%hyb_coef_2_raw(il0)*avg2_set%m11(1,1,geom%il0rz(il0),il0)
+      if (den>zero) then
+         ! Hybrid weights
+         diag_set%hyb_coef_1(il0) = diag_set%hyb_coef_1_raw(il0)*num/den
+         diag_set%hyb_coef_2(il0) = diag_set%hyb_coef_2_raw(il0)*num/den
+      else
+         ! Missing values
+         diag_set%hyb_coef_1(il0) = mpl%msv%valr
+         diag_set%hyb_coef_2(il0) = mpl%msv%valr
+      end if
+   else
+      ! Missing values
+      diag_set%hyb_coef_1_raw(il0) = mpl%msv%valr
+      diag_set%hyb_coef_1(il0) = mpl%msv%valr
+      diag_set%hyb_coef_2_raw(il0) = mpl%msv%valr
+      diag_set%hyb_coef_2(il0) = mpl%msv%valr
+   end if
+end do
+
+end subroutine diag_set_hybridization
+
+end module type_diag_set

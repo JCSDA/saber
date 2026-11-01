@@ -203,7 +203,7 @@ if (present(scaling_factor)) lscaling_factor = scaling_factor
 
 if (.not.cmat%allocated) then
    ! Allocation
-   call cmat%alloc(nam,geom,diag%blk(0,1)%ncmp)
+   call cmat%alloc(nam,geom,diag%blk(1)%glb%ncmp)
 
    ! Initialization
    call cmat%init(mpl,nam)
@@ -212,16 +212,16 @@ end if
 ! Convolution parameters
 do ig=1,nam%ng
    ! Copy fields
-   cmat%blk(ig)%a = diag%blk(0,ig)%a_c0a
-   do icmp=1,diag%blk(0,ig)%ncmp
-      cmat%blk(ig)%rh(:,:,icmp) = diag%blk(0,ig)%rh_c0a*diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor
+   cmat%blk(ig)%a = diag%blk(ig)%glb%a_c0a
+   do icmp=1,diag%blk(ig)%glb%ncmp
+      cmat%blk(ig)%rh(:,:,icmp) = diag%blk(ig)%glb%rh_c0a*diag%blk(ig)%glb%s_c0a(:,:,icmp)*lscaling_factor
       if (nam%nc4>1) then
-         cmat%blk(ig)%D11(:,:,icmp) = diag%blk(0,ig)%D11_c0a*(diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor)**2
-         cmat%blk(ig)%D22(:,:,icmp) = diag%blk(0,ig)%D22_c0a*(diag%blk(0,ig)%s_c0a(:,:,icmp)*lscaling_factor)**2
-         cmat%blk(ig)%D12(:,:,icmp) = diag%blk(0,ig)%D12_c0a
+         cmat%blk(ig)%D11(:,:,icmp) = diag%blk(ig)%glb%D11_c0a*(diag%blk(ig)%glb%s_c0a(:,:,icmp)*lscaling_factor)**2
+         cmat%blk(ig)%D22(:,:,icmp) = diag%blk(ig)%glb%D22_c0a*(diag%blk(ig)%glb%s_c0a(:,:,icmp)*lscaling_factor)**2
+         cmat%blk(ig)%D12(:,:,icmp) = diag%blk(ig)%glb%D12_c0a
       end if
    end do
-   cmat%blk(ig)%rv = diag%blk(0,ig)%rv_c0a*lscaling_factor
+   cmat%blk(ig)%rv = diag%blk(ig)%glb%rv_c0a*lscaling_factor
 end do
 
 end subroutine cmat_from_hdiag

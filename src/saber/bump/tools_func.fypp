@@ -682,15 +682,15 @@ end subroutine func_area
 ! Subroutine: func_add
 !> Check if value missing and add if not missing
 !----------------------------------------------------------------------
-subroutine func_add(mpl,val,cumul,num,wgt)
+subroutine func_add(mpl,val,cval,cwgt,wgt)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(in) :: mpl           !< MPI data
 real(kind_real),intent(in) :: val          !< Value to add
-real(kind_real),intent(inout) :: cumul     !< Cumul
-real(kind_real),intent(inout) :: num       !< Number of values
+real(kind_real),intent(inout) :: cval      !< Cumulated value
+real(kind_real),intent(inout) :: cwgt      !< Cumulated weight
 real(kind_real),intent(in),optional :: wgt !< Weight
 
 ! Local variables
@@ -705,8 +705,8 @@ if (present(wgt)) lwgt = wgt
 
 ! Add value to cumul
 if (mpl%msv%isnot(val)) then
-   cumul = cumul+lwgt*val
-   num = num+lwgt
+   cval = cval+lwgt*val
+   cwgt = cwgt+lwgt
 end if
 
 end subroutine func_add
@@ -715,21 +715,21 @@ end subroutine func_add
 ! Subroutine: func_divide
 !> Check if value missing and divide if not missing
 !----------------------------------------------------------------------
-subroutine func_divide(mpl,val,num)
+subroutine func_divide(mpl,val,div)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(in) :: mpl     !< MPI data
 real(kind_real),intent(inout) :: val !< Value to divide
-real(kind_real),intent(in) :: num    !< Divider
+real(kind_real),intent(in) :: div    !< Divider
 
 ! Set name
 @:set_name(func_divide)
 
-! Divide cumul by num
-if (abs(num)>zero) then
-   val = val/num
+! Divide cumul by div
+if (abs(div)>zero) then
+   val = val/div
 else
    val = mpl%msv%valr
 end if

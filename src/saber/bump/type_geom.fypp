@@ -97,7 +97,8 @@ type geom_type
    ! Geometry data on subset Sc0, full domain
    integer :: nc0                                     !< Number of subset Sc0 points
    integer,allocatable :: proc_to_c0_offset(:)        !< Task to offset on subset Sc0
-   integer,allocatable :: nc0_gmask(:)                !< Horizontal mask size on subset Sc0
+   integer,allocatable :: gmask_c0_size(:)            !< Geometry mask size on subset Sc0
+   integer :: gmask_hor_c0_size                       !< Union of horizontal geometry masks size on subset Sc0
    real(kind_real) :: area                            !< Domain area
    real(kind_real),allocatable :: area_ver_c0(:)      !< Area profile on subset Sc0
    real(kind_real) :: area_max_c0                     !< Area maximum on subset Sc0
@@ -292,7 +293,7 @@ if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
 if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
 if (allocated(geom%vert_coord_c0a)) deallocate(geom%vert_coord_c0a)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
-if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
+if (allocated(geom%gmask_c0_size)) deallocate(geom%gmask_c0_size)
 call geom%hull_c0u%dealloc
 call geom%hull_c0%dealloc
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
@@ -412,6 +413,9 @@ if (nam%mask_check) then
    write(mpl%info,'(a10,a,i4,a,i4,a)') '','Boundary classes: ',geom%bnda_c0u%nclass,' distinct masks over ', &
  & geom%nl0,' levels (arc checks are shared within a class)'
    call mpl%flush
+else
+   ! Empty mask boundaries
+   call geom%bnda_c0u%empty(geom%nl0)
 end if
 
 ! Setup horizontal distance
@@ -481,7 +485,7 @@ write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
    write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ', &
- & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
+ & hundred*real(geom%gmask_c0_size(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Vertical coordinate:'
@@ -708,7 +712,7 @@ allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%vert_coord_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_hor_c0a(geom%nc0a))
-allocate(geom%nc0_gmask(0:geom%nl0))
+allocate(geom%gmask_c0_size(geom%nl0))
 allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vert_coordavg(geom%nl0))
 allocate(geom%l0_to_l0i(geom%nl0))
@@ -752,11 +756,12 @@ end if
 
 ! Horizontally averaged mask
 if (geom%nc0a>0) geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
-geom%nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
 do il0=1,geom%nl0
-   geom%nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
+   geom%gmask_c0_size(il0) = zss_count(geom%gmask_c0a(:,il0))
 end do
-call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
+geom%gmask_hor_c0_size = zss_count(geom%gmask_hor_c0a)
+call mpl%f_comm%allreduce(geom%gmask_c0_size,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%gmask_hor_c0_size,fckit_mpi_sum())
 
 ! Release memory
 deallocate(geom%lon_mga)
@@ -1362,7 +1367,7 @@ else
 end if
 
 ! Miscellanous area-related fields
-if (geom%nc0_gmask(0)>0) then
+if (geom%gmask_hor_c0_size>0) then
    geom%area_max_c0 = geom%area*real(count(geom%gmask_hor_c0a),kind_real)/real(geom%nc0,kind_real)
 else
    geom%area_max_c0 = zero
