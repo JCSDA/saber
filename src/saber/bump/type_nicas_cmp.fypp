@@ -3088,11 +3088,11 @@ do il1=1,nicas_cmp%nl1
          write(nicas_cmp%hor(il1s)%interp_c1b_to_c0a%prefix,'(a,i3.3)') 'interp_c1b_to_c0a_',il1s
          select case (nicas_cmp%interp_type)
          case ('c0')
-            call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%interp(mpl,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1,gmask_c1, &
+            call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%interp(mpl,geom%hull_c0u,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1,gmask_c1, &
  & nicas_cmp%hor(il1s)%mesh_c1,nicas_cmp%hor(il1s)%tree_c1, &
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0s),geom%bnda_c0u%lev(il0s),ifmt,.false.)
          case ('c1')
-            call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%interp(mpl,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1,gmask_c1, &
+            call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%interp(mpl,geom%hull_c0u,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1,gmask_c1, &
  & nicas_cmp%hor(il1s)%mesh_c1,nicas_cmp%hor(il1s)%tree_c1, &
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0s),geom%bnda_c0u%lev(il0s),ifmt,.true.)
          case ('si')

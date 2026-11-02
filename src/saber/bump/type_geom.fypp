@@ -785,10 +785,10 @@ type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
 integer :: iproc,ic0a,ic0u,ic0
-integer :: proc_to_universe_size(mpl%nproc),proc_to_universe_proportion(mpl%nproc)
+integer :: proc_to_universe_size(mpl%nproc)
 integer,allocatable :: order(:)
 real(kind_real) :: dist,lon_avg,lat_avg,dist_max
-real(kind_real) :: xyz(3),xyz_avg(3)
+real(kind_real) :: xyz(3),xyz_avg(3),proc_to_universe_proportion(mpl%nproc)
 real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_dist_max(:)
 
 ! Set name
@@ -1302,7 +1302,7 @@ else
       end do
 
       ! Desynchronize random number generator
-      call rng%resync(mpl)
+      call rng%desync(mpl)
 
       ! Release memory
       call minim%dealloc
@@ -1342,12 +1342,6 @@ else
    if (.not.aconfig_domain%get('xmax',geom%xmax)) call mpl%abort('${subr}$','missing domain xmax')
    if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
    if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
-
-
-   ! Get grid projection
-   if (.not.geom%aconfig_work_grid%get('projection',aconfig_work_proj)) call mpl%abort('${subr}$','missing projection')
-   geom%aproj_work = atlas_projection(aconfig_work_proj)
-
 
    ! Get grid projection
    if (geom%aconfig_work_grid%get('projection',aconfig_work_proj)) then

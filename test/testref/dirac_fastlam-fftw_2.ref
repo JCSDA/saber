@@ -15,12 +15,12 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 2.3917087430241827e-03
     + stddev = 4.8853072639868877e-02
-Norm of input parameter weight_0: 8.5293772677492697e+01
-Norm of input parameter weight_1: 1.7798283127050783e+02
-Norm of input parameter weight_2: 7.9007161597063444e+01
-Norm of input parameter normalization_0: 2.9443509824288640e+02
-Norm of input parameter normalization_1: 3.1365082892731181e+02
-Norm of input parameter normalization_2: 3.0386395009761605e+02
+Norm of input parameter weight_0: 8.5295451413645523e+01
+Norm of input parameter weight_1: 1.7798210976265435e+02
+Norm of input parameter weight_2: 7.9007226339404966e+01
+Norm of input parameter normalization_0: 2.9443638603848285e+02
+Norm of input parameter normalization_1: 3.1365102845489849e+02
+Norm of input parameter normalization_2: 3.0386400781567335e+02
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM interpolation accuracy test passed
@@ -42,15 +42,15 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (10 levels):
     + min close to zero
     + max    = 1.0206223826251037e+00
-    + mean   = 1.3911182713746958e-02
-    + stddev = 7.3379198438230597e-02
+    + mean   = 1.3911079084635203e-02
+    + stddev = 7.3378976817174896e-02
   - air_horizontal_velocity_potential (10 levels):
     + min close to zero
     + max    = 1.0206223826251037e+00
-    + mean   = 1.3911182713746958e-02
-    + stddev = 7.3379198438230597e-02
+    + mean   = 1.3911079084635203e-02
+    + stddev = 7.3378976817174896e-02
   - air_pressure_at_surface (1 levels):
     + min close to zero
     + max    = 1.0203056599844855e+00
-    + mean   = 7.2668239922363001e-02
-    + stddev = 1.8173946962596860e-01
+    + mean   = 7.2668417270172619e-02
+    + stddev = 1.8174022989688871e-01

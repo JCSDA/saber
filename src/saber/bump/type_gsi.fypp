@@ -608,7 +608,7 @@ integer,intent(in) :: nact                    !< Actual size
 character(len=*),intent(inout):: utable(nact) !< Table
 
 ! Local variables
-integer :: ioflag,ln,i,n,ios
+integer :: ioflag,ln,iact,itot,n,ios
 character(len=256) :: buf
 
 ! Set name
@@ -634,7 +634,8 @@ file_scan: do
 
    if(index(buf(1:ln),trim(tname))>0) then
       ! Found wanted table
-      i = 0
+      iact = 0
+      itot = 0
 
       ! Start reading table
       table_scan: do
@@ -650,14 +651,20 @@ file_scan: do
 
          if (.not.(buf(1:1)=='#'.or.buf(1:1)=='!')) then
             ! Check index
-            if (i>nact) call mpl%abort('${subr}$','error reading table')
+            if (iact==nact) call mpl%abort('${subr}$','error reading table (actual size exceeded)')
 
             ! Increment
-            i = i+1
+            iact = iact+1
 
             ! Copy buffer
-            utable(i) = trim(buf)
+            utable(iact) = trim(buf)
          end if
+
+         ! Increment
+         itot = itot+1
+
+         ! Check index
+         if (itot==ntot) call mpl%abort('${subr}$','error reading table (total size exceeded)')
       end do table_scan
 
       ! Finished reading table

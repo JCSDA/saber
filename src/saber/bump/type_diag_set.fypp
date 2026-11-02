@@ -403,6 +403,7 @@ associate(ic2a=>diag_set%ic2a)
 write(lunit,'(a2,a)') '',trim(diag_set%prefix)//':'
 
 ! Write variables
+print*, "toto:",diag_set%ncmp
 if (diag_set%ncmp==1) then
    call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_set%rh_l0*req)
    if (nam%nc4>1) then
@@ -416,7 +417,7 @@ if (diag_set%ncmp==1) then
 else
    do icmp=1,diag_set%ncmp
       ! Write component
-      write(lunit,'(a4,a,i1,a)') '','component ',icmp,':'
+      write(lunit,'(a4,a,i1,a)') '','cmp_',icmp,':'
       call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'a_l0',diag_set%a_l0(:,icmp))
       call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rh_l0',diag_set%rh_l0*diag_set%s_l0(:,icmp)*req)
       if (nam%nc4>1) then

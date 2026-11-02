@@ -15,6 +15,7 @@ use tools_kinds, only: kind_short,kind_long,kind_real
 use tools_qsort, only: qsort
 use tools_ssrfpack, only: fval,fval_op,gradl
 use tools_stripack, only: bnodes,trfind,trmesh
+use type_hull, only: hull_type
 use type_mpl, only: mpl_type
 use type_rng, only: rng_type
 use type_tree, only: tree_type
@@ -285,13 +286,14 @@ end subroutine mesh_dealloc
 ! Subroutine: mesh_barycentric
 !> Compute barycentric coordinates
 !----------------------------------------------------------------------
-subroutine mesh_barycentric(mesh,mpl,lon,lat,tree,b,ib)
+subroutine mesh_barycentric(mesh,mpl,hull,lon,lat,tree,b,ib)
 
 implicit none
 
 ! Passed variables
 class(mesh_type),intent(in) :: mesh !< Mesh
 type(mpl_type),intent(inout) :: mpl !< MPI data
+type(hull_type),intent(in) :: hull  !< Hull
 real(kind_real),intent(in) :: lon   !< Longitude
 real(kind_real),intent(in) :: lat   !< Latitude
 type(tree_type),intent(in) :: tree  !< Tree
@@ -302,6 +304,7 @@ integer,intent(out) :: ib(3)        !< Barycentric indices
 integer :: order(3)
 integer,allocatable :: nn_index(:)
 real(kind_real) :: xyz(3)
+logical :: inside_hull
 
 ! Set name
 @:set_name(mesh_barycentric)
@@ -320,9 +323,13 @@ b = zero
 ib = 0
 call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
-! Transform indices
 if (all(ib>0)) then
+   ! Transform indices
    ib = mesh%order(ib)
+
+   ! Check that point is inside the hull
+   call hull%inside(mpl,lon,lat,inside_hull)
+   if (.not.inside_hull) ib = mpl%msv%vali
 else
    ib = mpl%msv%vali
 end if
