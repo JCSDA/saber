@@ -19,6 +19,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  8.59 / 30.72 / 10.46
                    Subgrid hash:    682755028
                 Subgrid size:     1008
+             nl1 =                               1
              nc1(  1) =                       1008
              ns =                             1008
              v%n_s =                             1

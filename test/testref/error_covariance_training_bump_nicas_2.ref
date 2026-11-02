@@ -7,21 +7,25 @@
              Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter nicas_a - 1: 4.7944707465970552e+01
 Norm of input parameter nicas_a - 2: 7.3584341166431972e+00
+             nl1 =                               2
              nc1(  1) =                        448
              nc1(  2) =                        544
              ns =                              992
              v%n_s =                             2
              c%n_s[global] =                 17504
+             nl1 =                               2
              nc1(  1) =                      33408
              nc1(  2) =                       9720
              ns =                            43128
              v%n_s =                             2
              c%n_s[global] =                365960
+             nl1 =                               2
              nc1(  1) =                        544
              nc1(  2) =                        448
              ns =                              992
              v%n_s =                             2
              c%n_s[global] =                 18944
+             nl1 =                               2
              nc1(  1) =                      34144
              nc1(  2) =                       5544
              ns =                            39688

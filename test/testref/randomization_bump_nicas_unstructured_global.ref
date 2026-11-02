@@ -12,6 +12,7 @@
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -33,7 +34,7 @@ Member 1:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.6249722585330351e+00
     + max    = 2.8732854016846492e+00
-    + mean   = 1.1495005208622036e-01
+    + mean   = 1.1495005208622039e-01
     + stddev = 1.0338940316801188e+00
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
@@ -41,7 +42,7 @@ Member 2:
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.1015227049151384e+00
-    + max    = 2.7680353225674676e+00
+    + max    = 2.7680353225674668e+00
     + mean   = 1.1837433473429709e-01
     + stddev = 9.8327793921476159e-01
 Member 3: 
@@ -51,14 +52,14 @@ Member 3:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.0836483496426284e+00
     + max    = 2.7244227492579283e+00
-    + mean   = 2.5231571411294240e-01
-    + stddev = 8.9653911131822761e-01
+    + mean   = 2.5231571411294235e-01
+    + stddev = 8.9653911131822750e-01
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.1833241575364126e+00
+    + min    = -2.1833241575364131e+00
     + max    = 3.2107103228777443e+00
     + mean   = 2.7273265838617855e-01
     + stddev = 9.4684137554639769e-01
@@ -69,8 +70,8 @@ Member 5:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.0946734491281980e+00
     + max    = 2.7102062544031975e+00
-    + mean   = -7.1093184260391892e-02
-    + stddev = 9.4373383304044434e-01
+    + mean   = -7.1093184260391906e-02
+    + stddev = 9.4373383304044445e-01
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
@@ -88,7 +89,7 @@ Member 7:
     + min    = -2.5546564737386470e+00
     + max    = 3.0045544756182965e+00
     + mean   = 1.1511375084144648e-01
-    + stddev = 9.2068644838611358e-01
+    + stddev = 9.2068644838611380e-01
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
@@ -96,7 +97,7 @@ Member 8:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.5160002739111613e+00
     + max    = 2.6229002654703244e+00
-    + mean   = 4.6608565866302583e-02
+    + mean   = 4.6608565866302569e-02
     + stddev = 8.8083378724872374e-01
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
@@ -123,15 +124,15 @@ Member 11:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.7396828392023416e+00
     + max    = 2.6470839758536169e+00
-    + mean   = -9.4445414226050836e-03
-    + stddev = 8.9006205082451162e-01
+    + mean   = -9.4445414226050940e-03
+    + stddev = 8.9006205082451151e-01
 Member 12: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.3154038794230498e+00
-    + max    = 2.9348460594292427e+00
+    + max    = 2.9348460594292423e+00
     + mean   = -6.4375405762933435e-02
     + stddev = 1.0221791276427530e+00
 Member 13: 
@@ -139,9 +140,9 @@ Member 13:
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.4589426783056920e+00
+    + min    = -3.4589426783056911e+00
     + max    = 2.6190246694784283e+00
-    + mean   = 7.0709215379647977e-03
+    + mean   = 7.0709215379647899e-03
     + stddev = 9.9626945634521813e-01
 Member 14: 
 - Valid time: 2010-01-01T12:00:00Z
@@ -168,26 +169,26 @@ Member 16:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.8838348499470512e+00
     + max    = 2.9741375944316539e+00
-    + mean   = -5.2170552431601694e-02
+    + mean   = -5.2170552431601701e-02
     + stddev = 9.3344569409191014e-01
 Member 17: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.3528624022155000e+00
-    + max    = 3.5997786043865339e+00
+    + min    = -3.3528624022154996e+00
+    + max    = 3.5997786043865347e+00
     + mean   = -1.7302507174624510e-01
-    + stddev = 1.0162983936661973e+00
+    + stddev = 1.0162983936661976e+00
 Member 18: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.9166200173727450e+00
-    + max    = 3.0660116658860459e+00
-    + mean   = 3.3236547286618401e-02
-    + stddev = 1.0771273756481587e+00
+    + max    = 3.0660116658860455e+00
+    + mean   = 3.3236547286618415e-02
+    + stddev = 1.0771273756481585e+00
 Member 19: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
@@ -195,15 +196,15 @@ Member 19:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.3626071306264982e+00
     + max    = 2.2704566605191663e+00
-    + mean   = -4.3714586048984948e-02
-    + stddev = 9.5655244690850794e-01
+    + mean   = -4.3714586048984934e-02
+    + stddev = 9.5655244690850783e-01
 Member 20: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.8238804958305939e+00
-    + max    = 2.1423968481911100e+00
+    + min    = -2.8238804958305956e+00
+    + max    = 2.1423968481911095e+00
     + mean   = -1.2213201363098021e-01
     + stddev = 9.5935726335959981e-01
 Member 21: 
@@ -211,8 +212,8 @@ Member 21:
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.7579861799508976e+00
-    + max    = 2.6356288427525438e+00
+    + min    = -2.7579861799508967e+00
+    + max    = 2.6356288427525434e+00
     + mean   = 4.3899489034728068e-02
     + stddev = 9.8453894695352240e-01
 Member 22: 
@@ -221,17 +222,17 @@ Member 22:
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.1809435342702841e+00
-    + max    = 2.5262119537170666e+00
-    + mean   = -7.5024231630090362e-03
+    + max    = 2.5262119537170671e+00
+    + mean   = -7.5024231630090024e-03
     + stddev = 9.6138667725796179e-01
 Member 23: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.a3ac36d [173]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.0362009514112303e+00
+    + min    = -3.0362009514112294e+00
     + max    = 3.2200981221263647e+00
-    + mean   = 1.4618206729113409e-01
+    + mean   = 1.4618206729113412e-01
     + stddev = 9.4749260206024744e-01
 Member 24: 
 - Valid time: 2010-01-01T12:00:00Z
@@ -240,5 +241,5 @@ Member 24:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.4650541998433804e+00
     + max    = 2.9348537342664072e+00
-    + mean   = -1.1030077675202228e-01
+    + mean   = -1.1030077675202227e-01
     + stddev = 1.0532971785881404e+00

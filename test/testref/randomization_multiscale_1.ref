@@ -18,6 +18,7 @@
                    Effective resolution (min/max/avg):  6.38 /  9.86 /  7.96
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               3
              nc1(  1) =                         88
              nc1(  2) =                         88
              nc1(  3) =                         88
@@ -44,6 +45,7 @@
                    Effective resolution (min/max/avg):  4.07 /  8.99 /  5.23
                    Subgrid hash:  -2117861176
                 Subgrid size:      208
+             nl1 =                               5
              nc1(  1) =                        208
              nc1(  2) =                        208
              nc1(  3) =                        208
@@ -72,6 +74,7 @@
                    Effective resolution (min/max/avg):  3.58 / 12.80 /  4.36
                    Subgrid hash:    682755028
                 Subgrid size:     1008
+             nl1 =                               5
              nc1(  1) =                       1008
              nc1(  2) =                       1008
              nc1(  3) =                       1008

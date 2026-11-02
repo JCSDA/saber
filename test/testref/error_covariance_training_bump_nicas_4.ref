@@ -24,6 +24,7 @@ Norm of input parameter rv - 2: 4.1565010573423358e+01
                    Effective resolution (min/max/avg):  3.77 /  7.27 /  4.88
                    Subgrid hash:    761790603
                 Subgrid size:      144
+             nl1 =                               2
              nc1(  1) =                        208
              nc1(  2) =                        144
              ns =                              352
@@ -42,6 +43,7 @@ Norm of input parameter rv - 2: 4.1565010573423358e+01
                    Effective resolution (min/max/avg):  3.25 / 13.77 /  3.80
                    Subgrid hash:   -144504417
                 Subgrid size:     2520
+             nl1 =                               2
              nc1(  1) =                      16048
              nc1(  2) =                       2520
              ns =                            18568

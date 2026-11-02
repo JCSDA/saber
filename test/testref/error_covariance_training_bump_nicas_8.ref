@@ -12,11 +12,13 @@
                    Effective resolution (min/max/avg):  4.62 / 20.24 /  5.38
                    Subgrid hash:    661457954
                 Subgrid size:     3168
+             nl1 =                               2
              nc1(  1) =                       3168
              nc1(  2) =                       3168
              ns =                             6336
              v%n_s =                             2
              c%n_s[global] =                481280
+             nl1 =                               2
              nc1(  1) =                       3168
              nc1(  2) =                       3168
              ns =                             6336

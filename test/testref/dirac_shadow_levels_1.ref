@@ -52,6 +52,7 @@ Norm of output parameter : 8.4154619599877037e+01
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               1
              nc1(  1) =                         88
              ns =                               88
              v%n_s =                             1

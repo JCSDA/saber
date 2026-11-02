@@ -28,6 +28,7 @@
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               1
              nc1(  1) =                        360
              ns =                              360
              v%n_s =                             1
