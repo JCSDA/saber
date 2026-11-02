@@ -1139,7 +1139,7 @@ if (samp%sc1.and.nam%new_hdiag.and.nam%local_diag) then
    do ic2a=1,samp%nc2a
       nc1max = max(zss_count(samp%local_mask(:,ic2a)),nc1max)
    end do
-   call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(nc1max,fckit_mpi_max())
    nc1max = nc1max+1
    nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max,io_override=.true.)
    nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a,io_override=.true.)
@@ -1149,7 +1149,7 @@ if (samp%sc1.and.nam%new_vbal) then
    do ic2b=1,samp%nc2b
       nc1max = max(zss_count(samp%vbal_mask(:,ic2b)),nc1max)
    end do
-   call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(nc1max,fckit_mpi_max())
    nc1max = nc1max+1
    nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max,io_override=.true.)
    nc2b_id = define_dim(mpl,ncid,'nc2b',samp%nc2b,io_override=.true.)
@@ -3187,7 +3187,7 @@ do jc4=1,nam%nc4
          do i_s=1,samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%n_s
             ic0u = samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%col(i_s)
             ic0c = c0u_to_c0c(ic0u)
-            if (mpl%msv%isnot(ic0u)) then
+            if (mpl%msv%isnot(ic0c)) then
                samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%col(i_s) = ic0c
             else
                call mpl%abort('${subr}$','wrong local source for interp_c0c_to_c3a')

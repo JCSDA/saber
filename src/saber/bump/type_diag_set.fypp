@@ -429,12 +429,16 @@ else
       end if
       call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'rv_l0',diag_set%rv_l0*diag_set%s_l0(:,icmp))
    end do
-   call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_set%ecc_l0)
+   if (nam%nc4>1) call write_yaml_profile(lunit,6,geom%nl0,geom%grp2d(ig),nam%ilev2d,'ecc_l0',diag_set%ecc_l0)
 end if
-if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_set%hyb_coef_1_raw
-if (mpl%msv%isanynot(diag_set%hyb_coef_1)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 1: ',diag_set%hyb_coef_1_raw
-if (mpl%msv%isanynot(diag_set%hyb_coef_2_raw)) write(lunit,'(a4,a,e10.4)') '','raw hybrid coefficient 2: ',diag_set%hyb_coef_2_raw
-if (mpl%msv%isanynot(diag_set%hyb_coef_2)) write(lunit,'(a4,a,e10.4)') '','hybrid coefficient 2: ',diag_set%hyb_coef_2
+if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d, &
+ & 'raw hybrid coefficient 1',diag_set%hyb_coef_1_raw)
+if (mpl%msv%isanynot(diag_set%hyb_coef_1)) call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d, &
+ & 'hybrid coefficient 1',diag_set%hyb_coef_1)
+if (mpl%msv%isanynot(diag_set%hyb_coef_2_raw)) call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d, &
+ & 'raw hybrid coefficient 2',diag_set%hyb_coef_2_raw)
+if (mpl%msv%isanynot(diag_set%hyb_coef_2)) call write_yaml_profile(lunit,4,geom%nl0,geom%grp2d(ig),nam%ilev2d, &
+ & 'hybrid coefficient 2',diag_set%hyb_coef_2)
 
 ! End associate
 end associate
@@ -562,7 +566,7 @@ type(geom_type),intent(in) :: geom             !< Geometry
 ! Local variables
 integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc3,jc4,icmp,jcmp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
-real(kind_real) :: a,m2(geom%nl0),rh_span
+real(kind_real) :: a,m2(geom%nl0),rh_span,rh_factor
 real(kind_real),allocatable :: raw_copy(:,:,:,:),raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:)
 real(kind_real),allocatable :: fit_hor(:,:),fit_ver(:)
 real(kind_real),allocatable :: a_l1(:,:),s_l1(:,:),rh_l1(:),D11_l1(:),D22_l1(:),D12_l1(:),rv_l1(:)
@@ -759,11 +763,12 @@ do il1=1,nl1
 
    ! Check that horizontal length-scale is not too large
    if (supeq(rh_l1(il1),rh_span)) then
-      rh_l1(il1) = mpl%msv%valr
+      rh_factor = rh_span/rh_l1(il1)
+      rh_l1(il1) = rh_l1(il1)*rh_factor
       if (nam%nc4>1) then
-         D11_l1(il1) = mpl%msv%valr
-         D22_l1(il1) = mpl%msv%valr
-         D12_l1(il1) = mpl%msv%valr
+         D11_l1(il1) = D11_l1(il1)*rh_factor**2
+         D22_l1(il1) = D22_l1(il1)*rh_factor**2
+         D12_l1(il1) = D12_l1(il1)*rh_factor
       end if
    end if
 
@@ -1093,25 +1098,6 @@ real(kind_real) :: P4,S_rho,norm,alpha,dalpha,alpha_star
 ! Set name
 @:set_name(diag_set_localization)
 
-! Compute noise level for the NICE metho
-if (nam%loc_option=='nice_with_table') then
-   ! Use look-up table
-   S_rho = zero
-   do il0=1,geom%nl0
-      do jl0r=1,nam%nl0r
-         do jc4=1,nam%nc4
-            do jc3=1,nam%nc3
-               if (mpl%msv%isnot(cor_set%raw(jc3,jc4,jl0r,il0))) S_rho = S_rho+diag_set%frob_wgt(jc3,jc4,jl0r,il0)* &
- & eval(mpl,cor_set%fit(jc3,jc4,jl0r,il0),ne)
-            end do
-         end do
-      end do
-   end do
-else if (nam%loc_option=='nice_without_table') then
-   ! Use ergodicity assumption
-   S_rho = zss_sum(diag_set%frob_wgt*avg_set%cor_var,mask=mpl%msv%isnot(avg_set%cor_var))
-end if
-
 if (nam%loc_option=='from_squared_correlation') then
    ! Ensemble size-dependent coefficient
    P4 = one/real(ne-1,kind_real)
@@ -1136,6 +1122,25 @@ if (nam%loc_option=='from_squared_correlation') then
    end do
    !$omp end parallel do
 else if ((nam%loc_option=='nice_with_table').or.(nam%loc_option=='nice_without_table')) then
+   ! Compute noise level for the NICE method
+   if (nam%loc_option=='nice_with_table') then
+      ! Use look-up table
+      S_rho = zero
+      do il0=1,geom%nl0
+         do jl0r=1,nam%nl0r
+            do jc4=1,nam%nc4
+               do jc3=1,nam%nc3
+                  if (mpl%msv%isnot(cor_set%raw(jc3,jc4,jl0r,il0))) S_rho = S_rho+diag_set%frob_wgt(jc3,jc4,jl0r,il0)* &
+ & eval(mpl,cor_set%fit(jc3,jc4,jl0r,il0),ne)
+               end do
+            end do
+         end do
+      end do
+   else if (nam%loc_option=='nice_without_table') then
+      ! Use ergodicity assumption
+      S_rho = zss_sum(diag_set%frob_wgt*avg_set%cor_var,mask=mpl%msv%isnot(avg_set%cor_var))
+   end if
+
    ! Determine smallest positive, even integer gamma that violates de discrepancy principle
    gamma_star = 0
    do gamma=2,10,2
@@ -1201,7 +1206,7 @@ else if ((nam%loc_option=='nice_with_table').or.(nam%loc_option=='nice_without_t
       call mpl%warning('${subr}$','impossible to find a positive gamma_star')
       diag_set%raw = mpl%msv%valr
    end if
-else if (nam%loc_option=='default') then
+else if (nam%loc_option=='from_asymptotic_statistics') then
    !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_set,avg_set)
    do il0=1,geom%nl0
       do jl0r=1,nam%nl0r

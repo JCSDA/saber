@@ -439,9 +439,6 @@ real(kind_real),intent(out) :: dist !< Great-circle distance
 ! Set name
 @:set_name(func_sphere_dist)
 
-! Create ATLAS geometry
-
-
 ! Compute distance
 dist = ageometry%distance(lon_i*rad2deg,lat_i*rad2deg,lon_f*rad2deg,lat_f*rad2deg)
 
@@ -468,8 +465,8 @@ real(kind_real),intent(out) :: z    !< Z coordinate
 
 if (mpl%msv%isnot(lat).and.mpl%msv%isnot(lon)) then
    ! Check longitude/latitude
-   if (inf(lon,-pi).and.sup(lon,pi)) call mpl%abort('${subr}$','wrong longitude')
-   if (inf(lat,-half*pi).and.sup(lat,-half*pi)) call mpl%abort('${subr}$','wrong latitude')
+   if (inf(lon,-pi).or.sup(lon,pi)) call mpl%abort('${subr}$','wrong longitude')
+   if (inf(lat,-half*pi).or.sup(lat,half*pi)) call mpl%abort('${subr}$','wrong latitude')
 
    ! Convert to x/y/z
    call ageometry%lonlat2xyz(lon*rad2deg,lat*rad2deg,x,y,z)
@@ -518,6 +515,9 @@ if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
       ! Copy coordinates
       lon = lon*deg2rad
       lat = lat*deg2rad
+
+      ! Set lon/lat into correct range
+      call lonlatmod(lon,lat)
    else
       ! Missing values
       lon = mpl%msv%valr

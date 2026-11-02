@@ -151,23 +151,23 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      4667.70 km
                                  cor. ver. support:         3.21 vertical units
-             Block group 1:  0.25372404E+00 for      138 diagnostic points
-             Block group 2:  0.26188703E+00 for      133 diagnostic points
+             Block group 1:  0.21611841E+00 for      160 diagnostic points
+             Block group 2:  0.22060903E+00 for      160 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      6837.64 km
-                                 loc. ver. support:         6.16 vertical units
+                                 loc. hor. support:      5857.55 km
+                                 loc. ver. support:         6.45 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      6911.21 km
-                                 loc. ver. support:         6.16 vertical units
-                Level:   1 ~> loc. at class zero:       0.93
+                                 loc. hor. support:      5688.80 km
+                                 loc. ver. support:         6.45 vertical units
+                Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      7462.49 km
-                                 loc. ver. support:         6.07 vertical units
+                                 loc. hor. support:      5885.02 km
+                                 loc. ver. support:         6.50 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      7402.94 km
-                                 loc. ver. support:         6.06 vertical units
-Norm of output parameter loc_rh - 1: 4.3887911167056417e+08
-Norm of output parameter loc_rv - 1: 3.7806684909908381e+02
+                                 loc. hor. support:      6156.02 km
+                                 loc. ver. support:         6.50 vertical units
+Norm of output parameter loc_rh - 1: 3.6157037016063112e+08
+Norm of output parameter loc_rv - 1: 3.9939218939707285e+02

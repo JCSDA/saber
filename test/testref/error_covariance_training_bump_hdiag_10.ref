@@ -124,46 +124,46 @@ Norm of input parameter sampling_mask_field - 1: 8.1293446261637541e+01
                    Level:  10 ~> amplitude:        1.00
                                  cor. hor. support:      4724.90 km
                                  cor. ver. support:         6.26 vertical units
-             Block air_horizontal_streamfunction:  0.23503778E+00 for    74900 diagnostic points
+             Block air_horizontal_streamfunction:  0.43506170E+00 for    38297 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                 Level:   3 ~> loc. at class zero:       0.92
                 Level:   4 ~> loc. at class zero:       0.92
-                Level:   5 ~> loc. at class zero:       0.92
+                Level:   5 ~> loc. at class zero:       0.93
                 Level:   6 ~> loc. at class zero:       0.92
                 Level:   7 ~> loc. at class zero:       0.92
                 Level:   8 ~> loc. at class zero:       0.92
                 Level:   9 ~> loc. at class zero:       0.92
                 Level:  10 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5316.33 km
-                                 loc. ver. support:         8.15 vertical units
+                                 loc. hor. support:      6113.12 km
+                                 loc. ver. support:         9.99 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5426.97 km
-                                 loc. ver. support:         7.91 vertical units
+                                 loc. hor. support:      8907.00 km
+                                 loc. ver. support:        10.44 vertical units
                    Level:   3 ~> amplitude:        1.00
-                                 loc. hor. support:      6102.03 km
-                                 loc. ver. support:         8.33 vertical units
+                                 loc. hor. support:     10007.90 km
+                                 loc. ver. support:         8.63 vertical units
                    Level:   4 ~> amplitude:        1.00
-                                 loc. hor. support:      5715.89 km
-                                 loc. ver. support:         9.68 vertical units
+                                 loc. hor. support:      9533.98 km
+                                 loc. ver. support:         9.45 vertical units
                    Level:   5 ~> amplitude:        1.00
-                                 loc. hor. support:      5864.53 km
-                                 loc. ver. support:         9.44 vertical units
+                                 loc. hor. support:      7859.06 km
+                                 loc. ver. support:         8.60 vertical units
                    Level:   6 ~> amplitude:        1.00
-                                 loc. hor. support:      5798.58 km
-                                 loc. ver. support:         9.48 vertical units
+                                 loc. hor. support:      6058.90 km
+                                 loc. ver. support:        11.22 vertical units
                    Level:   7 ~> amplitude:        1.00
-                                 loc. hor. support:      6131.87 km
-                                 loc. ver. support:         9.74 vertical units
+                                 loc. hor. support:      7055.86 km
+                                 loc. ver. support:         6.61 vertical units
                    Level:   8 ~> amplitude:        1.00
-                                 loc. hor. support:      6063.29 km
-                                 loc. ver. support:         8.42 vertical units
+                                 loc. hor. support:      6916.94 km
+                                 loc. ver. support:        10.14 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 loc. hor. support:      6517.74 km
-                                 loc. ver. support:         7.99 vertical units
+                                 loc. hor. support:      6028.97 km
+                                 loc. ver. support:        10.08 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 loc. hor. support:      6240.26 km
-                                 loc. ver. support:         8.32 vertical units
+                                 loc. hor. support:      6633.71 km
+                                 loc. ver. support:         7.32 vertical units
 Norm of output parameter cor_rh - 1: 3.7999789493441582e+08
 Norm of output parameter cor_rv - 1: 5.1400072564932691e+02

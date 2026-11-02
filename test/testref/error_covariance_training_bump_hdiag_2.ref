@@ -51,7 +51,7 @@
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.95E+00
-             Block air_horizontal_streamfunction:  0.31731695E+00 for    45440 diagnostic points
+             Block air_horizontal_streamfunction:  0.31426002E+00 for    45440 diagnostic points
              Block air_pressure_at_surface:  0.30043439E+00 for    11360 diagnostic points
                    Level:   1 ~> amplitude:        0.87
                                  cor. hor. support:      4847.24 km
@@ -82,5 +82,5 @@ Norm of output parameter cor_rhc - 2: 6.1726239191160559e+00
 Norm of output parameter cor_ecc - 1: 2.4355015976268295e+01
 Norm of output parameter cor_rh - 1: 2.2096058314199358e+08
 Norm of output parameter cor_rh - 2: 1.8407452227579886e+08
-Norm of output parameter cor_rv - 1: 1.3316366914081132e+02
+Norm of output parameter cor_rv - 1: 1.3316366914081129e+02
 Norm of output parameter cor_rv - 2: 1.0140567410272303e+02

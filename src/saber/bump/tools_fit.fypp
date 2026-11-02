@@ -88,7 +88,7 @@ real(kind_real) :: nd
 ! Set name
 @:set_name(fit_diag_iso)
 
-if (mpl%msv%isnot(r)) then
+if (mpl%msv%isnot(r).and.mpl%msv%isnot(s)) then
    do i=1,n
       ! Normalized distance
       if (r>zero) then
@@ -136,7 +136,7 @@ real(kind_real) :: H11,H22,H12,dx,dy,nd
 ! Set name
 @:set_name(fit_diag_tensor)
 
-if (mpl%msv%isnot(D11).or.mpl%msv%isnot(D22).or.mpl%msv%isnot(D12)) then
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12).and.mpl%msv%isnot(s)) then
    ! Inverse D to get H
    call tensor_d2h(mpl,D11*s**2,D22*s**2,D12,H11,H22,H12)
 
@@ -191,11 +191,11 @@ if (mpl%msv%isanynot(rv)) then
    ver_sqrt = zero
 
    do il0=1,nl0
-      if (mpl%msv%isnot(rv(il0))) then
+      if (mpl%msv%isnot(rv(il0)).and.mpl%msv%isnot(s(il0))) then
          do jl0=1,nl0
             ! Normalized distance
             if (rv(il0)>zero) then
-               vnd = abs(vert_coord(jl0)-vert_coord(il0))/rv(il0)
+               vnd = abs(vert_coord(jl0)-vert_coord(il0))/(rv(il0)*s(il0))
             elseif (il0/=jl0) then
                vnd = one
             else
@@ -280,10 +280,10 @@ do icmp=1,ncmp
 
    do il0=1,nl0
       ! Horizontal component
-      if (mpl%msv%isnot(rh(il0))) call diag_iso(mpl,nc3,disth,'hor',s(il0,icmp),rh(il0),hor_fit)
+      call diag_iso(mpl,nc3,disth,'hor',s(il0,icmp),rh(il0),hor_fit)
 
       do jl0r=1,nl0r
-         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(rh(il0))) then
+         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isallnot(hor_fit)) then
             do jc3=1,nc3
                ! Fit function
                if (mpl%msv%isnot(fit(jc3,jl0r,il0))) fit(jc3,jl0r,il0) = fit(jc3,jl0r,il0) &
@@ -341,12 +341,10 @@ do icmp=1,ncmp
 
    do il0=1,nl0
       ! Horizontal component
-      if (mpl%msv%isnot(D11(il0)).and.mpl%msv%isnot(D22(il0)).and.mpl%msv%isnot(D12(il0))) &
- & call diag_tensor(mpl,nc3,nc4,disth,as,s(il0,icmp),D11(il0),D22(il0),D12(il0),hor_fit)
+      call diag_tensor(mpl,nc3,nc4,disth,as,s(il0,icmp),D11(il0),D22(il0),D12(il0),hor_fit)
 
       do jl0r=1,nl0r
-         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(D11(il0)).and.mpl%msv%isnot(D22(il0)) &
- & .and.mpl%msv%isnot(D12(il0))) then
+         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isallnot(hor_fit)) then
             do jc4=1,nc4
                do jc3=1,nc3
                   ! Fit function

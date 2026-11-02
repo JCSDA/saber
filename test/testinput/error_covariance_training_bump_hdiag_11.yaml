@@ -46,7 +46,7 @@ background error:
         reduced levels: 2
       diagnostics:
         target ensemble size: 25
-        localization option: from_squared_correlation
+        localization option: from_asymptotic_statistics
       output model files:
       - parameter: loc_rh
         file:

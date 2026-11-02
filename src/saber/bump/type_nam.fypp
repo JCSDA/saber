@@ -455,7 +455,7 @@ if (conf%get('io',section)) then
    nam%fname_vbal_cov_default = ''
    call nam%get(section,'overriding vertical balance file',nam%fname_vbal,'fname_vbal')
    nam%fname_mom_default = ''
-   call nam%get(section,'overriding moments file',nam%fname_mom,'fname_vbal')
+   call nam%get(section,'overriding moments file',nam%fname_mom,'fname_mom')
    call nam%get(section,'overriding averaged statistics file',nam%fname_avg,'fname_avg')
    call nam%get(section,'overriding universe radius file',nam%fname_universe_radius,'fname_universe_radius')
    call nam%get(section,'overriding nicas file',nam%fname_nicas,'fname_nicas')
@@ -769,6 +769,8 @@ if (conf%get('vertical balance',section)) then
 
          ! Reorder variables
          nam%variables(1:nam%nv) = nam%variables(vbal_order)
+         nam%var2d(1:nam%nv) = nam%var2d(vbal_order)
+         nam%group_index(1:nam%nv) = nam%group_index(vbal_order)
          nam%vbal_block = nam%vbal_block(vbal_order,vbal_order)
 
          ! Set section
@@ -1312,10 +1314,10 @@ end if
 ! Variance section
 if (nam%new_var) then
    if (nam%forced_var) then
-      do iv=1,nam%nv
+      do ig=1,nam%ng
          do il0=1,nam%nl0
-            if (mpl%msv%is(nam%stddev(il0,iv))) call nam%abort(mpl,'${subr}$','*stddev* is missing')
-            if (.not.(nam%stddev(il0,iv)>zero)) call nam%abort(mpl,'${subr}$','*stddev* should be positive')
+            if (mpl%msv%is(nam%stddev(il0,ig))) call nam%abort(mpl,'${subr}$','*stddev* is missing')
+            if (.not.(nam%stddev(il0,ig)>zero)) call nam%abort(mpl,'${subr}$','*stddev* should be positive')
          end do
       end do
       if (nam%var_filter) call nam%abort(mpl,'${subr}$','*var_filter* forbidden for *forced_var*')

@@ -292,7 +292,7 @@ type(geom_type),intent(in) :: geom           !< Geometry
 integer,intent(in) :: grpid                  !< Group ID
 
 ! Local variables
-integer :: nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vert_coord_id,l0rl0_to_l0_id
+integer :: nc3_id,nc4_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,as_id,vert_coord_id,l0rl0_to_l0_id
 integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
 integer :: cor_bins_id,cor_hist_id
 
@@ -306,6 +306,7 @@ end if
 
 ! Define dimensions
 nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
+nc4_id = define_dim(mpl,grpid,'nc4',nam%nc4)
 nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
 nl0_id = define_dim(mpl,grpid,'nl0',geom%nl0)
 nbinsp1_id = define_dim(mpl,grpid,'nbinsp1',nam%avg_nbins+1)
@@ -313,23 +314,25 @@ nbins_id = define_dim(mpl,grpid,'nbins',nam%avg_nbins)
 
 ! Define coordinates
 disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
 vert_coord_id = define_var(mpl,grpid,'vert_coord','real',(/nl0_id/))
 
 ! Define variables
 l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_id/))
-m11_bins_id = define_var(mpl,grpid,'m11_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m11_hist_id = define_var(mpl,grpid,'m11_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m11m11_bins_id = define_var(mpl,grpid,'m11m11_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m11m11_hist_id = define_var(mpl,grpid,'m11m11_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m2m2_bins_id = define_var(mpl,grpid,'m2m2_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m2m2_hist_id = define_var(mpl,grpid,'m2m2_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-m22_bins_id = define_var(mpl,grpid,'m22_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-m22_hist_id = define_var(mpl,grpid,'m22_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
-cor_bins_id = define_var(mpl,grpid,'cor_bins','real',(/nbinsp1_id,nc3_id,nl0r_id,nl0_id/))
-cor_hist_id = define_var(mpl,grpid,'cor_hist','real',(/nbins_id,nc3_id,nl0r_id,nl0_id/))
+m11_bins_id = define_var(mpl,grpid,'m11_bins','real',(/nbinsp1_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m11_hist_id = define_var(mpl,grpid,'m11_hist','real',(/nbins_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m11m11_bins_id = define_var(mpl,grpid,'m11m11_bins','real',(/nbinsp1_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m11m11_hist_id = define_var(mpl,grpid,'m11m11_hist','real',(/nbins_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m2m2_bins_id = define_var(mpl,grpid,'m2m2_bins','real',(/nbinsp1_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m2m2_hist_id = define_var(mpl,grpid,'m2m2_hist','real',(/nbins_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m22_bins_id = define_var(mpl,grpid,'m22_bins','real',(/nbinsp1_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+m22_hist_id = define_var(mpl,grpid,'m22_hist','real',(/nbins_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+cor_bins_id = define_var(mpl,grpid,'cor_bins','real',(/nbinsp1_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+cor_hist_id = define_var(mpl,grpid,'cor_hist','real',(/nbins_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
 
 ! Write coordinates
-call put_var(mpl,grpid,disth_id,geom%disth(1:nam%nc3))
+call put_var(mpl,grpid,disth_id,geom%disth)
+call put_var(mpl,grpid,as_id,geom%as)
 call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
 
 ! Write variables
@@ -521,7 +524,7 @@ do il0=1,geom%nl0
                   min_cor = zss_minval(list_cor,mask=mpl%msv%isnot(list_cor))
                   max_cor = zss_maxval(list_cor,mask=mpl%msv%isnot(list_cor))
                else
-                  min_m11 = huge_real
+                  min_cor = huge_real
                   max_cor = -huge_real
                end if
 
