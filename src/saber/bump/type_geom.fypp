@@ -519,7 +519,8 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in) :: fieldset             !< Fieldset
 
 ! Local variables
-integer :: il0,imga
+integer :: il0,imga,iproc
+integer :: proc_to_nmga(mpl%nproc)
 real(kind_real) :: lon0,lat0,dist,maxdist
 real(kind_real),pointer :: vert_coord_ptr(:),real_ptr(:,:)
 type(atlas_field) :: afield,afield_lonlat
@@ -594,6 +595,7 @@ case ('NodeColumns')
    anodes = afunctionspace_nc%nodes()
    afield_lonlat = anodes%lonlat()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
       geom%lon_mga = real_ptr(1,:)*deg2rad
       geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -605,6 +607,7 @@ case ('PointCloud')
    ! Get lon/lat field
    afield_lonlat = afunctionspace_pc%lonlat()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
      geom%lon_mga = real_ptr(1,:)*deg2rad
      geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -616,6 +619,7 @@ case ('StructuredColumns')
    ! Get lon/lat
    afield_lonlat = afunctionspace_sc%xy()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
      geom%lon_mga = real_ptr(1,:)*deg2rad
      geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -629,13 +633,24 @@ do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
 
+! Communication
+call mpl%f_comm%allgather(geom%nmga,proc_to_nmga)
+
 ! Setup global flag
-if (mpl%main) then
-   lon0 = geom%lon_mga(1)
-   lat0 = geom%lat_mga(1)
-end if
-call mpl%f_comm%broadcast(lon0,mpl%rootproc-1)
-call mpl%f_comm%broadcast(lat0,mpl%rootproc-1)
+lon0 = mpl%msv%vali
+lat0 = mpl%msv%vali
+do iproc=1,mpl%nproc
+   if (proc_to_nmga(iproc)>0) then
+      if (mpl%myproc==iproc) then
+         lon0 = geom%lon_mga(1)
+         lat0 = geom%lat_mga(1)
+      end if
+      call mpl%f_comm%broadcast(lon0,iproc-1)
+      call mpl%f_comm%broadcast(lat0,iproc-1)
+      exit
+   end if
+end do
+if (mpl%msv%is(lon0).or.mpl%msv%is(lat0)) call mpl%abort('${subr}$','no valid point found')
 maxdist = zero
 do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) then
@@ -1135,6 +1150,7 @@ else
    else
       ! Find the point furthest from the centroid (first corner)
       maxdist = zero
+      vtmp = mpl%msv%valr
       do ic0a=1,geom%nc0a
          dist = sum((v_c0a(:,ic0a)-geom%v_center)**2)
          if (sup(dist,maxdist)) then
@@ -1152,6 +1168,7 @@ else
 
       ! Find the point furthest from the first corner (opposite corner)
       maxdist = zero
+      vtmp = mpl%msv%valr
       do ic0a=1,geom%nc0a
          dist = sum((v_c0a(:,ic0a)-v_bnd(:,1))**2)
          if (sup(dist,maxdist)) then
@@ -1177,6 +1194,7 @@ else
 
          ! Get positive triangle with maximum area
          maxdist = zero
+         vtmp = mpl%msv%valr
          do ic0a=1,geom%nc0a
             ! Check points order
             v1 = v_c0a(:,ic0a)-v_bnd(:,ib_1)
@@ -1208,6 +1226,7 @@ else
       geom%v_center = geom%v_center/sqrt(sum(geom%v_center**2))
       infl = one
       dinfl = one
+      infl_opt = one
       do iter=1,niter
          ! Inflation factor
          infl = infl+dinfl
@@ -1679,7 +1698,7 @@ else
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
          imga = geom%c0a_to_mga(ic0a)
-         fld_mga(imga,il0) = fld_c0a(ic0a,il0)
+         fld_mga(imga,il0) = fld_c0a_masked(ic0a,il0)
       end do
    end do
 end if
@@ -2423,7 +2442,7 @@ if (mpl%main) then
        do is=1,ns
          ! Get distance to the nearest neighbor
          call tree_s%find_nearest_neighbors(mpl,lon_s(is),lat_s(is),2,nn_index_check,nn_dist_check)
-         if (nn_dist_check(1)>zero) call mpl%abort('{subr}','error in sampling')
+         if (nn_dist_check(1)>zero) call mpl%abort('${subr}$','error in sampling')
 
          ! Get theoretical distance to the nearest neighbor
          nn_dist_eff(is) = nn_dist_check(2)*reqkm

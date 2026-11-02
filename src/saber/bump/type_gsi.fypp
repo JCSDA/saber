@@ -482,7 +482,7 @@ if (axis(1)<axis(n)) then
          end if
       end do
    end if
-else
+else if (axis(1)>axis(n)) then
    ! Decreasing axis
    do i=2,n
       if (sup(axis(i),axis(i-1))) call mpl%abort('${subr}$','axis not decreasing')
@@ -513,6 +513,12 @@ else
          end if
       end do
    end if
+else
+   ! Missing values
+   im = mpl%msv%vali
+   ip = mpl%msv%vali
+   rm = mpl%msv%valr
+   rp = mpl%msv%valr
 end if
 
 end subroutine gsi_interp_linear
@@ -542,6 +548,7 @@ character(len=1024) :: buf
 ! Initialization
 ncomment = 0
 n = 0
+buf = ''
 
 ! Rewind file
 rewind(lu)
@@ -570,6 +577,7 @@ file_scan: do
 
             ! Read next line, save contents
             read(lu,'(a)',advance='no',eor=998,iostat=ios) buf
+            if (ios/=0) exit
          end do line_scan
 998 continue
          ! End of table
@@ -616,6 +624,7 @@ character(len=256) :: buf
 
 ! Initialization
 n = ntot
+buf = ''
 
 ! Rewind file
 rewind(lu)
@@ -643,6 +652,7 @@ file_scan: do
          line_scan: do
             ! Read next line, save contents
             read(lu,'(a)',advance='no',eor=999,iostat=ios) buf
+            if (ios/=0) exit
          end do line_scan
 999 continue
 

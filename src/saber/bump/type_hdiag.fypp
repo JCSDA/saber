@@ -150,8 +150,10 @@ if (mpl%main) then
  & nl0_1_id,nl0_2_id)
 
       ! Write ensemble correlation
+print*, 'ok'
       if (nam%compute_cor) call hdiag%cor%blk(ig)%glb%write(mpl,nam,geom,grpid,nc3_id,nc4_id,nl0r_id, &
  & nl0_1_id,nl0_2_id)
+print*, 'nop'
 
       ! Write ensemble localization and hybrid coefficient
       if (nam%compute_loc.or.nam%compute_hyb) call hdiag%loc%blk(ig)%glb%write(mpl,nam,geom,grpid, &
@@ -410,6 +412,7 @@ do ig=1,nam%ng
    ! Interpolate
    if (gsi%var2d(iv)) then
       ! 2D variable
+      hdiag%cor%blk(ig)%glb%s_c0a = mpl%msv%valr
       hdiag%cor%blk(ig)%glb%rh_c0a = mpl%msv%valr
       hdiag%cor%blk(ig)%glb%rv_c0a = mpl%msv%valr
       do ic0a=1,geom%nc0a

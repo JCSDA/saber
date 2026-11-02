@@ -1665,6 +1665,52 @@ character(len=1024) :: color
 ! Allocation
 call samp%alloc(mpl,nam,geom)
 
+! Compute nearest neighbors for local diagnostics output
+if (nam%nldwv>0) then
+   write(mpl%info,'(a7,a)') '','Compute local diagnostics locations:'
+   call mpl%flush
+
+   ! Allocation
+   allocate(samp%ldwv_to_proc(nam%nldwv))
+   allocate(samp%ldwv_to_c0a(nam%nldwv))
+   allocate(ldwv_to_lon(nam%nldwv))
+   allocate(ldwv_to_lat(nam%nldwv))
+   allocate(ldwv_to_il0(nam%nldwv))
+   allocate(gmask_ldwv(nam%nldwv))
+
+   ! Initialization
+   ldwv_to_il0 = 0
+
+   ! Get index from lon/lat
+   call geom%lonlat_to_c0(mpl,nam%nldwv,nam%lon_ldwv,nam%lat_ldwv,ldwv_to_il0,iproc=samp%ldwv_to_proc, &
+ & ic0a=samp%ldwv_to_c0a,lon_c0=ldwv_to_lon,lat_c0=ldwv_to_lat,mask_c0=gmask_ldwv)
+   do ildwv=1,nam%nldwv
+      if (gmask_ldwv(ildwv)) call geom%hull_c0%inside(mpl,ldwv_to_lon(ildwv),ldwv_to_lat(ildwv),gmask_ldwv(ildwv))
+      if (.not.gmask_ldwv(ildwv)) call mpl%abort('${subr}$', &
+ & 'profile '//trim(nam%name_ldwv(ildwv))//' is masked or out of the domain')
+   end do
+
+   do ildwv=1,nam%nldwv
+      ! Check redundancy
+      do jldwv=1,ildwv-1
+         if (eq(ldwv_to_lon(ildwv),ldwv_to_lon(jldwv)).and.eq(ldwv_to_lat(ildwv),ldwv_to_lat(jldwv))) &
+ & call mpl%abort('${subr}$','profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
+ & 'are located grid point')
+      end do
+
+      ! Print results
+      write(mpl%test,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
+ & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
+      call mpl%flush
+   end do
+
+   ! Release memory
+   deallocate(ldwv_to_lon)
+   deallocate(ldwv_to_lat)
+   deallocate(ldwv_to_il0)
+   deallocate(gmask_ldwv)
+end if
+
 if (nam%load_samp_local) then
    ! Read local sampling
    write(mpl%info,'(a7,a)') '','Read local sampling'
@@ -1681,52 +1727,6 @@ else
       call samp%compute_mask(mpl,nam,geom,ens)
    else
       call samp%compute_mask(mpl,nam,geom)
-   end if
-
-   ! Compute nearest neighbors for local diagnostics output
-   if (nam%nldwv>0) then
-      write(mpl%info,'(a7,a)') '','Compute local diagnostics locations:'
-      call mpl%flush
-
-      ! Allocation
-      allocate(samp%ldwv_to_proc(nam%nldwv))
-      allocate(samp%ldwv_to_c0a(nam%nldwv))
-      allocate(ldwv_to_lon(nam%nldwv))
-      allocate(ldwv_to_lat(nam%nldwv))
-      allocate(ldwv_to_il0(nam%nldwv))
-      allocate(gmask_ldwv(nam%nldwv))
-
-      ! Initialization
-      ldwv_to_il0 = 0
-
-      ! Get index from lon/lat
-      call geom%lonlat_to_c0(mpl,nam%nldwv,nam%lon_ldwv,nam%lat_ldwv,ldwv_to_il0,iproc=samp%ldwv_to_proc, &
- & ic0a=samp%ldwv_to_c0a,lon_c0=ldwv_to_lon,lat_c0=ldwv_to_lat,mask_c0=gmask_ldwv)
-      do ildwv=1,nam%nldwv
-         if (gmask_ldwv(ildwv)) call geom%hull_c0%inside(mpl,ldwv_to_lon(ildwv),ldwv_to_lat(ildwv),gmask_ldwv(ildwv))
-         if (.not.gmask_ldwv(ildwv)) call mpl%abort('${subr}$', &
- & 'profile '//trim(nam%name_ldwv(ildwv))//' is masked or out of the domain')
-      end do
-
-      do ildwv=1,nam%nldwv
-         ! Check redundancy
-         do jldwv=1,ildwv-1
-            if (eq(ldwv_to_lon(ildwv),ldwv_to_lon(jldwv)).and.eq(ldwv_to_lat(ildwv),ldwv_to_lat(jldwv))) &
- & call mpl%abort('${subr}$','profiles'//trim(nam%name_ldwv(ildwv))//' and '//trim(nam%name_ldwv(jldwv))// &
- & 'are located grid point')
-         end do
-
-         ! Print results
-         write(mpl%test,'(a10,a,f6.1,a,f6.1)') '','Profile '//trim(nam%name_ldwv(ildwv))//' computed at lon/lat: ', &
- & ldwv_to_lon(ildwv)*rad2deg,' / ',ldwv_to_lat(ildwv)*rad2deg
-         call mpl%flush
-      end do
-
-      ! Release memory
-      deallocate(ldwv_to_lon)
-      deallocate(ldwv_to_lat)
-      deallocate(ldwv_to_il0)
-      deallocate(gmask_ldwv)
    end if
 
    if (samp%sc1) then

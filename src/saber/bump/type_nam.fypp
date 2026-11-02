@@ -378,7 +378,7 @@ lverbose = .true.
 if (present(verbose)) lverbose = verbose
 
 ! Missing value
-call nam%get(conf,'msvalr',mpl%msv%valr,'msvalr')
+call nam%get(mpl,conf,'msvalr',mpl%msv%valr,'msvalr')
 if (lverbose) then
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
@@ -413,22 +413,22 @@ if (conf%get('general',section)) then
          mpl%wng_color = char(27)//'[0;37;42;1m'
       end if
    end if
-   call nam%get(section,'testing',mpl%testing,'testing')
-   call nam%get(section,'default seed',nam%default_seed,'default_seed')
-   call nam%get(section,'reproducibility operators',nam%repro_ops,'repro_ops')
-   call nam%get(section,'reproducibility threshold',nam%repro_th,'repro_th')
-   call nam%get(section,'timers',nam%timers,'timers')
-   call nam%get(section,'universe length-scale',nam%universe_radius,'universe_radius')
+   call nam%get(mpl,section,'testing',mpl%testing,'testing')
+   call nam%get(mpl,section,'default seed',nam%default_seed,'default_seed')
+   call nam%get(mpl,section,'reproducibility operators',nam%repro_ops,'repro_ops')
+   call nam%get(mpl,section,'reproducibility threshold',nam%repro_th,'repro_th')
+   call nam%get(mpl,section,'timers',nam%timers,'timers')
+   call nam%get(mpl,section,'universe length-scale',nam%universe_radius,'universe_radius')
 end if
 
 ! I/O param
 if (conf%get('io',section)) then
    if (lverbose) call print_section(mpl,section,'I/O')
-   call nam%get(section,'data directory',nam%datadir,'datadir')
-   call nam%get(section,'files prefix',nam%prefix,'prefix')
-   call nam%get(section,'new files',nam%new_files,'new_files')
-   call nam%get(section,'parallel netcdf',nam%parallel_netcdf,'parallel_netcdf')
-   call nam%get(section,'io tasks',nam%nprocio,'io tasks')
+   call nam%get(mpl,section,'data directory',nam%datadir,'datadir')
+   call nam%get(mpl,section,'files prefix',nam%prefix,'prefix')
+   call nam%get(mpl,section,'new files',nam%new_files,'new_files')
+   call nam%get(mpl,section,'parallel netcdf',nam%parallel_netcdf,'parallel_netcdf')
+   call nam%get(mpl,section,'io tasks',nam%nprocio,'io tasks')
    if (section%get('alias',confs)) then
       if (size(confs)>0) then
          ! Release memory
@@ -450,78 +450,78 @@ if (conf%get('io',section)) then
          end do
       end if
    end if
-   call nam%get(section,'overriding sampling file',nam%fname_samp,'fname_samp')
+   call nam%get(mpl,section,'overriding sampling file',nam%fname_samp,'fname_samp')
    call nam%get(section,'overriding vertical covariance file',nam%fname_vbal_cov,'fname_vbal_cov')
    nam%fname_vbal_cov_default = ''
-   call nam%get(section,'overriding vertical balance file',nam%fname_vbal,'fname_vbal')
+   call nam%get(mpl,section,'overriding vertical balance file',nam%fname_vbal,'fname_vbal')
    nam%fname_mom_default = ''
    call nam%get(section,'overriding moments file',nam%fname_mom,'fname_mom')
-   call nam%get(section,'overriding averaged statistics file',nam%fname_avg,'fname_avg')
-   call nam%get(section,'overriding universe radius file',nam%fname_universe_radius,'fname_universe_radius')
-   call nam%get(section,'overriding nicas file',nam%fname_nicas,'fname_nicas')
-   call nam%get(section,'overriding psichitouv file',nam%fname_wind,'fname_wind')
-   call nam%get(section,'gsi data file',nam%fname_gsi_data,'fname_gsi_data')
-   call nam%get(section,'gsi namelist',nam%fname_gsi_nam,'fname_gsi_nam')
+   call nam%get(mpl,section,'overriding averaged statistics file',nam%fname_avg,'fname_avg')
+   call nam%get(mpl,section,'overriding universe radius file',nam%fname_universe_radius,'fname_universe_radius')
+   call nam%get(mpl,section,'overriding nicas file',nam%fname_nicas,'fname_nicas')
+   call nam%get(mpl,section,'overriding psichitouv file',nam%fname_wind,'fname_wind')
+   call nam%get(mpl,section,'gsi data file',nam%fname_gsi_data,'fname_gsi_data')
+   call nam%get(mpl,section,'gsi namelist',nam%fname_gsi_nam,'fname_gsi_nam')
 end if
 
 ! Drivers section
 if (conf%get('drivers',section)) then
    if (lverbose) call print_section(mpl,section,'Drivers')
-   call nam%get(section,'compute covariance',nam%compute_cov,'compute_cov')
-   call nam%get(section,'compute correlation',nam%compute_cor,'compute_cor')
-   call nam%get(section,'compute localization',nam%compute_loc,'compute_loc')
-   call nam%get(section,'compute hybrid weights',nam%compute_hyb,'compute_hyb')
+   call nam%get(mpl,section,'compute covariance',nam%compute_cov,'compute_cov')
+   call nam%get(mpl,section,'compute correlation',nam%compute_cor,'compute_cor')
+   call nam%get(mpl,section,'compute localization',nam%compute_loc,'compute_loc')
+   call nam%get(mpl,section,'compute hybrid weights',nam%compute_hyb,'compute_hyb')
    nam%new_hdiag = nam%compute_cov.or.nam%compute_cor.or.nam%compute_loc.or.nam%compute_hyb
-   call nam%get(section,'hybrid source',nam%hybrid_source,'hybrid_source')
-   call nam%get(section,'multivariate strategy',nam%strategy,'strategy')
-   call nam%get(section,'compute normality',nam%new_normality,'new_normality')
-   call nam%get(section,'read local sampling',nam%load_samp_local,'load_samp_local')
-   call nam%get(section,'read global sampling',nam%load_samp_global,'load_samp_global')
-   call nam%get(section,'write local sampling',nam%write_samp_local,'write_samp_local')
-   call nam%get(section,'write global sampling',nam%write_samp_global,'write_samp_global')
-   call nam%get(section,'write sampling grids',nam%write_samp_grids,'write_samp_global')
-   call nam%get(section,'compute vertical covariance',nam%new_vbal_cov,'new_vbal_cov')
-   call nam%get(section,'read vertical covariance',nam%load_vbal_cov,'load_vbal_cov')
-   call nam%get(section,'write vertical covariance',nam%write_vbal_cov,'write_vbal_cov')
-   call nam%get(section,'compute vertical balance',nam%new_vbal,'new_vbal')
-   call nam%get(section,'read vertical balance',nam%load_vbal,'load_vbal')
-   call nam%get(section,'write vertical balance',nam%write_vbal,'write_vbal')
-   call nam%get(section,'compute variance',nam%new_var,'new_var')
-   call nam%get(section,'compute moments',nam%new_mom,'new_mom')
-   call nam%get(section,'read moments',nam%load_mom,'load_mom')
-   call nam%get(section,'write moments',nam%write_mom,'write_mom')
-   call nam%get(section,'write averaged statistics',nam%write_avg,'write_avg')
-   call nam%get(section,'write diagnostics',nam%write_hdiag,'write_hdiag')
-   call nam%get(section,'write diagnostics detail',nam%write_hdiag_detail,'write_hdiag_detail')
-   call nam%get(section,'write diagnostics in yaml',nam%write_hdiag_yaml,'write_hdiag_yaml')
-   call nam%get(section,'read universe radius',nam%load_universe_radius,'load_universe_radius')
-   call nam%get(section,'write universe radius',nam%write_universe_radius,'write_universe_radius')
-   call nam%get(section,'compute nicas',nam%new_nicas,'new_nicas')
-   call nam%get(section,'read local nicas',nam%load_nicas_local,'load_nicas_local')
-   call nam%get(section,'read global nicas',nam%load_nicas_global,'load_nicas_global')
-   call nam%get(section,'write local nicas',nam%write_nicas_local,'write_nicas_local')
-   call nam%get(section,'write global nicas',nam%write_nicas_global,'write_nicas_global')
-   call nam%get(section,'write nicas grids',nam%write_nicas_grids,'write_nicas_grids')
-   call nam%get(section,'write nicas steps',nam%write_nicas_steps,'write_nicas_steps')
-   call nam%get(section,'compute psichitouv',nam%new_wind,'new_wind')
-   call nam%get(section,'read local psichitouv',nam%load_wind_local,'load_wind_local')
-   call nam%get(section,'read global psichitouv',nam%load_wind_global,'load_wind_global')
-   call nam%get(section,'write local psichitouv',nam%write_wind_local,'write_wind_local')
-   call nam%get(section,'write global psichitouv',nam%write_wind_global,'write_wind_global')
-   call nam%get(section,'vertical balance inverse test',nam%check_vbal,'check_vbal')
-   call nam%get(section,'adjoints test',nam%check_adjoints,'check_adjoints')
-   call nam%get(section,'normalization test',nam%check_normalization,'check_normalization')
-   call nam%get(section,'internal dirac test',nam%check_dirac,'check_dirac')
-   call nam%get(section,'randomization test',nam%check_randomization,'check_randomization')
-   call nam%get(section,'internal consistency test',nam%check_consistency,'check_consistency')
-   call nam%get(section,'localization optimality test',nam%check_optimality,'check_optimality')
-   call nam%get(section,'interpolate from gsi data',nam%from_gsi,'from_gsi')
+   call nam%get(mpl,section,'hybrid source',nam%hybrid_source,'hybrid_source')
+   call nam%get(mpl,section,'multivariate strategy',nam%strategy,'strategy')
+   call nam%get(mpl,section,'compute normality',nam%new_normality,'new_normality')
+   call nam%get(mpl,section,'read local sampling',nam%load_samp_local,'load_samp_local')
+   call nam%get(mpl,section,'read global sampling',nam%load_samp_global,'load_samp_global')
+   call nam%get(mpl,section,'write local sampling',nam%write_samp_local,'write_samp_local')
+   call nam%get(mpl,section,'write global sampling',nam%write_samp_global,'write_samp_global')
+   call nam%get(mpl,section,'write sampling grids',nam%write_samp_grids,'write_samp_grids')
+   call nam%get(mpl,section,'compute vertical covariance',nam%new_vbal_cov,'new_vbal_cov')
+   call nam%get(mpl,section,'read vertical covariance',nam%load_vbal_cov,'load_vbal_cov')
+   call nam%get(mpl,section,'write vertical covariance',nam%write_vbal_cov,'write_vbal_cov')
+   call nam%get(mpl,section,'compute vertical balance',nam%new_vbal,'new_vbal')
+   call nam%get(mpl,section,'read vertical balance',nam%load_vbal,'load_vbal')
+   call nam%get(mpl,section,'write vertical balance',nam%write_vbal,'write_vbal')
+   call nam%get(mpl,section,'compute variance',nam%new_var,'new_var')
+   call nam%get(mpl,section,'compute moments',nam%new_mom,'new_mom')
+   call nam%get(mpl,section,'read moments',nam%load_mom,'load_mom')
+   call nam%get(mpl,section,'write moments',nam%write_mom,'write_mom')
+   call nam%get(mpl,section,'write averaged statistics',nam%write_avg,'write_avg')
+   call nam%get(mpl,section,'write diagnostics',nam%write_hdiag,'write_hdiag')
+   call nam%get(mpl,section,'write diagnostics detail',nam%write_hdiag_detail,'write_hdiag_detail')
+   call nam%get(mpl,section,'write diagnostics in yaml',nam%write_hdiag_yaml,'write_hdiag_yaml')
+   call nam%get(mpl,section,'read universe radius',nam%load_universe_radius,'load_universe_radius')
+   call nam%get(mpl,section,'write universe radius',nam%write_universe_radius,'write_universe_radius')
+   call nam%get(mpl,section,'compute nicas',nam%new_nicas,'new_nicas')
+   call nam%get(mpl,section,'read local nicas',nam%load_nicas_local,'load_nicas_local')
+   call nam%get(mpl,section,'read global nicas',nam%load_nicas_global,'load_nicas_global')
+   call nam%get(mpl,section,'write local nicas',nam%write_nicas_local,'write_nicas_local')
+   call nam%get(mpl,section,'write global nicas',nam%write_nicas_global,'write_nicas_global')
+   call nam%get(mpl,section,'write nicas grids',nam%write_nicas_grids,'write_nicas_grids')
+   call nam%get(mpl,section,'write nicas steps',nam%write_nicas_steps,'write_nicas_steps')
+   call nam%get(mpl,section,'compute psichitouv',nam%new_wind,'new_wind')
+   call nam%get(mpl,section,'read local psichitouv',nam%load_wind_local,'load_wind_local')
+   call nam%get(mpl,section,'read global psichitouv',nam%load_wind_global,'load_wind_global')
+   call nam%get(mpl,section,'write local psichitouv',nam%write_wind_local,'write_wind_local')
+   call nam%get(mpl,section,'write global psichitouv',nam%write_wind_global,'write_wind_global')
+   call nam%get(mpl,section,'vertical balance inverse test',nam%check_vbal,'check_vbal')
+   call nam%get(mpl,section,'adjoints test',nam%check_adjoints,'check_adjoints')
+   call nam%get(mpl,section,'normalization test',nam%check_normalization,'check_normalization')
+   call nam%get(mpl,section,'internal dirac test',nam%check_dirac,'check_dirac')
+   call nam%get(mpl,section,'randomization test',nam%check_randomization,'check_randomization')
+   call nam%get(mpl,section,'internal consistency test',nam%check_consistency,'check_consistency')
+   call nam%get(mpl,section,'localization optimality test',nam%check_optimality,'check_optimality')
+   call nam%get(mpl,section,'interpolate from gsi data',nam%from_gsi,'from_gsi')
 end if
 
 ! Model section
 if (conf%get('model',section)) then
    if (lverbose) call print_section(mpl,section,'Model')
-   call nam%get(section,'nl0',nam%nl0,'nl0')
+   call nam%get(mpl,section,'nl0',nam%nl0,'nl0')
    if (section%get('variables',str_array)) then
       nam%nv = size(str_array)
       if (nam%nv>0) then
@@ -555,7 +555,7 @@ if (conf%get('model',section)) then
             allocate(nam%group_names(nam%ng))
             nam%group_index = 0
             do iconf=1,size(confs)
-               call nam%get(confs(iconf),'group name',nam%group_names(iconf),'group_names')
+               call nam%get(mpl,confs(iconf),'group name',nam%group_names(iconf),'group_names')
                call confs(iconf)%get_or_die('variables',str_array)
                do it=1,size(str_array)
                   do iv=1,nam%nv
@@ -592,8 +592,8 @@ if (conf%get('model',section)) then
    nam%ilev2d = 1
    if (nam%nv>0) then
       if (any(nam%var2d)) then
-         call nam%get(section,'nearest 3d level',lev2d,'lev2d')
-         call nam%get(section,'levels direction',topdown,'topdown')
+         call nam%get(mpl,section,'nearest 3d level',lev2d,'lev2d')
+         call nam%get(mpl,section,'levels direction',topdown,'topdown')
          if (lev2d=='bottom') then
             if (topdown) then
                nam%ilev2d = nam%nl0
@@ -613,30 +613,30 @@ if (conf%get('model',section)) then
          end if
       end if
    end if
-   call nam%get(section,'do not cross mask boundaries',nam%mask_check,'mask_check')
+   call nam%get(mpl,section,'do not cross mask boundaries',nam%mask_check,'mask_check')
 end if
 
 ! Ensemble sizes
 if (conf%get('ensemble sizes',section)) then
    if (lverbose) call print_section(mpl,section,'Ensemble sizes')
-   call nam%get(section,'total ensemble size',nam%ens_ne,'ens_ne')
-   call nam%get(section,'sub-ensembles',nam%ens_nsub,'ens_nsub')
+   call nam%get(mpl,section,'total ensemble size',nam%ens_ne,'ens_ne')
+   call nam%get(mpl,section,'sub-ensembles',nam%ens_nsub,'ens_nsub')
 end if
 
 ! Sampling section
 if (conf%get('sampling',section)) then
    if (lverbose) call print_section(mpl,section,'Sampling')
-   call nam%get(section,'computation grid size',nam%nc1,'nc1')
-   call nam%get(section,'diagnostic grid size',nam%nc2,'nc2')
-   call nam%get(section,'distance classes',nam%nc3,'nc3')
-   call nam%get(section,'angular sectors',nam%nc4,'nc4')
-   call nam%get(section,'distance class width',nam%dc,'dc')
-   call nam%get(section,'reduced levels',nam%nl0r,'nl0r')
-   call nam%get(section,'enable large number of reduced levels',nam%enable_large_nl0r,'enable_large_nl0r')
-   call nam%get(section,'local diagnostic',nam%local_diag,'local_diag')
-   call nam%get(section,'averaging length-scale',nam%local_rad,'local_rad')
-   call nam%get(section,'averaging latitude width',nam%local_dlat,'local_dlat')
-   call nam%get(section,'interpolation type',nam%samp_interp_type,'samp_interp_type')
+   call nam%get(mpl,section,'computation grid size',nam%nc1,'nc1')
+   call nam%get(mpl,section,'diagnostic grid size',nam%nc2,'nc2')
+   call nam%get(mpl,section,'distance classes',nam%nc3,'nc3')
+   call nam%get(mpl,section,'angular sectors',nam%nc4,'nc4')
+   call nam%get(mpl,section,'distance class width',nam%dc,'dc')
+   call nam%get(mpl,section,'reduced levels',nam%nl0r,'nl0r')
+   call nam%get(mpl,section,'enable large number of reduced levels',nam%enable_large_nl0r,'enable_large_nl0r')
+   call nam%get(mpl,section,'local diagnostic',nam%local_diag,'local_diag')
+   call nam%get(mpl,section,'averaging length-scale',nam%local_rad,'local_rad')
+   call nam%get(mpl,section,'averaging latitude width',nam%local_dlat,'local_dlat')
+   call nam%get(mpl,section,'interpolation type',nam%samp_interp_type,'samp_interp_type')
    if (section%get('masks',confs)) then
       nam%nmask = size(confs)
       if (nam%nmask>0) then
@@ -662,25 +662,25 @@ if (conf%get('sampling',section)) then
 
          ! Get values
          do iconf=1,size(confs)
-            call nam%get(confs(iconf),'type',nam%mask_type(iconf),'mask_type')
-            call nam%get(confs(iconf),'threshold',nam%mask_th(iconf),'mask_th')
-            call nam%get(confs(iconf),'side',nam%mask_lu(iconf),'mask_lu')
-            call nam%get(confs(iconf),'variable',nam%mask_variable(iconf),'mask_variable')
+            call nam%get(mpl,confs(iconf),'type',nam%mask_type(iconf),'mask_type')
+            call nam%get(mpl,confs(iconf),'threshold',nam%mask_th(iconf),'mask_th')
+            call nam%get(mpl,confs(iconf),'side',nam%mask_lu(iconf),'mask_lu')
+            call nam%get(mpl,confs(iconf),'variable',nam%mask_variable(iconf),'mask_variable')
          end do
       end if
    end if
-   call nam%get(section,'contiguous levels threshold',nam%ncontig_th,'ncontig_th')
+   call nam%get(mpl,section,'contiguous levels threshold',nam%ncontig_th,'ncontig_th')
 end if
 
 ! Diagnostics section
 if (conf%get('diagnostics',section)) then
    if (lverbose) call print_section(mpl,section,'diagnostics')
-   call nam%get(section,'target ensemble size',nam%ne,'ne')
-   call nam%get(section,'gaussian approximation',nam%gau_approx,'gau_approx')
-   call nam%get(section,'localization option',nam%loc_option,'loc_option')
-   call nam%get(section,'generalized kurtosis threshold',nam%gen_kurt_th,'gen_kurt_th')
-   call nam%get(section,'histogram bins',nam%avg_nbins,'avg_nbins')
-   call nam%get(section,'diagnosed lengths scaling',nam%lengths_scaling,'lengths_scaling')
+   call nam%get(mpl,section,'target ensemble size',nam%ne,'ne')
+   call nam%get(mpl,section,'gaussian approximation',nam%gau_approx,'gau_approx')
+   call nam%get(mpl,section,'localization option',nam%loc_option,'loc_option')
+   call nam%get(mpl,section,'generalized kurtosis threshold',nam%gen_kurt_th,'gen_kurt_th')
+   call nam%get(mpl,section,'histogram bins',nam%avg_nbins,'avg_nbins')
+   call nam%get(mpl,section,'diagnosed lengths scaling',nam%lengths_scaling,'lengths_scaling')
 end if
 
 ! Vertical balance section
@@ -795,39 +795,39 @@ if (conf%get('vertical balance',section)) then
          deallocate(vbal_order)
       end if
    end if
-   call nam%get(section,'pseudo inverse',nam%vbal_pseudo_inv,'vbal_pseudo_inv')
-   call nam%get(section,'dominant mode',nam%vbal_pseudo_inv_mmax,'vbal_pseudo_inv_mmax')
-   call nam%get(section,'variance threshold',nam%vbal_pseudo_inv_var_th,'vbal_pseudo_inv_var_th')
-   call nam%get(section,'identity blocks',nam%vbal_id,'vbal_id')
+   call nam%get(mpl,section,'pseudo inverse',nam%vbal_pseudo_inv,'vbal_pseudo_inv')
+   call nam%get(mpl,section,'dominant mode',nam%vbal_pseudo_inv_mmax,'vbal_pseudo_inv_mmax')
+   call nam%get(mpl,section,'variance threshold',nam%vbal_pseudo_inv_var_th,'vbal_pseudo_inv_var_th')
+   call nam%get(mpl,section,'identity blocks',nam%vbal_id,'vbal_id')
 end if
 
 ! Variance section
 if (conf%get('variance',section)) then
    if (lverbose) call print_section(mpl,section,'Variance')
-   call nam%get(section,'explicit stddev',nam%forced_var,'forced_var')
+   call nam%get(mpl,section,'explicit stddev',nam%forced_var,'forced_var')
    call nam%get(mpl,section,'stddev',nam%stddev,'stddev')
-   call nam%get(section,'objective filtering',nam%var_filter,'var_filter')
-   call nam%get(section,'filtering iterations',nam%var_niter,'var_niter')
-   call nam%get(section,'filtering passes',nam%var_npass,'var_npass')
+   call nam%get(mpl,section,'objective filtering',nam%var_filter,'var_filter')
+   call nam%get(mpl,section,'filtering iterations',nam%var_niter,'var_niter')
+   call nam%get(mpl,section,'filtering passes',nam%var_npass,'var_npass')
    call nam%get(mpl,section,'initial length-scale',nam%var_rhflt,'var_rhflt',one/req)
 end if
 
 ! Optimality test section
 if (conf%get('optimality test',section)) then
    if (lverbose) call print_section(mpl,section,'Optimality test')
-   call nam%get(section,'half number of factors',nam%optimality_nfac,'optimality_nfac')
-   call nam%get(section,'factors increment',nam%optimality_delta,'optimality_delta')
-   call nam%get(section,'test vectors',nam%optimality_ntest,'optimality_ntest')
+   call nam%get(mpl,section,'half number of factors',nam%optimality_nfac,'optimality_nfac')
+   call nam%get(mpl,section,'factors increment',nam%optimality_delta,'optimality_delta')
+   call nam%get(mpl,section,'test vectors',nam%optimality_ntest,'optimality_ntest')
 end if
 
 ! Fit section
 if (conf%get('fit',section)) then
    if (lverbose) call print_section(mpl,section,'Fit')
-   call nam%get(section,'raw diagnostic lower threshold',nam%diag_raw_th,'diag_raw_th')
-   call nam%get(section,'horizontal filtering length-scale',nam%diag_rhflt,'diag_rhflt')
-   call nam%get(section,'vertical filtering length-scale',nam%diag_rvflt,'diag_rvflt')
-   call nam%get(section,'vertical stride',nam%fit_dl0,'fit_dl0')
-   call nam%get(section,'number of components',nam%fit_ncmp,'fit_ncmp')
+   call nam%get(mpl,section,'raw diagnostic lower threshold',nam%diag_raw_th,'diag_raw_th')
+   call nam%get(mpl,section,'horizontal filtering length-scale',nam%diag_rhflt,'diag_rhflt')
+   call nam%get(mpl,section,'vertical filtering length-scale',nam%diag_rvflt,'diag_rvflt')
+   call nam%get(mpl,section,'vertical stride',nam%fit_dl0,'fit_dl0')
+   call nam%get(mpl,section,'number of components',nam%fit_ncmp,'fit_ncmp')
 end if
 
 ! Local profiles section
@@ -851,9 +851,9 @@ if (conf%get('local profiles',confs)) then
       nam%name_ldwv = ''
 
       do iconf=1,size(confs)
-         call nam%get(confs(iconf),'longitude',nam%lon_ldwv(iconf),'lon_ldwv')
-         call nam%get(confs(iconf),'latitude',nam%lat_ldwv(iconf),'lat_ldwv')
-         call nam%get(confs(iconf),'name',nam%name_ldwv(iconf),'name_ldwv')
+         call nam%get(mpl,confs(iconf),'longitude',nam%lon_ldwv(iconf),'lon_ldwv')
+         call nam%get(mpl,confs(iconf),'latitude',nam%lat_ldwv(iconf),'lat_ldwv')
+         call nam%get(mpl,confs(iconf),'name',nam%name_ldwv(iconf),'name_ldwv')
       end do
    end if
 end if
@@ -861,14 +861,14 @@ end if
 ! NICAS section
 if (conf%get('nicas',section)) then
    if (lverbose) call print_section(mpl,section,'NICAS')
-   call nam%get(section,'resolution',nam%resol,'resol')
-   call nam%get(section,'filter mode',nam%filter_mode,'filter_mode')
-   call nam%get(section,'filter resolution',nam%filter_resol,'filter_resol')
-   call nam%get(section,'grid type',nam%nicas_draw_type,'nicas_draw_type')
-   call nam%get(section,'explicit length-scales',nam%forced_radii,'forced_radii')
+   call nam%get(mpl,section,'resolution',nam%resol,'resol')
+   call nam%get(mpl,section,'filter mode',nam%filter_mode,'filter_mode')
+   call nam%get(mpl,section,'filter resolution',nam%filter_resol,'filter_resol')
+   call nam%get(mpl,section,'grid type',nam%nicas_draw_type,'nicas_draw_type')
+   call nam%get(mpl,section,'explicit length-scales',nam%forced_radii,'forced_radii')
    call nam%get(mpl,section,'horizontal length-scale',nam%rh,'rh',one/req)
    call nam%get(mpl,section,'vertical length-scale',nam%rv,'rv')
-   call nam%get(section,'explicit length-scales for sampling',nam%forced_radii_sampling,'forced_radii_sampling')
+   call nam%get(mpl,section,'explicit length-scales for sampling',nam%forced_radii_sampling,'forced_radii_sampling')
    call nam%get(mpl,section,'horizontal length-scale for sampling',nam%rhs,'rhs',one/req)
    call nam%get(mpl,section,'vertical length-scale for sampling',nam%rvs,'rvs')
    if ((nam%strategy=='duplicated and weighted').and.(nam%nv>0)) then
@@ -882,22 +882,29 @@ if (conf%get('nicas',section)) then
       ! Initialize weights to zero
       loc_wgt = zero
 
-      ! Set default weight
-      call nam%get(section,'default off-diagonal weight',real_scalar,'loc_wgt')
+      ! Set diagonal weights
       do iv=1,nam%nv
-         ig = nam%group_index(iv)
-         do jv=1,nam%nv
-            jg = nam%group_index(jv)
-            if (ig==jg) then
-               if (iv==jv) then
-                  ! Unit diagonal
-                  loc_wgt(iv,jv) = one
-               else
-                  loc_wgt(iv,jv) = real_scalar
-               end if
-            end if
-         end do
+         loc_wgt(iv,iv) = one
       end do
+
+      ! Set default weight
+      call nam%get(mpl,section,'default off-diagonal weight',real_scalar,'loc_wgt')
+      if (mpl%msv%isnot(real_scalar)) then
+         do iv=1,nam%nv
+            ig = nam%group_index(iv)
+            do jv=1,nam%nv
+               jg = nam%group_index(jv)
+               if (ig==jg) then
+                  if (iv==jv) then
+                     ! Unit diagonal
+                     loc_wgt(iv,jv) = one
+                  else
+                     loc_wgt(iv,jv) = real_scalar
+                  end if
+               end if
+            end do
+         end do
+      end if
 
       ! Copy weights
       if (section%get('specific off-diagonal weights',confs)) then
@@ -929,7 +936,7 @@ if (conf%get('nicas',section)) then
       ! Release memory
       deallocate(loc_wgt)
    end if
-   call nam%get(section,'default interpolation type',nam%nicas_default_interp_type,'nicas_default_interp_type')
+   call nam%get(mpl,section,'default interpolation type',nam%nicas_default_interp_type,'nicas_default_interp_type')
    if (section%get('interpolation type',confs)) then
       if ((size(confs)>0).and.(nam%ng>0)) then
          ! Release memory
@@ -952,20 +959,20 @@ if (conf%get('nicas',section)) then
       end if
       call nam%conf_keys%set('nicas_interp_type','interpolation type')
    end if
-   call nam%get(section,'smooth interpolation factor',nam%nicas_si_factor,'nicas_si_factor')
-   call nam%get(section,'normalization randomization size',nam%norm_rand_size,'norm_rand_size')
-   call nam%get(section,'horizontal interpolation test',nam%interp_test,'interp_test')
-   call nam%get(section,'overriding component in file',nam%file_component,'file_component')
-   call nam%get(section,'similar levels threshold',nam%sim_levs_th,'sim_levs_th')
-   call nam%get(section,'interpolation in global file',nam%interp_in_global_file,'interp_in_global_file')
-   call nam%get(section,'setup timings',nam%nicas_setup_timings,'nicas_setup_timings')
-   call nam%get(section,'application timings',nam%nicas_application_timings,'nicas_application_timings')
+   call nam%get(mpl,section,'smooth interpolation factor',nam%nicas_si_factor,'nicas_si_factor')
+   call nam%get(mpl,section,'normalization randomization size',nam%norm_rand_size,'norm_rand_size')
+   call nam%get(mpl,section,'horizontal interpolation test',nam%interp_test,'interp_test')
+   call nam%get(mpl,section,'overriding component in file',nam%file_component,'file_component')
+   call nam%get(mpl,section,'similar levels threshold',nam%sim_levs_th,'sim_levs_th')
+   call nam%get(mpl,section,'interpolation in global file',nam%interp_in_global_file,'interp_in_global_file')
+   call nam%get(mpl,section,'setup timings',nam%nicas_setup_timings,'nicas_setup_timings')
+   call nam%get(mpl,section,'application timings',nam%nicas_application_timings,'nicas_application_timings')
 end if
 
 ! Psichitouv section
 if (conf%get('psichitouv',section)) then
    if (lverbose) call print_section(mpl,section,'Psichitouv')
-   call nam%get(section,'dipole test',nam%wind_dipole_test,'wind_dipole_test')
+   call nam%get(mpl,section,'dipole test',nam%wind_dipole_test,'wind_dipole_test')
 end if
 
 ! Dirac section
@@ -1019,11 +1026,11 @@ end if
 
 ! External section
 if (conf%get('external',section)) then
-   call nam%get(section,'iterative algorithm',nam%iterative_algo,'iterative_algo')
-   call nam%get(section,'vertical coordinate name',nam%vert_coord_name,'vert_coord_name')
-   call nam%get(section,'geographical mask name',nam%gmask_name,'gmask_name')
-   call nam%get(section,'time communicator rank',nam%time_comm(1),'time_comm(1)')
-   call nam%get(section,'time communicator size',nam%time_comm(2),'time_comm(2)')
+   call nam%get(mpl,section,'iterative algorithm',nam%iterative_algo,'iterative_algo')
+   call nam%get(mpl,section,'vertical coordinate name',nam%vert_coord_name,'vert_coord_name')
+   call nam%get(mpl,section,'geographical mask name',nam%gmask_name,'gmask_name')
+   call nam%get(mpl,section,'time communicator rank',nam%time_comm(1),'time_comm(1)')
+   call nam%get(mpl,section,'time communicator size',nam%time_comm(2),'time_comm(2)')
 end if
 
 ! Release memory
@@ -1066,6 +1073,7 @@ if (nam%ndir>0) nam%latdir = nam%latdir*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv = nam%lon_ldwv*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv = nam%lat_ldwv*deg2rad
 if (nam%forced_radii) then
+   if (.not.(allocated(nam%rh).and.allocated(nam%rv))) call mpl%abort('${subr}$','rh and rv are not allocated')
    do ig=1,nam%ng
       if (mpl%msv%isallnot(nam%rh(:,ig)).and.mpl%msv%isall(nam%rv(:,ig))) then
          call mpl%warning('${subr}$','rh specified but not rv for '//trim(nam%group_names(ig))//', set to zero')
@@ -1327,6 +1335,7 @@ if (nam%new_var) then
       if ((nam%var_niter>0).and.(nam%var_npass>0)) &
  & call nam%abort(mpl,'${subr}$','*var_niter* or *var_npass* should not be positive at the same time')
       if ((nam%var_niter>0).or.(nam%var_npass>0)) then
+        if (.not.allocated(nam%var_rhflt)) call nam%abort(mpl,'${subr}$','*var_rhflt* is not allocated')
          do iv=1,nam%nv
             do il0=1,nam%nl0
                if (mpl%msv%is(nam%var_rhflt(il0,iv))) call nam%abort(mpl,'${subr}$','*var_rhflt* is missing')
@@ -1403,9 +1412,9 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
                   call nam%msg('with the univariate or crossed *strategy*,' &
  & //' *rh* must be specified for the group of each variable',msg)
                case default
-                  call mpl%abort('${subr}$','wrong groups_definition [internal]')
+                  call nam%abort(mpl,'${subr}$','wrong groups_definition [internal]')
                end select
-               call mpl%abort('${subr}$',msg)
+               call nam%abort(mpl,'${subr}$',msg)
             end if
             if (mpl%msv%is(nam%rv(il0,ig))) then
                call nam%abort(mpl,'${subr}$','*rv* is missing for '//trim(nam%group_names(ig)))
@@ -1416,15 +1425,15 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end do
    end if
    if (nam%forced_radii_sampling) then
-      if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for forced_radii_sampling')
-      if (.not.allocated(nam%rhs)) call mpl%abort('${subr}$','rhs is missing')
-      if (.not.allocated(nam%rvs)) call mpl%abort('${subr}$','rvs is missing')
+      if (.not.nam%forced_radii) call nam%abort(mpl,'${subr}$','*forced_radii* required for *forced_radii_sampling*')
+      if (.not.allocated(nam%rhs)) call nam%abort(mpl,'${subr}$','*rhs* is missing')
+      if (.not.allocated(nam%rvs)) call nam%abort(mpl,'${subr}$','*rvs* is missing')
       do ig=1,nam%ng
          do il0=1,nam%nl0
-            if (mpl%msv%is(nam%rhs(il0,ig))) call mpl%abort('${subr}$','rhs is missing for '//trim(nam%group_names(ig)))
-            if (mpl%msv%is(nam%rvs(il0,ig))) call mpl%abort('${subr}$','rvs is missing for '//trim(nam%group_names(ig)))
-            if (nam%rhs(il0,ig)<zero) call mpl%abort('${subr}$','rhs should be non-negative for '//trim(nam%group_names(ig)))
-            if (nam%rvs(il0,ig)<zero) call mpl%abort('${subr}$','rvs should be non-negative for '//trim(nam%group_names(ig)))
+            if (mpl%msv%is(nam%rhs(il0,ig))) call nam%abort(mpl,'${subr}$','*rhs* is missing for '//trim(nam%group_names(ig)))
+            if (mpl%msv%is(nam%rvs(il0,ig))) call nam%abort(mpl,'${subr}$','*rvs* is missing for '//trim(nam%group_names(ig)))
+            if (nam%rhs(il0,ig)<zero) call nam%abort(mpl,'${subr}$','*rhs* should be non-negative for '//trim(nam%group_names(ig)))
+            if (nam%rvs(il0,ig)<zero) call nam%abort(mpl,'${subr}$','*rvs* should be non-negative for '//trim(nam%group_names(ig)))
          end do
       end do
    end if
@@ -1463,7 +1472,7 @@ if (nam%new_wind.and.(nam%load_wind_local.or.nam%load_wind_global)) &
  & call nam%abort(mpl,'${subr}$','*new_wind* and *load_wind_local* or *load_wind_global* are exclusive')
 
 ! External section
-if (any(nam%time_comm<=0)) call mpl%abort('${subr}$','time_comm elements should larger than 0')
+if (any(nam%time_comm<=0)) call nam%abort(mpl,'${subr}$','*time_comm* elements should larger than 0')
 
 end subroutine nam_check
 
@@ -1582,12 +1591,13 @@ end subroutine nam_print_confs
 ! Subroutine: nam_get_${dtype}$
 !> Get value
 !----------------------------------------------------------------------
-subroutine nam_get_${dtype}$(nam,conf,key,val,internal)
+subroutine nam_get_${dtype}$(nam,mpl,conf,key,val,internal)
 
 implicit none
 
 ! Passed variables
 class(nam_type),intent(inout) :: nam         !< Namelist
+type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(fckit_configuration),intent(in) :: conf !< Configuration
 character(len=*),intent(in) :: key           !< Key
 ${ftype[dtype]}$,intent(out) :: val          !< Value
@@ -1605,6 +1615,13 @@ if (conf%has(key)) then
       val = str
    #:else
       call conf%get_or_die(key, val)
+   #:endif
+else
+   ! Missing value
+   #:if dtype == 'string'
+      val = ''
+   #:else
+      val = mpl%${msv[dtype]}$
    #:endif
 end if
 
@@ -1711,7 +1728,7 @@ character(len=*),intent(in) :: internal               !< Internal BUMP variable 
 real(kind_real),intent(in),optional :: norm           !< Normalization factor
 
 ! Local variables
-integer :: iconf,ig,it,ntoset,nfound
+integer :: iconf,nprof,ig,it,il0,ntoset,nfound
 real(kind_real) :: scalar,lnorm
 real(kind_real),allocatable :: array(:)
 character(len=:),allocatable :: str_array(:)
@@ -1761,10 +1778,13 @@ if (conf%has(key).and.(nam%nl0>0).and.(nam%ng>0)) then
          end do
       elseif (confs(iconf)%has('profile')) then
          call confs(iconf)%get_or_die('profile',array)
+         nprof = min(nam%nl0,size(array))
          do it=1,size(str_array)
             do ig=1,nam%ng
                if (str_array(it)==nam%group_names(ig)) then
-                  val(1:size(array),ig) = array*lnorm
+                  do il0=1,nprof
+                     val(il0,ig) = array(il0)*lnorm
+                  end do
                   nfound = nfound+1
                end if
             end do

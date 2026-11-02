@@ -437,6 +437,7 @@ do i=1,l-1
 end do
 
 ! Candidates for NP = NPTS(L) are the unmarked neighbors of nodes in NPTS.  DNP is initially greater than -cos(PI) (the maximum distance)
+np = 0
 dnp = two
 
 ! Loop on nodes NI in NPTS

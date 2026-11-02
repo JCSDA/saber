@@ -1659,7 +1659,7 @@ integer :: il0,il0i,i_s,ic0a,ic1a,ic2b,iv,jl0,jv,kv,lv,ie,nb,jb,joffset,kb,koffs
 real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0),explained_cov(geom%nl0,geom%nl0)
 real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:),xv_cov_agg(:,:),vv_cov_agg(:,:),vv_cov_agg_inv(:,:),reg_agg(:,:)
 real(kind_real),allocatable :: a_ik(:,:),cov_kl(:,:),a_jl(:,:)
-logical :: diag_vv,valid
+logical :: diag_vv,valid(samp%nc2b)
 type(ens_type) :: ensu
 
 ! Set name
@@ -1738,6 +1738,33 @@ else
       call ensu%copy(mpl,nam,geom,ens)
    end if
 
+   ! Check for valid points
+   valid = .true.
+   do iv=1,nam%nv
+      if (any(nam%vbal_block(iv,:))) then
+         do jv=1,iv
+            if (nam%vbal_block(iv,jv)) then
+               do ic2b=1,samp%nc2b                 
+                  ! Non-missing xv-covariance
+                  if (mpl%msv%isany(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
+                  do kv=1,jv
+                     if (nam%vbal_block(iv,kv)) then
+                        ! Non-missing vv-covariance
+                        if (mpl%msv%isany(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
+                        if (kv==jv) then
+                           ! Positive diagonal for diagonal blocks of vv-covariance
+                           do il0=1,geom%nl0
+                              if (.not.(vbal%blk(jv,kv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid(ic2b) = .false.
+                           end do
+                         end if
+                     end if
+                  end do
+               end do
+            end if
+         end do
+      end if
+   end do
+
    ! Process rows sequentially
    do iv=1,nam%nv
       write(mpl%info,'(a7,a,i2.2,a)') '','Process row #',iv,':'
@@ -1790,28 +1817,7 @@ else
          call mpl%prog_init(samp%nc2b)
 
          do ic2b=1,samp%nc2b
-            ! Check validity for this point and this row
-            valid = .true.
-            do jv=1,iv
-               if (nam%vbal_block(iv,jv)) then
-                  ! Non-missing xv-covariance
-                  if (mpl%msv%isany(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))) valid = .false.
-                  do kv=1,jv
-                     if (nam%vbal_block(iv,kv)) then
-                        ! Non-missing vv-covariance
-                        if (mpl%msv%isany(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))) valid = .false.
-                        if (kv==jv) then
-                           ! Positive diagonal for diagonal blocks of vv-covariance
-                           do il0=1,geom%nl0
-                              if (.not.(vbal%blk(jv,kv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid = .false.
-                           end do
-                         end if
-                     end if
-                  end do
-               end if
-            end do
-
-            if (valid) then
+            if (valid(ic2b)) then
                ! Initialization
                xv_cov_agg = zero
                vv_cov_agg = zero
@@ -1837,7 +1843,6 @@ else
                         end do
                      else
                         ! Copy all coefficients
-
                         xv_cov_agg(:,joffset+1:joffset+geom%nl0) = vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b)
                      end if
 
@@ -1860,47 +1865,55 @@ else
                               vv_cov_agg(joffset+1:joffset+geom%nl0,koffset+1:koffset+geom%nl0) = &
  &  vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b)
                               if (kv<jv) vv_cov_agg(koffset+1:koffset+geom%nl0,joffset+1:joffset+geom%nl0) = &
- &  vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b)
+ &  transpose(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))
                            end if
                         end do
                      end if
                   end if
                end do
-            end if
 
-            ! Aggregated vv-covariance inversion
-            if (nam%vbal_pseudo_inv) then
-               if (nam%vbal_pseudo_inv_mmax>0) then
-                  call pseudoinv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv,mmax=nam%vbal_pseudo_inv_mmax)
-               elseif (nam%vbal_pseudo_inv_var_th>zero) then
-                  call pseudoinv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv,var_th=nam%vbal_pseudo_inv_var_th)
+               ! Aggregated vv-covariance inversion
+               if (nam%vbal_pseudo_inv) then
+                 if (nam%vbal_pseudo_inv_mmax>0) then
+                     call pseudoinv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv,mmax=nam%vbal_pseudo_inv_mmax)
+                  elseif (nam%vbal_pseudo_inv_var_th>zero) then
+                     call pseudoinv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv,var_th=nam%vbal_pseudo_inv_var_th)
+                  end if
+               else
+                  call syminv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv)
                end if
-            else
-               call syminv(mpl,nb*geom%nl0,vv_cov_agg,vv_cov_agg_inv)
-            end if
 
-            ! Compute regression
-            reg_agg = matmul(xv_cov_agg,vv_cov_agg_inv)
+               ! Compute regression
+               reg_agg = matmul(xv_cov_agg,vv_cov_agg_inv)
 
-            ! Copy regression to blocks and compute explained variance
-            jb = 0
-            do jv=1,iv
-               if (nam%vbal_block(iv,jv)) then
-                  ! Update block index
-                  jb = jb+1
-                  joffset = (jb-1)*geom%nl0
+               ! Copy regression to blocks and compute explained variance
+               jb = 0
+               do jv=1,iv
+                  if (nam%vbal_block(iv,jv)) then
+                     ! Update block index
+                     jb = jb+1
+                     joffset = (jb-1)*geom%nl0
 
-                  ! Copy regression
-                  vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_agg(:,joffset+1:joffset+geom%nl0)
+                     ! Copy regression
+                     vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = reg_agg(:,joffset+1:joffset+geom%nl0)
 
-                  ! Compute explained variance
-                  explained_cov = matmul(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b),matmul(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b), &
+                     ! Compute explained variance
+                     explained_cov = matmul(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b),matmul(vbal%blk(jv,jv)%vv_cov_c2b(:,:,ic2b), &
  & transpose(vbal%blk(iv,jv)%reg_c2b(:,:,ic2b))))
-                  do il0=1,geom%nl0
-                     vbal%blk(iv,jv)%explained_var_c2b(il0,ic2b) = explained_cov(il0,il0)
-                  end do
-               end if
-            end do
+                     do il0=1,geom%nl0
+                        vbal%blk(iv,jv)%explained_var_c2b(il0,ic2b) = explained_cov(il0,il0)
+                     end do
+                  end if
+               end do
+            else
+               ! Missing values
+               do jv=1,iv
+                  if (nam%vbal_block(iv,jv)) then
+                     vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = mpl%msv%valr
+                     vbal%blk(iv,jv)%explained_var_c2b(:,ic2b) = mpl%msv%valr
+                  end if
+               end do
+            end if
 
             ! Update
             call mpl%prog_print(ic2b)

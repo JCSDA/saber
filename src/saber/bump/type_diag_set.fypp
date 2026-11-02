@@ -17,7 +17,6 @@ use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum,wri
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,define_dim,define_var,put_var
 use tools_repro, only: inf,infeq,supeq
-use tools_wrfda
 use type_avg_set, only: avg_set_type
 use type_geom, only: geom_type
 use type_minim, only: minim_type
@@ -207,6 +206,8 @@ class(diag_set_type),intent(inout) :: diag_set !< Diagnostic block
 
 ! Release memory
 call diag_set%partial_dealloc
+if (allocated(diag_set%a_c0a)) deallocate(diag_set%a_c0a)
+if (allocated(diag_set%s_c0a)) deallocate(diag_set%s_c0a)
 if (allocated(diag_set%rh_c0a)) deallocate(diag_set%rh_c0a)
 if (allocated(diag_set%D11_c0a)) deallocate(diag_set%D11_c0a)
 if (allocated(diag_set%D22_c0a)) deallocate(diag_set%D22_c0a)
@@ -244,6 +245,7 @@ integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detai
 integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,ecc_l0_id,rv_l0_id
 integer :: hyb_coef_1_raw_id,hyb_coef_1_id,hyb_coef_2_raw_id,hyb_coef_2_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
+real(kind_real),allocatable :: rh_l0_cmp(:,:),D11_l0_cmp(:,:),D22_l0_cmp(:,:),D12_l0_cmp(:,:),rv_l0_cmp(:,:)
 
 ! Set name
 @:set_name(diag_set_write)
@@ -341,28 +343,46 @@ if (mpl%msv%isanynot(diag_set%fit)) then
          end do
       end do
    end if
-   if (diag_set%ncmp==1) then
-      call put_var(mpl,grpid,rh_l0_id,diag_set%rh_l0*req)
-      if (nam%nc4>1) then
-         call put_var(mpl,grpid,D11_l0_id,diag_set%D11_l0*req**2)
-         call put_var(mpl,grpid,D22_l0_id,diag_set%D22_l0*req**2)
-         call put_var(mpl,grpid,D12_l0_id,diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*req**2)
-         call put_var(mpl,grpid,ecc_l0_id,diag_set%ecc_l0)
-      end if
-      call put_var(mpl,grpid,rv_l0_id,diag_set%rv_l0)
-   else
-      call put_var(mpl,grpid,a_l0_id,diag_set%a_l0)
-      do icmp=1,diag_set%ncmp
-         call put_var(mpl,grpid,rh_l0_id,diag_set%rh_l0*diag_set%s_l0(:,icmp)*req)
-         if (nam%nc4>1) then
-            call put_var(mpl,grpid,D11_l0_id,diag_set%D11_l0*diag_set%s_l0(:,icmp)**2*req**2)
-            call put_var(mpl,grpid,D22_l0_id,diag_set%D22_l0*diag_set%s_l0(:,icmp)**2*req**2)
-            call put_var(mpl,grpid,D12_l0_id,diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*diag_set%s_l0(:,icmp)**2*req**2)
-         end if
-         call put_var(mpl,grpid,rv_l0_id,diag_set%rv_l0*diag_set%s_l0(:,icmp))
-      end do
-      if (nam%nc4>1) call put_var(mpl,grpid,ecc_l0_id,diag_set%ecc_l0)
+
+   ! Allocation
+   allocate(rh_l0_cmp(geom%nl0,diag_set%ncmp))
+   if (nam%nc4>1) then
+      allocate(D11_l0_cmp(geom%nl0,diag_set%ncmp))
+      allocate(D22_l0_cmp(geom%nl0,diag_set%ncmp))
+      allocate(D12_l0_cmp(geom%nl0,diag_set%ncmp))
    end if
+   allocate(rv_l0_cmp(geom%nl0,diag_set%ncmp))
+
+   ! Fill temporary arrays
+   do icmp=1,diag_set%ncmp
+      rh_l0_cmp(:,icmp) = diag_set%rh_l0*diag_set%s_l0(:,icmp)
+      if (nam%nc4>1) then
+         D11_l0_cmp(:,icmp) = diag_set%D11_l0*diag_set%s_l0(:,icmp)**2
+         D22_l0_cmp(:,icmp) = diag_set%D22_l0*diag_set%s_l0(:,icmp)**2
+         D12_l0_cmp(:,icmp) = diag_set%D11_l0*diag_set%D22_l0*diag_set%D12_l0*diag_set%s_l0(:,icmp)**2
+      end if
+      rv_l0_cmp(:,icmp) = diag_set%rv_l0*diag_set%s_l0(:,icmp)
+   end do
+
+   ! Write variables
+   if (diag_set%ncmp>1) call put_var(mpl,grpid,a_l0_id,diag_set%a_l0)
+   call put_var(mpl,grpid,rh_l0_id,rh_l0_cmp*req)
+   if (nam%nc4>1) then
+      call put_var(mpl,grpid,D11_l0_id,D11_l0_cmp*req**2)
+      call put_var(mpl,grpid,D22_l0_id,D22_l0_cmp*req**2)
+      call put_var(mpl,grpid,D12_l0_id,D12_l0_cmp*req**2)
+      call put_var(mpl,grpid,ecc_l0_id,diag_set%ecc_l0)
+   end if
+   call put_var(mpl,grpid,rv_l0_id,rv_l0_cmp)
+
+   ! Release memory
+   deallocate(rh_l0_cmp)
+   if (nam%nc4>1) then
+      deallocate(D11_l0_cmp)
+      deallocate(D22_l0_cmp)
+      deallocate(D12_l0_cmp)
+   end if
+   deallocate(rv_l0_cmp)
 end if
 if (mpl%msv%isanynot(diag_set%hyb_coef_1_raw)) call put_var(mpl,grpid,hyb_coef_1_raw_id,diag_set%hyb_coef_1_raw)
 if (mpl%msv%isanynot(diag_set%hyb_coef_1)) call put_var(mpl,grpid,hyb_coef_1_id,diag_set%hyb_coef_1)
@@ -1066,10 +1086,10 @@ do icmp=1,diag_set%ncmp
 end do
 diag_set%rh_l0 = nam%rh(1:geom%nl0,ig)
 if (nam%nc4>1) then
-   diag_set%D11_l0 = nam%rh(1:geom%nl0,ig)
-   diag_set%D22_l0 = nam%rh(1:geom%nl0,ig)
-   diag_set%D12_l0 = nam%rh(1:geom%nl0,ig)
-   diag_set%ecc_l0 = nam%rh(1:geom%nl0,ig)
+   diag_set%D11_l0 = nam%rh(1:geom%nl0,ig)**2
+   diag_set%D22_l0 = nam%rh(1:geom%nl0,ig)**2
+   diag_set%D12_l0 = zero
+   diag_set%ecc_l0 = zero
 end if
 diag_set%rv_l0 = nam%rv(1:geom%nl0,ig)
 

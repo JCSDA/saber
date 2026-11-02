@@ -308,6 +308,9 @@ logical :: anisotropic
 ! Set name
 @:set_name(cmat_from_bump)
 
+! Initialization
+anisotropic = .false.
+
 do ig=1,nam%ng
    ! Anisotropic flag
    anisotropic = (allocated(cmat%blk(ig)%bump_D11).and.allocated(cmat%blk(ig)%bump_D22).and.allocated(cmat%blk(ig)%bump_D12))

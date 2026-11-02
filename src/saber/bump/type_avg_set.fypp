@@ -195,11 +195,13 @@ if (allocated(avg_set%nc1a)) deallocate(avg_set%nc1a)
 if (allocated(avg_set%m11)) deallocate(avg_set%m11)
 if (allocated(avg_set%m11m11)) deallocate(avg_set%m11m11)
 if (allocated(avg_set%m2m2)) deallocate(avg_set%m2m2)
+if (allocated(avg_set%m22)) deallocate(avg_set%m22)
 if (allocated(avg_set%nc1a_cor)) deallocate(avg_set%nc1a_cor)
 if (allocated(avg_set%cor)) deallocate(avg_set%cor)
 if (allocated(avg_set%cor_var)) deallocate(avg_set%cor_var)
 if (allocated(avg_set%m11asysq)) deallocate(avg_set%m11asysq)
 if (allocated(avg_set%m2m2asy)) deallocate(avg_set%m2m2asy)
+if (allocated(avg_set%m22asy)) deallocate(avg_set%m22asy)
 if (allocated(avg_set%m11sq)) deallocate(avg_set%m11sq)
 if (allocated(avg_set%m11_bins)) deallocate(avg_set%m11_bins)
 if (allocated(avg_set%m11_hist)) deallocate(avg_set%m11_hist)
@@ -391,6 +393,9 @@ allocate(list_m2m2(samp%nc1a,avg_set%nsub,avg_set%nsub))
 allocate(list_m22(samp%nc1a,avg_set%nsub))
 allocate(list_cor(samp%nc1a))
 if (nam%loc_option=='nice_without_table') allocate(list_cor_save(samp%nc1a,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+
+! Initialization
+min_cor = huge_real
 
 ! Average
 do il0=1,geom%nl0
@@ -1138,6 +1143,8 @@ if (mpl%msv%is(ic2a).or.nam%local_diag) then
  & isub))+P11*avg_set%m22(jc3,jc4,jl0r,il0,jsub)
                      else
                         ! Off-diagonal terms
+                        m11asysq_gau(jsub,isub) = avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)
+                        m2m2asy_gau(jsub,isub) = avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)
                         m11asysq(jsub,isub) = avg_set%m11m11(jc3,jc4,jl0r,il0,jsub,isub)
                         m2m2asy(jsub,isub) = avg_set%m2m2(jc3,jc4,jl0r,il0,jsub,isub)
                      end if

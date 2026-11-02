@@ -1005,8 +1005,10 @@ do icmp=1,nicas_blk%ncmp
  & trim(nam%group_names(ig)),', component ',icmp
          call mpl%warning('${subr}$',message)
          do ic0a=1,geom%nc0a
-            ratio = nicas_blk%cmp(icmp)%rhs(ic0a,il0)/nam%universe_radius
-            if (ratio>one) nicas_blk%cmp(icmp)%rhs(ic0a,il0) = nicas_blk%cmp(icmp)%rhs(ic0a,il0)/ratio
+            if (geom%gmask_c0a(ic0a,il0)) then
+               ratio = nicas_blk%cmp(icmp)%rhs(ic0a,il0)/nam%universe_radius
+               if (ratio>one) nicas_blk%cmp(icmp)%rhs(ic0a,il0) = nicas_blk%cmp(icmp)%rhs(ic0a,il0)/ratio
+            end if
          end do
       end if
    end do
@@ -1360,6 +1362,7 @@ end do
 write(mpl%info,'(a7,a)') '','Values at dirac points:'
 if (nicas_blk%verbosity) call mpl%flush
 do idir=1,geom%ndir
+   val = mpl%msv%valr
    if (geom%iprocdir(idir)==mpl%myproc) val = fld_tot(geom%ic0adir(idir),geom%il0dir(idir))
    call mpl%f_comm%broadcast(val,geom%iprocdir(idir)-1)
    if (mpl%msv%isnot(val)) then

@@ -398,7 +398,7 @@ if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
       H12 = -D12full/det
    else
       write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8)') 'Tensor values (D11,D22,D12,D11*D22,D12full**2,det): ', &
- & D11,',',D22,',',D12,',',D11*D12,',',D12full**2,',',det
+ & D11,',',D22,',',D12,',',D11*D22,',',D12full**2,',',det
       call mpl%flush
       call mpl%abort('${subr}$','non-invertible tensor')
    end if
@@ -697,7 +697,7 @@ if (raw(iz)>zero) then
 
                ! Compute fitness
                call diag_iso(mpl,n,dist,dir,one,fit_r,fit)
-               cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
+               cost = sum((fit-raw_tmp)**2,mask=mpl%msv%isnot(raw_tmp))/real(ntmp,kind_real)
                if (inf(cost,cost_min)) then
                   ! Better fit
                   cost_min = cost

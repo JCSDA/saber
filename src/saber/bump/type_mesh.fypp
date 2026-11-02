@@ -263,6 +263,12 @@ integer :: i
 @:set_name(mesh_dealloc)
 
 ! Release memory
+if (allocated(mesh%rows)) then
+   do i=1,mesh%n
+      if (allocated(mesh%rows(i)%nodes)) deallocate(mesh%rows(i)%nodes)
+   end do
+   deallocate(mesh%rows)
+end if
 if (allocated(mesh%order)) deallocate(mesh%order)
 if (allocated(mesh%order_inv)) deallocate(mesh%order_inv)
 if (allocated(mesh%lon)) deallocate(mesh%lon)
@@ -270,12 +276,7 @@ if (allocated(mesh%lat)) deallocate(mesh%lat)
 if (allocated(mesh%x)) deallocate(mesh%x)
 if (allocated(mesh%y)) deallocate(mesh%y)
 if (allocated(mesh%z)) deallocate(mesh%z)
-if (allocated(mesh%rows)) then
-   do i=1,mesh%n
-      if (allocated(mesh%rows(i)%nodes)) deallocate(mesh%rows(i)%nodes)
-   end do
-   deallocate(mesh%rows)
-end if
+if (allocated(mesh%bnodes)) deallocate(mesh%bnodes)
 if (allocated(mesh%list)) deallocate(mesh%list)
 if (allocated(mesh%lptr)) deallocate(mesh%lptr)
 if (allocated(mesh%lend)) deallocate(mesh%lend)
@@ -309,38 +310,50 @@ logical :: inside_hull
 ! Set name
 @:set_name(mesh_barycentric)
 
-! Transform to cartesian coordinates
-call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
+if (tree%neff>0) then
+   ! Transform to cartesian coordinates
+   call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
 
-! Allocation
-allocate(nn_index(1))
+   ! Allocation
+   allocate(nn_index(1))
 
-! Find the next nearest neighbor
-call tree%find_nearest_neighbors(mpl,lon,lat,1,nn_index)
+   ! Find the next nearest neighbor
+   call tree%find_nearest_neighbors(mpl,lon,lat,1,nn_index)
 
-! Compute barycentric coordinates
-b = zero
-ib = 0
-call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
+   ! Compute barycentric coordinates
+   b = zero
+   ib = 0
+   call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
-if (all(ib>0)) then
-   ! Transform indices
-   ib = mesh%order(ib)
+   if (all(ib>0)) then
+      ! Transform indices
+      ib = mesh%order(ib)
 
-   ! Check that point is inside the hull
-   call hull%inside(mpl,lon,lat,inside_hull)
-   if (.not.inside_hull) ib = mpl%msv%vali
+      ! Check that point is inside the hull
+      call hull%inside(mpl,lon,lat,inside_hull)
+      if (.not.inside_hull) then
+          ! Missing values
+          b = mpl%msv%valr
+          ib = mpl%msv%vali 
+      end if
+   else
+      ! Missing values
+      b = mpl%msv%valr
+      ib = mpl%msv%vali
+   end if
+
+   ! Release memory
+   deallocate(nn_index)
+
+   ! Order
+   if (mpl%msv%isallnot(ib)) then
+      call qsort(3,ib,order)
+      b = b(order)
+   end if
 else
+   ! Missing values
+   b = mpl%msv%valr
    ib = mpl%msv%vali
-end if
-
-! Release memory
-deallocate(nn_index)
-
-! Order
-if (mpl%msv%isallnot(ib)) then
-   call qsort(3,ib,order)
-   b = b(order)
 end if
 
 end subroutine mesh_barycentric

@@ -10,13 +10,11 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,five,ten,pi,req
-use tools_cor_var, only: eval
 use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2r,tensor_d2e,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum,write_yaml_profile
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,define_dim,define_var,put_var
 use tools_repro, only: inf,infeq,supeq
-use tools_wrfda
 use type_diag_set, only: diag_set_type
 use type_geom, only: geom_type
 use type_minim, only: minim_type
@@ -25,8 +23,6 @@ use type_nam, only: nam_type
 use type_samp, only: samp_type,samp_flt_type
 
 implicit none
-
-real(kind_real),parameter :: bound = five !< Restriction bound applied on local diagnostics with respect to the global diagnostic
 
 ! Diagnostic block derived type
 type diag_blk_type
@@ -201,48 +197,6 @@ do il0=1,geom%nl0
             D12_c2a(ic2a,il0) = diag_blk%loc(ic2a)%D12_l0(il0)
          end if
          rv_c2a(ic2a,il0) = diag_blk%loc(ic2a)%rv_l0(il0)
-      end if
-
-      ! Apply global bounds
-      if (hyb_coef_only) then
-         if (mpl%msv%isnot(hyb_coef_1_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%hyb_coef_1(il0))) then
-            if ((hyb_coef_1_c2a(ic2a,il0)<diag_blk%glb%hyb_coef_1(il0)/bound) &
- & .or.(hyb_coef_1_c2a(ic2a,il0)>diag_blk%glb%hyb_coef_1(il0)*bound)) hyb_coef_1_c2a(ic2a,il0) = mpl%msv%valr
-         end if
-         if (mpl%msv%isnot(hyb_coef_2_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%hyb_coef_2(il0))) then
-            if ((hyb_coef_2_c2a(ic2a,il0)<diag_blk%glb%hyb_coef_2(il0)/bound) &
- & .or.(hyb_coef_2_c2a(ic2a,il0)>diag_blk%glb%hyb_coef_2(il0)*bound)) hyb_coef_2_c2a(ic2a,il0) = mpl%msv%valr
-         end if
-      else
-         do icmp=1,diag_blk%glb%ncmp
-            if (mpl%msv%isnot(a_c2a(ic2a,il0,icmp)).and.mpl%msv%isnot(diag_blk%glb%a_l0(il0,icmp))) then
-               if ((a_c2a(ic2a,il0,icmp)<diag_blk%glb%a_l0(il0,icmp)/bound) &
- & .or.(a_c2a(ic2a,il0,icmp)>diag_blk%glb%a_l0(il0,icmp)*bound)) a_c2a(ic2a,il0,icmp) = mpl%msv%valr
-            end if
-            if (mpl%msv%isnot(s_c2a(ic2a,il0,icmp)).and.mpl%msv%isnot(diag_blk%glb%s_l0(il0,icmp))) then
-               if ((s_c2a(ic2a,il0,icmp)<diag_blk%glb%s_l0(il0,icmp)/bound) &
- & .or.(s_c2a(ic2a,il0,icmp)>diag_blk%glb%s_l0(il0,icmp)*bound)) s_c2a(ic2a,il0,icmp) = mpl%msv%valr
-            end if
-         end do
-         if (nam%nc4==1) then
-            if (mpl%msv%isnot(rh_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%rh_l0(il0))) then
-               if ((rh_c2a(ic2a,il0)<diag_blk%glb%rh_l0(il0)/bound) &
- & .or.(rh_c2a(ic2a,il0)>diag_blk%glb%rh_l0(il0)*bound)) rh_c2a(ic2a,il0) = mpl%msv%valr
-            end if
-         else
-            if (mpl%msv%isnot(D11_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%D11_l0(il0))) then
-               if ((D11_c2a(ic2a,il0)<diag_blk%glb%D11_l0(il0)/bound) &
- & .or.(D11_c2a(ic2a,il0)>diag_blk%glb%D11_l0(il0)*bound)) D11_c2a(ic2a,il0) = mpl%msv%valr
-            end if
-            if (mpl%msv%isnot(D22_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%D22_l0(il0))) then
-               if ((D22_c2a(ic2a,il0)<diag_blk%glb%D22_l0(il0)/bound) &
- & .or.(D22_c2a(ic2a,il0)>diag_blk%glb%D22_l0(il0)*bound)) D22_c2a(ic2a,il0) = mpl%msv%valr
-            end if
-         end if
-         if (mpl%msv%isnot(rv_c2a(ic2a,il0)).and.mpl%msv%isnot(diag_blk%glb%rv_l0(il0))) then
-            if ((rv_c2a(ic2a,il0)<diag_blk%glb%rv_l0(il0)/bound) &
- & .or.(rv_c2a(ic2a,il0)>diag_blk%glb%rv_l0(il0)*bound)) rv_c2a(ic2a,il0) = mpl%msv%valr
-         end if
       end if
    end do
 
@@ -516,6 +470,26 @@ else
                end if
                do icmp=1,diag_blk%glb%ncmp
                   diag_blk%glb%rv_c0a(ic0a,il0,icmp) = diag_blk%glb%rv_l0(il0)*diag_blk%glb%s_c0a(ic0a,il0,icmp)
+               end do
+            end if
+         else
+            if (hyb_coef_only) then
+               diag_blk%glb%hyb_coef_1_c0a(ic0a,il0) = mpl%msv%valr
+               diag_blk%glb%hyb_coef_2_c0a(ic0a,il0) = mpl%msv%valr
+            else
+               do icmp=1,diag_blk%glb%ncmp
+                  diag_blk%glb%a_c0a(ic0a,il0,icmp) = mpl%msv%valr
+                  diag_blk%glb%s_c0a(ic0a,il0,icmp) = mpl%msv%valr
+               end do
+               diag_blk%glb%rh_c0a(ic0a,il0) = mpl%msv%valr
+               if (nam%nc4>1) then
+                  diag_blk%glb%D11_c0a(ic0a,il0) = mpl%msv%valr
+                  diag_blk%glb%D22_c0a(ic0a,il0) = mpl%msv%valr
+                  diag_blk%glb%D12_c0a(ic0a,il0) = mpl%msv%valr
+                  diag_blk%glb%ecc_c0a(ic0a,il0) = mpl%msv%valr
+               end if
+               do icmp=1,diag_blk%glb%ncmp
+                  diag_blk%glb%rv_c0a(ic0a,il0,icmp) = mpl%msv%valr
                end do
             end if
          end if

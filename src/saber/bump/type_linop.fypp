@@ -720,7 +720,7 @@ if (n_s>linop%n_s) then
 
    ! Reallocate larger linear operation
    call linop%dealloc
-   linop%n_s = 2*linop_tmp%n_s
+   linop%n_s = max(n_s,2*linop_tmp%n_s)
    call linop%alloc(linop_tmp%nvec)
 
    ! Copy data

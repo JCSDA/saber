@@ -450,6 +450,7 @@ if (mpl%main) then
 
    ! Initialization
    glb_to_red = mpl%msv%vali
+   glb_to_proc = mpl%msv%vali
 
    ! Build global to reduced halo conversion
    do iproc=1,mpl%nproc
@@ -662,11 +663,15 @@ if (com_out%nown>0) then
    do iown=1,com_out%nown
       do while (red_to_glb_tmp(ired)/=own_to_glb_tmp(iown))
          ired = ired+1
+         if (ired>nred) exit
       end do
+      if (ired>nred) call mpl%abort('${subr}$','own point missing from the reduced halo')
       com_out%own_to_red(own_to_glb_order(iown)) = red_to_glb_order(ired)
       do while (ext_to_glb_tmp(iext)/=own_to_glb_tmp(iown))
          iext = iext+1
+         if (iext>next) exit
       end do
+      if (iext>next) call mpl%abort('${subr}$','own point missing from the extended halo')
       com_out%own_to_ext(own_to_glb_order(iown)) = ext_to_glb_order(iext)
    end do
 

@@ -476,7 +476,7 @@ if (allocated(hor%c1u_to_c1b)) deallocate(hor%c1u_to_c1b)
 
 if (allocated(hor%vert_coord_c1a)) deallocate(hor%vert_coord_c1a)
 if (allocated(hor%vert_coord_c1u)) deallocate(hor%vert_coord_c1u)
-if (allocated(hor%rv_c1b)) deallocate(hor%rh_c1b)
+if (allocated(hor%rh_c1b)) deallocate(hor%rh_c1b)
 if (allocated(hor%rv_c1b)) deallocate(hor%rv_c1b)
 if (allocated(hor%H11_c1b)) deallocate(hor%H11_c1b)
 if (allocated(hor%H22_c1b)) deallocate(hor%H22_c1b)
@@ -2498,6 +2498,7 @@ if (any(nicas_cmp%vlev)) then
       write(mpl%info,'(a13,a,i8)') '','nl0 =                        ',nicas_cmp%nl0
       call mpl%flush
       write(mpl%test,'(a13,a,i8)') '','nl1 =                        ',nicas_cmp%nl1
+      call mpl%flush
       do il1=1,nicas_cmp%nl1
          il1s = nicas_cmp%hor(il1)%il1s
          write(mpl%test,'(a13,a,i3,a,i8)') '','nc1(',il1,') =                   ',nicas_cmp%hor(il1s)%nc1
@@ -3034,17 +3035,21 @@ do il1=1,nicas_cmp%nl1
          write(mpl%info,'(a16,a)') '','Get global lon/lat'
          call mpl%flush(flush=nicas_cmp%verbosity)
 
-         if (compute_interp) then
+         if (compute_interp.or.nam%write_nicas_global) then
             ! Allocation
             allocate(lon_c1(nicas_cmp%hor(il1s)%nc1))
             allocate(lat_c1(nicas_cmp%hor(il1s)%nc1))
-            allocate(gmask_c1(nicas_cmp%hor(il1s)%nc1))
 
             ! Communication
             call mpl%loc_to_glb(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%nc1,nicas_cmp%hor(il1s)%c1a_to_c1, &
  & nicas_cmp%hor(il1s)%lon_c1a,lon_c1,.true.)
             call mpl%loc_to_glb(nicas_cmp%hor(il1s)%nc1a,nicas_cmp%hor(il1s)%nc1,nicas_cmp%hor(il1s)%c1a_to_c1, &
  & nicas_cmp%hor(il1s)%lat_c1a,lat_c1,.true.)
+         end if
+
+         if (compute_interp) then
+            ! Allocation
+            allocate(gmask_c1(nicas_cmp%hor(il1s)%nc1))
 
             ! Setup mesh
             call nicas_cmp%hor(il1s)%mesh_c1%init(mpl,rng,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1)
@@ -3464,7 +3469,7 @@ if (.not.nam%load_nicas_global) then
    allocate(nicas_cmp%sa_to_l1(nicas_cmp%nsa))
 end if
 allocate(nicas_cmp%su_to_s(nicas_cmp%nsu))
-allocate(nicas_cmp%sa_to_su(nicas_cmp%nsu))
+allocate(nicas_cmp%sa_to_su(nicas_cmp%nsa))
 allocate(nicas_cmp%su_to_sa(nicas_cmp%nsu))
 allocate(nicas_cmp%su_to_c1u(nicas_cmp%nsu))
 allocate(nicas_cmp%su_to_l1(nicas_cmp%nsu))
@@ -3630,7 +3635,7 @@ call nicas_cmp%com_s_AB%setup(mpl,'com_s_AB',nicas_cmp%nsa,nicas_cmp%nsb,nicas_c
 call nicas_cmp%com_s_AU%setup(mpl,'com_s_AU',nicas_cmp%nsa,nicas_cmp%nsu,nicas_cmp%ns,nicas_cmp%sa_to_s,nicas_cmp%su_to_s)
 
 ! Halo extension from zone A to zone U
-if (nam%write_nicas_global) call nicas_cmp%com_s_AU%ext(mpl,order_inv_sa,nicas_cmp%order_inv_su)
+if ((.not.nam%load_nicas_global).and.nam%write_nicas_global) call nicas_cmp%com_s_AU%ext(mpl,order_inv_sa,nicas_cmp%order_inv_su)
 
 ! Default control variable size
 nicas_cmp%ncv = nicas_cmp%nsa
@@ -4686,7 +4691,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: il0,ic0a,ie
 real(kind_real) :: scaling
-real(kind_real) :: fld(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
+real(kind_real) :: fld(geom%nc0a,geom%nl0),m2(geom%nc0a,nicas_cmp%nl0)
 type(cv_cmp_type) :: cv_cmp
 
 ! Set name
@@ -4721,7 +4726,7 @@ end do
 
 ! Compute variance
 scaling = one/real(nam%norm_rand_size,kind_real)
-do il0=1,geom%nl0
+do il0=1,nicas_cmp%nl0
    if (nicas_cmp%vlev(il0)) then
       do ic0a=1,geom%nc0a
          if (geom%gmask_c0a(ic0a,il0)) then
@@ -5018,6 +5023,9 @@ if (any(nicas_cmp%vlev)) then
       call mpl%stop_timer('nicas_apply_norm')
       if (lsteps) call nicas_cmp%steps(7)%add(mpl,geom,fld)
    end if
+else
+  ! Missing values
+  fld = mpl%msv%valr
 end if
 
 end subroutine nicas_cmp_apply_sqrt
@@ -5780,6 +5788,7 @@ else
 
    do itest=1,nam%check_normalization
       ! Initialization
+      isa = mpl%msv%vali
       alpha = zero
       if (mpl%myproc==iproc(itest)) then
          ! Get random point

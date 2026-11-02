@@ -282,7 +282,7 @@ if (units=='meters') then
    end if
 else if (units=='degrees') then
    ! Grid parameters
-   ymean = half*(ymin+ymax)
+   ymean = half*(ymin+ymax)*deg2rad
    Lx = (xmax-xmin)*deg2rad*cos(ymean)
    Ly = (ymax-ymin)*deg2rad
    dx = gamma

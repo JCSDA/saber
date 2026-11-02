@@ -306,6 +306,9 @@ character(len=13) :: cfmt
 ! Set name
 @:set_name(func_independent_levels)
 
+! Check number of levels
+if (nlx<=0) return
+
 ! Compute local hash for the mask of each level
 do ilx=1,nlx
    n = count(.not.mask_cxa(:,ilx))

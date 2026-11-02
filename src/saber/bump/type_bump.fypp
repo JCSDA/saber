@@ -1230,12 +1230,20 @@ call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bum
 call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
+iv_psi = bump%mpl%msv%vali
+iv_chi = bump%mpl%msv%vali
+iv_ua = bump%mpl%msv%vali
+iv_va = bump%mpl%msv%vali
 do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)=='air_horizontal_streamfunction') iv_psi = iv
    if (bump%nam%variables(iv)=='air_horizontal_velocity_potential') iv_chi = iv
    if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
    if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do
+
+! Check all indices have been found
+if (bump%mpl%msv%is(iv_psi).or.bump%mpl%msv%is(iv_chi).or.bump%mpl%msv%is(iv_ua).or.bump%mpl%msv%is(iv_va)) &
+ &  call bump%mpl%abort('${subr}$','psi, chi, u and v variables are required')
 
 ! Transform psi/chi to u/v
 call bump%wind%psichi_to_uv(bump%mpl,bump%geom,fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi), &
@@ -1292,12 +1300,20 @@ call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bum
 call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
+iv_psi = bump%mpl%msv%vali
+iv_chi = bump%mpl%msv%vali
+iv_ua = bump%mpl%msv%vali
+iv_va = bump%mpl%msv%vali
 do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)=='air_horizontal_streamfunction') iv_psi = iv
    if (bump%nam%variables(iv)=='air_horizontal_velocity_potential') iv_chi = iv
    if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
    if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do
+
+! Check all indices have been found
+if (bump%mpl%msv%is(iv_psi).or.bump%mpl%msv%is(iv_chi).or.bump%mpl%msv%is(iv_ua).or.bump%mpl%msv%is(iv_va)) &
+ &  call bump%mpl%abort('${subr}$','psi, chi, u and v variables are required')
 
 ! Transform psi/chi to u/v adjoint
 call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom,fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
@@ -1444,7 +1460,8 @@ do iv=1,bump%nam%nv
       else
          if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
          if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
+         if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
+         if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
          fld_c0a = bump%hdiag%cor%blk(ig)%glb%rh_c0a
          do il0=1,bump%geom%nl0
             do ic0a=1,bump%geom%nc0a
@@ -1457,6 +1474,7 @@ do iv=1,bump%nam%nv
    case ('cor_rh1')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
       if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
       fld_c0a = bump%hdiag%cor%blk(ig)%glb%D11_c0a
       do il0=1,bump%geom%nl0
@@ -1469,6 +1487,7 @@ do iv=1,bump%nam%nv
    case ('cor_rh2')
       if (.not.allocated(bump%hdiag%cor%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
       if (icmp>size(bump%hdiag%cor%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
       fld_c0a = bump%hdiag%cor%blk(ig)%glb%D22_c0a
       do il0=1,bump%geom%nl0
@@ -1518,6 +1537,7 @@ do iv=1,bump%nam%nv
       else
          if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
          if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
          if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
          fld_c0a = bump%hdiag%loc%blk(ig)%glb%rh_c0a
          do il0=1,bump%geom%nl0
@@ -1531,6 +1551,7 @@ do iv=1,bump%nam%nv
    case ('loc_rh1')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
       if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
       fld_c0a = bump%hdiag%loc%blk(ig)%glb%D11_c0a
       do il0=1,bump%geom%nl0
@@ -1543,6 +1564,7 @@ do iv=1,bump%nam%nv
    case ('loc_rh2')
       if (.not.allocated(bump%hdiag%loc%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       if (.not.allocated(bump%hdiag%loc%blk(ig)%glb%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor%blk(ig)%glb%s_c0a)) call bump%mpl%abort('${subr}$','s_c0a should be allocated')
       if (icmp>size(bump%hdiag%loc%blk(ig)%glb%s_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component index is too large')
       fld_c0a = bump%hdiag%loc%blk(ig)%glb%D22_c0a
       do il0=1,bump%geom%nl0
@@ -1765,11 +1787,13 @@ do iv=1,bump%nam%nv
    ! Select parameter from cmat
    select case (trim(param))
    case ('a')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_a)) allocate(bump%cmat%blk(ig)%bump_a(bump%geom%nc0a,bump%geom%nl0, &
  & bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_a(:,:,icmp) = fld_c0a
       found = .true.
    case ('rh')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_rh)) allocate(bump%cmat%blk(ig)%bump_rh(bump%geom%nc0a,bump%geom%nl0, &
  & bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_rh(:,:,icmp) = fld_c0a
@@ -1781,6 +1805,7 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('rh1')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_D11)) allocate(bump%cmat%blk(ig)%bump_D11(bump%geom%nc0a, &
  & bump%geom%nl0,bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_D11(:,:,icmp) = fld_c0a
@@ -1792,6 +1817,7 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('rh2')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_D22)) allocate(bump%cmat%blk(ig)%bump_D22(bump%geom%nc0a, &
  & bump%geom%nl0,bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_D22(:,:,icmp) = fld_c0a
@@ -1803,11 +1829,13 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('rhc')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_D12)) allocate(bump%cmat%blk(ig)%bump_D12(bump%geom%nc0a, &
  & bump%geom%nl0,bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_D12(:,:,icmp) = fld_c0a
       found = .true.
    case ('rv')
+      if (icmp>bump%cmat%blk(ig)%ncmp) call bump%mpl%abort('${subr}$','component index is too large')
       if (.not.allocated(bump%cmat%blk(ig)%bump_rv)) allocate(bump%cmat%blk(ig)%bump_rv(bump%geom%nc0a,bump%geom%nl0, &
  & bump%cmat%blk(ig)%ncmp))
       bump%cmat%blk(ig)%bump_rv(:,:,icmp) = fld_c0a
@@ -1896,6 +1924,7 @@ call bump%nicas%dealloc
 call bump%samp%dealloc
 call bump%var%dealloc
 call bump%vbal%dealloc
+call bump%wind%dealloc
 
 ! Finalize MPL object
 call bump%mpl%final()
