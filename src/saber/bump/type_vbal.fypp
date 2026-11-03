@@ -1659,7 +1659,7 @@ integer :: il0,il0i,i_s,ic0a,ic1a,ic2b,iv,jl0,jv,kv,lv,ie,nb,jb,joffset,kb,koffs
 real(kind_real) :: fld_c0a_1(geom%nc0a,geom%nl0),fld_c0a_2(geom%nc0a,geom%nl0),explained_cov(geom%nl0,geom%nl0)
 real(kind_real),allocatable :: fld_c1a(:),fld_c2b(:),xv_cov_agg(:,:),vv_cov_agg(:,:),vv_cov_agg_inv(:,:),reg_agg(:,:)
 real(kind_real),allocatable :: a_ik(:,:),cov_kl(:,:),a_jl(:,:)
-logical :: diag_vv,valid(samp%nc2b)
+logical :: diag_vv,valid
 type(ens_type) :: ensu
 
 ! Set name
@@ -1738,33 +1738,6 @@ else
       call ensu%copy(mpl,nam,geom,ens)
    end if
 
-   ! Check for valid points
-   valid = .true.
-   do iv=1,nam%nv
-      if (any(nam%vbal_block(iv,:))) then
-         do jv=1,iv
-            if (nam%vbal_block(iv,jv)) then
-               do ic2b=1,samp%nc2b                 
-                  ! Non-missing xv-covariance
-                  if (mpl%msv%isany(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
-                  do kv=1,jv
-                     if (nam%vbal_block(iv,kv)) then
-                        ! Non-missing vv-covariance
-                        if (mpl%msv%isany(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))) valid(ic2b) = .false.
-                        if (kv==jv) then
-                           ! Positive diagonal for diagonal blocks of vv-covariance
-                           do il0=1,geom%nl0
-                              if (.not.(vbal%blk(jv,kv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid(ic2b) = .false.
-                           end do
-                         end if
-                     end if
-                  end do
-               end do
-            end if
-         end do
-      end if
-   end do
-
    ! Process rows sequentially
    do iv=1,nam%nv
       write(mpl%info,'(a7,a,i2.2,a)') '','Process row #',iv,':'
@@ -1817,7 +1790,28 @@ else
          call mpl%prog_init(samp%nc2b)
 
          do ic2b=1,samp%nc2b
-            if (valid(ic2b)) then
+            ! Check validity for this point and this row
+            valid = .true.
+            do jv=1,iv
+               if (nam%vbal_block(iv,jv)) then
+                  ! Non-missing xv-covariance
+                  if (mpl%msv%isany(vbal%blk(iv,jv)%xv_cov_c2b(:,:,ic2b))) valid = .false.
+                  do kv=1,jv
+                     if (nam%vbal_block(iv,kv)) then
+                        ! Non-missing vv-covariance
+                        if (mpl%msv%isany(vbal%blk(jv,kv)%vv_cov_c2b(:,:,ic2b))) valid = .false.
+                        if (kv==jv) then
+                           ! Positive diagonal for diagonal blocks of vv-covariance
+                           do il0=1,geom%nl0
+                              if (.not.(vbal%blk(jv,kv)%vv_cov_c2b(il0,il0,ic2b)>zero)) valid = .false.
+                           end do
+                         end if
+                     end if
+                  end do
+               end if
+            end do
+
+            if (valid) then
                ! Initialization
                xv_cov_agg = zero
                vv_cov_agg = zero
