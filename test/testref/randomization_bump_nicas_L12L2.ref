@@ -17,6 +17,7 @@
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -29,6 +30,7 @@
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               1
              nc1(  1) =                        360
              ns =                              360
              v%n_s =                             1
@@ -54,7 +56,7 @@ Member 1:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.6695001793410973e+00
     + max    = 2.8251927595089623e+00
-    + mean   = 3.1416149081023942e-02
+    + mean   = 3.1416149081023977e-02
     + stddev = 1.0258780824782843e+00
   - air_pressure_at_surface (1 levels):
     + min    = -3.5462596513340392e+00
@@ -82,7 +84,7 @@ Member 3:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.2817765845939828e+00
     + max    = 2.9558232093085008e+00
-    + mean   = 2.0784320089617245e-01
+    + mean   = 2.0784320089617242e-01
     + stddev = 9.1041937897840952e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.7356724735102014e+00
@@ -110,8 +112,8 @@ Member 5:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.3416837421050740e+00
     + max    = 3.1855858158526926e+00
-    + mean   = -1.4714792816941680e-02
-    + stddev = 9.5718684465794934e-01
+    + mean   = -1.4714792816941699e-02
+    + stddev = 9.5718684465794912e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.2033076306779775e+00
     + max    = 3.4992819176335064e+00
@@ -124,8 +126,8 @@ Member 6:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.5561704051016978e+00
     + max    = 2.4852308323485328e+00
-    + mean   = -2.1965363293899537e-01
-    + stddev = 9.9924083181146639e-01
+    + mean   = -2.1965363293899531e-01
+    + stddev = 9.9924083181146650e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.4962519107704049e+00
     + max    = 3.5001949421480405e+00
@@ -138,8 +140,8 @@ Member 7:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.5800415729584896e+00
     + max    = 3.6889153558861709e+00
-    + mean   = 1.7584532485579102e-01
-    + stddev = 8.9952888590601376e-01
+    + mean   = 1.7584532485579107e-01
+    + stddev = 8.9952888590601388e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.7261289804336117e+00
     + max    = 2.3935915560831162e+00
@@ -150,9 +152,9 @@ Member 8:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.5448744415581372e+00
+    + min    = -2.5448744415581368e+00
     + max    = 2.6833916907985742e+00
-    + mean   = 1.3434888620276328e-01
+    + mean   = 1.3434888620276331e-01
     + stddev = 8.5702679989862784e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.8320521465527042e+00
@@ -164,9 +166,9 @@ Member 9:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.5823891360534108e+00
-    + max    = 2.6111158436384305e+00
-    + mean   = 9.4290215803744568e-02
+    + min    = -3.5823891360534112e+00
+    + max    = 2.6111158436384301e+00
+    + mean   = 9.4290215803744512e-02
     + stddev = 9.5315195289750054e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.3034095662133072e+00
@@ -180,7 +182,7 @@ Member 10:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.2036998827341896e+00
     + max    = 3.1747216631453439e+00
-    + mean   = -3.3274903448619469e-02
+    + mean   = -3.3274903448619497e-02
     + stddev = 9.8690864652070553e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.6549351217585846e+00
@@ -206,9 +208,9 @@ Member 12:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.5586749995195506e+00
+    + min    = -3.5586749995195510e+00
     + max    = 3.4822414672047608e+00
-    + mean   = 6.1122442571892595e-02
+    + mean   = 6.1122442571892623e-02
     + stddev = 9.5312452687049931e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.2289631228643447e+00
@@ -222,7 +224,7 @@ Member 13:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.5117381471556177e+00
     + max    = 2.7774356681201793e+00
-    + mean   = -1.9123263930663190e-02
+    + mean   = -1.9123263930663215e-02
     + stddev = 9.7607800816415569e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.1900686123639841e+00
@@ -235,9 +237,9 @@ Member 14:
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.9328412582538474e+00
-    + max    = 2.6430077796606248e+00
+    + max    = 2.6430077796606244e+00
     + mean   = 1.2520789165376875e-01
-    + stddev = 9.6264838649359241e-01
+    + stddev = 9.6264838649359230e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.6649621403077193e+00
     + max    = 3.2449971847175165e+00
@@ -262,10 +264,10 @@ Member 16:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.9000161149373698e+00
+    + min    = -2.9000161149373693e+00
     + max    = 3.0171505584079927e+00
-    + mean   = -3.7646497412414569e-02
-    + stddev = 9.2076140906613713e-01
+    + mean   = -3.7646497412414597e-02
+    + stddev = 9.2076140906613724e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.0836611380143357e+00
     + max    = 3.0360806489528613e+00
@@ -276,9 +278,9 @@ Member 17:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.4291184040339782e+00
+    + min    = -3.4291184040339773e+00
     + max    = 3.5533716423432709e+00
-    + mean   = -6.4609173787601351e-02
+    + mean   = -6.4609173787601337e-02
     + stddev = 1.0514586732135518e+00
   - air_pressure_at_surface (1 levels):
     + min    = -2.1337126030383726e+00
@@ -291,8 +293,8 @@ Member 18:
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.1761660639428722e+00
-    + max    = 3.3443424540663207e+00
-    + mean   = 5.0444190215208365e-02
+    + max    = 3.3443424540663202e+00
+    + mean   = 5.0444190215208413e-02
     + stddev = 1.0898765280332003e+00
   - air_pressure_at_surface (1 levels):
     + min    = -3.2839821354661778e+00
@@ -306,8 +308,8 @@ Member 19:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.8647180718453606e+00
     + max    = 2.8170571681638426e+00
-    + mean   = -6.9585491266355923e-02
-    + stddev = 9.5661278294298302e-01
+    + mean   = -6.9585491266355895e-02
+    + stddev = 9.5661278294298291e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.8027219201708315e+00
     + max    = 2.7183818421499781e+00
@@ -318,8 +320,8 @@ Member 20:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -2.9800757261857047e+00
-    + max    = 2.2272239270790890e+00
+    + min    = -2.9800757261857060e+00
+    + max    = 2.2272239270790899e+00
     + mean   = -1.6134263595122403e-01
     + stddev = 9.5893866673269801e-01
   - air_pressure_at_surface (1 levels):
@@ -334,7 +336,7 @@ Member 21:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.1734985510579414e+00
     + max    = 2.9198000768210086e+00
-    + mean   = 1.2617394355486474e-02
+    + mean   = 1.2617394355486483e-02
     + stddev = 9.4314330270489777e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.5285418855632988e+00
@@ -346,9 +348,9 @@ Member 22:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.7195179560896454e+00
+    + min    = -3.7195179560896441e+00
     + max    = 2.8854221633559156e+00
-    + mean   = 1.6582149881158176e-01
+    + mean   = 1.6582149881158179e-01
     + stddev = 9.9996627722259779e-01
   - air_pressure_at_surface (1 levels):
     + min    = -3.0565556026702141e+00
@@ -362,7 +364,7 @@ Member 23:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.8855462426064937e+00
     + max    = 3.6734314961129710e+00
-    + mean   = 1.3219050633487262e-01
+    + mean   = 1.3219050633487259e-01
     + stddev = 9.4977151446429375e-01
   - air_pressure_at_surface (1 levels):
     + min    = -2.8814177573203654e+00
@@ -374,8 +376,8 @@ Member 24:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (2 levels):
-    + min    = -3.4079049263146262e+00
-    + max    = 3.2010746181745158e+00
+    + min    = -3.4079049263146257e+00
+    + max    = 3.2010746181745171e+00
     + mean   = -1.2039728701469306e-01
     + stddev = 1.0285579689167337e+00
   - air_pressure_at_surface (1 levels):

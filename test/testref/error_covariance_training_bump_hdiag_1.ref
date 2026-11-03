@@ -80,11 +80,11 @@
           Norm of air_horizontal_streamfunction:  0.36983045E+02
           Norm of air_horizontal_velocity_potential:  0.38827386E+02
           Norm of air_pressure_at_surface:  0.23269406E+02
-          Level   1 ~> 100.0%
-          Level   2 ~> 100.0%
           Profile A computed at lon/lat:    0.0 /    0.0
           Profile B computed at lon/lat:  -18.0 /   54.0
           Profile C computed at lon/lat: -126.0 /  -63.0
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
           Subgrid hash:   1534185147
           Subgrid hash:   -735092467
              -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
@@ -143,9 +143,9 @@
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.95E+00
-             Block air_horizontal_streamfunction:  0.31731695E+00 for    45440 diagnostic points
-             Block air_horizontal_velocity_potential:  0.31641292E+00 for    45440 diagnostic points
-             Block air_pressure_at_surface:  0.30043439E+00 for    11360 diagnostic points
+             Block air_horizontal_streamfunction:  0.31886116E+00 for    45440 diagnostic points
+             Block air_horizontal_velocity_potential:  0.31792472E+00 for    45440 diagnostic points
+             Block air_pressure_at_surface:  0.30031219E+00 for    11360 diagnostic points
                    Level:   1 ~> amplitude:        0.87
                                  cor. hor. support:      4847.24 km
                                  cor. ver. support:         3.48 vertical units
@@ -176,16 +176,16 @@
                    Level:   2 ~> amplitude:        0.16
                                  cor. hor. support:      1509.02 km
                                  cor. ver. support:         0.00 vertical units
-Norm of output parameter cor_a - 1: 4.9583644570426330e+01
-Norm of output parameter cor_a - 2: 1.2586020987001758e+01
-Norm of output parameter cor_rh1 - 1: 2.8323166162339544e+08
-Norm of output parameter cor_rh1 - 2: 2.2465333644638774e+08
-Norm of output parameter cor_rh2 - 1: 3.0355149622450018e+08
-Norm of output parameter cor_rh2 - 2: 2.4237115017348740e+08
-Norm of output parameter cor_rhc - 1: 8.7583705336356932e+00
-Norm of output parameter cor_rhc - 2: 8.7583705336356932e+00
-Norm of output parameter cor_ecc - 1: 3.1966481796332872e+01
-Norm of output parameter cor_rh - 1: 2.9068240287571537e+08
-Norm of output parameter cor_rh - 2: 2.3135736240278167e+08
-Norm of output parameter cor_rv - 1: 1.8457385668670406e+02
-Norm of output parameter cor_rv - 2: 1.3767325480645781e+02
+Norm of output parameter cor_a - 1: 6.1281543270845077e+01
+Norm of output parameter cor_a - 2: 1.2861864420944269e+00
+Norm of output parameter cor_rh1 - 1: 2.8323263213753968e+08
+Norm of output parameter cor_rh1 - 2: 2.7713199459617615e+08
+Norm of output parameter cor_rh2 - 1: 3.0400389127114236e+08
+Norm of output parameter cor_rh2 - 2: 2.9725227482139391e+08
+Norm of output parameter cor_rhc - 1: 8.7584266363176777e+00
+Norm of output parameter cor_rhc - 2: 8.7584266363176777e+00
+Norm of output parameter cor_ecc - 1: 3.2004814501853581e+01
+Norm of output parameter cor_rh - 1: 2.9087771484941429e+08
+Norm of output parameter cor_rh - 2: 2.8456049983792639e+08
+Norm of output parameter cor_rv - 1: 1.8457385668670403e+02
+Norm of output parameter cor_rv - 2: 1.8158680268138133e+02

@@ -84,7 +84,7 @@
           Independent levels for angular sector   4 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.96E+00
-             Block air_horizontal_streamfunction:  0.17712770E+00 for      160 diagnostic points
+             Block air_horizontal_streamfunction:  0.17420034E+00 for      160 diagnostic points
                    Level:   1 ~> amplitude:        0.76
                                  cor. hor. support:      5000.47 km
                                  cor. ver. support:         3.55 vertical units
@@ -110,6 +110,7 @@
                    Effective resolution (min/max/avg):  3.69 /  7.11 /  4.78
                    Subgrid hash:    761790603
                 Subgrid size:      144
+             nl1 =                               2
              nc1(  1) =                        208
              nc1(  2) =                        144
              ns =                              352
@@ -128,6 +129,7 @@
                    Effective resolution (min/max/avg):  3.48 / 12.05 /  4.26
                    Subgrid hash:   -419298473
                 Subgrid size:      880
+             nl1 =                               2
              nc1(  1) =                        880
              nc1(  2) =                        880
              ns =                             1760

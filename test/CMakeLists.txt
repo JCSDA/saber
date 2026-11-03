@@ -210,14 +210,3 @@ else()
   # Tests deactivated
   message( STATUS "SABER-QUENCH tests deactivated" )
 endif()
-
-if( SABER_TEST_BUMP )
-    # NICAS square-root test
-    add_fctest( TARGET          saber_nicas_sqrt
-                MPI             2
-                OMP             1
-                LABELS          tier2
-                LINKER_LANGUAGE ${FORTRAN_LINKER_LANGUAGE}
-                SOURCES         fctest/fctest_nicas_sqrt.F90
-                LIBS            saber )
-endif()

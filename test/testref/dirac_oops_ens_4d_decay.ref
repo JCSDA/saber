@@ -27,6 +27,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  4.07 /  8.99 /  5.23
                    Subgrid hash:  -2117861176
                 Subgrid size:      208
+             nl1 =                               2
              nc1(  1) =                        208
              nc1(  2) =                        208
              ns =                              416
@@ -54,7 +55,7 @@ Covariance(ensemble) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = -1.9759594584753784e-01
     + max    = 1.4184113078805216e-01
-    + mean   = -3.0159696659419049e-04
+    + mean   = -3.0159696659419060e-04
     + stddev = 1.3780429011746566e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -70,6 +71,7 @@ Covariance(ensemble) * Increment:
                    Effective resolution (min/max/avg):  4.07 /  8.99 /  5.23
                    Subgrid hash:  -2117861176
                 Subgrid size:      208
+             nl1 =                               2
              nc1(  1) =                        208
              nc1(  2) =                        208
              ns =                              416
@@ -90,7 +92,7 @@ Localization(ensemble) * Increment:
     + min close to zero
     + max    = 1.0000000000000004e+00
     + mean   = 1.7992643581848891e-02
-    + stddev = 8.9280944856409430e-02
+    + stddev = 8.9280944856409417e-02
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:

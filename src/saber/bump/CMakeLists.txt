@@ -36,6 +36,7 @@ if( ENABLE_BUMP )
     tools_wrfda.fypp
     type_avg.fypp
     type_avg_blk.fypp
+    type_avg_set.fypp
     type_bnda.fypp
     type_bump.h
     type_bump.fypp
@@ -48,6 +49,7 @@ if( ENABLE_BUMP )
     type_cv_cmp.fypp
     type_diag.fypp
     type_diag_blk.fypp
+    type_diag_set.fypp
     type_ens.fypp
     type_fieldset.fypp
     type_geom.fypp

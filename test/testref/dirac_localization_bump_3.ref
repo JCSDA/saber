@@ -30,11 +30,13 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
              v%n_s =                             2
              c%n_s[global] =                 26560
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -61,6 +63,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -73,6 +76,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -92,11 +96,13 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
              v%n_s =                             2
              c%n_s[global] =                 26560
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -127,6 +133,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -139,6 +146,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -157,24 +165,24 @@ Covariance(hybrid) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.4372209042761599e-01
+    + min    = -1.4372209042761597e-01
     + max    = 1.2135538305604123e+00
-    + mean   = 6.4014338362709967e-03
+    + mean   = 6.4014338362709993e-03
     + stddev = 6.6188569665637173e-02
   - northward_wind (2 levels):
     + min    = -1.3960585670891201e-01
     + max    = 1.2975680813568599e-01
-    + mean   = 5.6377442019259097e-04
+    + mean   = 5.6377442019259086e-04
     + stddev = 1.4053276915914582e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -6.0735507510884801e-02
+    + min    = -6.0735507510884787e-02
     + max    = 1.0813984062703935e-01
     + mean   = 1.0734833971676972e-03
-    + stddev = 9.7178526283277639e-03
+    + stddev = 9.7178526283277621e-03
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.8218159444322514e-01
     + max    = 2.7518492926870100e-02
-    + mean   = -2.5796956956097481e-03
+    + mean   = -2.5796956956097477e-03
     + stddev = 2.2135456075577386e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -190,11 +198,13 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
              v%n_s =                             2
              c%n_s[global] =                 26560
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -205,7 +215,7 @@ Covariance(hybrid1_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.4372209042761602e-01
+    + min    = -1.4372209042761597e-01
     + max    = 1.2135538305604121e+00
     + mean   = 6.4014338362709967e-03
     + stddev = 6.6188569665637173e-02
@@ -215,9 +225,9 @@ Covariance(hybrid1_ensemble) * Increment:
     + mean   = 5.6377442019259064e-04
     + stddev = 1.4053276915914580e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -6.0735507510884801e-02
+    + min    = -6.0735507510884780e-02
     + max    = 1.0813984062703935e-01
-    + mean   = 1.0734833971676970e-03
+    + mean   = 1.0734833971676972e-03
     + stddev = 9.7178526283277621e-03
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.8218159444322508e-01
@@ -238,11 +248,13 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
              v%n_s =                             2
              c%n_s[global] =                 26560
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -296,6 +308,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -308,6 +321,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -318,7 +332,7 @@ Covariance(hybrid2_ensemble) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.4372209042761602e-01
+    + min    = -1.4372209042761597e-01
     + max    = 1.2135538305604121e+00
     + mean   = 6.4014338362709967e-03
     + stddev = 6.6188569665637173e-02
@@ -328,9 +342,9 @@ Covariance(hybrid2_ensemble) * Increment:
     + mean   = 5.6377442019259064e-04
     + stddev = 1.4053276915914580e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -6.0735507510884801e-02
+    + min    = -6.0735507510884780e-02
     + max    = 1.0813984062703935e-01
-    + mean   = 1.0734833971676970e-03
+    + mean   = 1.0734833971676972e-03
     + stddev = 9.7178526283277621e-03
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.8218159444322508e-01
@@ -358,6 +372,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -370,6 +385,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -416,11 +432,13 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
              v%n_s =                             2
              c%n_s[global] =                 26560
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -435,17 +453,17 @@ Covariance(hybrid3_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.4372209042761599e-01
+    + min    = -1.4372209042761597e-01
     + max    = 1.2135538305604128e+00
-    + mean   = 6.4014338362709975e-03
+    + mean   = 6.4014338362709993e-03
     + stddev = 6.6188569665637187e-02
   - northward_wind (2 levels):
     + min    = -1.3960585670891207e-01
     + max    = 1.2975680813568602e-01
-    + mean   = 5.6377442019259097e-04
+    + mean   = 5.6377442019259108e-04
     + stddev = 1.4053276915914585e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -6.0735507510884801e-02
+    + min    = -6.0735507510884787e-02
     + max    = 1.0813984062703937e-01
     + mean   = 1.0734833971676972e-03
     + stddev = 9.7178526283277639e-03
@@ -475,6 +493,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -487,6 +506,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -505,17 +525,17 @@ Covariance(hybrid4_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -1.4372209042761599e-01
+    + min    = -1.4372209042761597e-01
     + max    = 1.2135538305604128e+00
-    + mean   = 6.4014338362709975e-03
+    + mean   = 6.4014338362709993e-03
     + stddev = 6.6188569665637187e-02
   - northward_wind (2 levels):
     + min    = -1.3960585670891207e-01
     + max    = 1.2975680813568602e-01
-    + mean   = 5.6377442019259097e-04
+    + mean   = 5.6377442019259108e-04
     + stddev = 1.4053276915914585e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -6.0735507510884801e-02
+    + min    = -6.0735507510884787e-02
     + max    = 1.0813984062703937e-01
     + mean   = 1.0734833971676972e-03
     + stddev = 9.7178526283277639e-03

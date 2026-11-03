@@ -781,7 +781,7 @@ call fieldset_in%check(mpl)
 call fieldset_out%check(mpl)
 
 ! Check mask, variables and ilev2d consistency
-if ((size(fieldset_in%mask3d)>0).and.(size(fieldset_in%mask3d)>0)) then
+if ((size(fieldset_in%mask3d)>0).and.(size(fieldset_out%mask3d)>0)) then
    if (any(fieldset_in%mask3d.neqv.fieldset_out%mask3d)) call mpl%abort('${subr}$','inconsistent masks')
 end if
 if (any(fieldset_in%variables/=fieldset_out%variables)) call mpl%abort('${subr}$','inconsistent variables')
@@ -795,7 +795,7 @@ do iv=1,fieldset_in%nv
 
    ! Get shapes
    shp_in = afield_in%shape()
-   shp_out = afield_in%shape()
+   shp_out = afield_out%shape()
    if (any(shp_in/=shp_out)) call mpl%abort('${subr}$','inconsistent shapes')
 end do
 

@@ -30,33 +30,34 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      4214.46 km
                                  cor. ver. support:         3.27 vertical units
-             Block common:  0.28659516E+00 for       33 diagnostic points
+             Block common:  0.21271710E+00 for       40 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      6435.27 km
-                                 loc. ver. support:         6.26 vertical units
+                                 loc. hor. support:      5802.22 km
+                                 loc. ver. support:         6.59 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      6764.10 km
-                                 loc. ver. support:         6.26 vertical units
+                                 loc. hor. support:      5550.67 km
+                                 loc. ver. support:         6.59 vertical units
              Effective levels:   1   2 
-                   Requested distance between points (min/max/avg):  0.161E+04 km /  0.161E+04 km /  0.161E+04 km
+                   Requested distance between points (min/max/avg):  0.145E+04 km /  0.145E+04 km /  0.145E+04 km
                    Regular sampling grid size:       88 points
                    Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.440E+04 km /  0.140E+04 km
-                   Effective resolution (min/max/avg):  1.46 /  6.34 /  4.93
+                   Effective resolution (min/max/avg):  1.32 /  5.72 /  4.44
                    Subgrid hash:  -1917247432
                 Subgrid size:       61
-                   Requested distance between points (min/max/avg):  0.169E+04 km /  0.169E+04 km /  0.169E+04 km
-                   Regular sampling grid size:       88 points
-                   Nearest neighbor distance (min/max/avg):  0.101E+04 km /  0.440E+04 km /  0.140E+04 km
-                   Effective resolution (min/max/avg):  1.54 /  6.67 /  5.18
-                   Subgrid hash:  -1917247432
-                Subgrid size:       61
+                   Requested distance between points (min/max/avg):  0.139E+04 km /  0.139E+04 km /  0.139E+04 km
+                   Regular sampling grid size:      144 points
+                   Nearest neighbor distance (min/max/avg):  0.720E+03 km /  0.278E+04 km /  0.127E+04 km
+                   Effective resolution (min/max/avg):  2.00 /  7.70 /  4.78
+                   Subgrid hash:    799114497
+                Subgrid size:       89
+             nl1 =                               2
              nc1(  1) =                         61
-             nc1(  2) =                         61
-             ns =                              122
+             nc1(  2) =                         89
+             ns =                              150
              v%n_s =                             2
-             c%n_s[global] =                  1172
+             c%n_s[global] =                  1167
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -70,11 +71,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9293235
-Norm of output parameter dirac_mom - 1: 7.2792080766161531e+00
-Norm of output parameter dirac_diag_loc - 1: 3.3172443205384914e+00
+          Level   2:  0.0000000 -  0.8538344
+Norm of output parameter dirac_mom - 1: 7.2792080766161540e+00
+Norm of output parameter dirac_diag_loc - 1: 3.0316364463217327e+00
 Norm of output parameter cor_rh - 1: 1.6276991012427351e+08
 Norm of output parameter cor_rv - 1: 1.2448575749387989e+02
-Norm of output parameter loc_rh - 1: 2.5337674536813390e+08
-Norm of output parameter loc_rv - 1: 2.3834876495945730e+02
-Norm of output parameter nicas_norm - 1: 4.5324659915789731e+01
+Norm of output parameter loc_rh - 1: 2.1452979447198293e+08
+Norm of output parameter loc_rv - 1: 2.5097416516513550e+02
+Norm of output parameter nicas_norm - 1: 4.6157638689433909e+01

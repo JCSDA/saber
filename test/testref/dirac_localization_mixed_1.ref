@@ -32,6 +32,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -49,8 +50,8 @@ Covariance(ensemble) * Increment:
   - northward_wind (2 levels):
     + min    = -9.5299373107580188e-02
     + max    = 1.4700187365150857e-01
-    + mean   = 1.5996729316865643e-04
-    + stddev = 7.7036851129689667e-03
+    + mean   = 1.5996729316865646e-04
+    + stddev = 7.7036851129689658e-03
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 8.8181197914204823e-01
@@ -75,6 +76,7 @@ Covariance(ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720

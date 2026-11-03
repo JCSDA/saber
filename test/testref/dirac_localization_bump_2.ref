@@ -32,6 +32,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -44,6 +45,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -70,6 +72,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -82,6 +85,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -101,6 +105,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -113,6 +118,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -143,6 +149,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -155,6 +162,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -180,18 +188,18 @@ Covariance(hybrid) * Increment:
   - northward_wind (2 levels):
     + min    = -2.2040053710112492e-01
     + max    = 1.5163638085774156e-01
-    + mean   = 4.8358701898549200e-04
+    + mean   = 4.8358701898549168e-04
     + stddev = 2.0001024473853397e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -9.2483369584843433e-03
+    + min    = -9.2483369584843416e-03
     + max    = 6.9391799128062348e-01
-    + mean   = 4.7345912924426428e-03
-    + stddev = 4.1621976975301803e-02
+    + mean   = 4.7345912924426420e-03
+    + stddev = 4.1621976975301796e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -1.4396097165854654e-01
-    + max    = 6.0143012549380787e-02
-    + mean   = 8.3657093850527544e-05
-    + stddev = 5.5982511498008170e-03
+    + min    = -1.4396097165854646e-01
+    + max    = 6.0143012549380759e-02
+    + mean   = 8.3657093850527626e-05
+    + stddev = 5.5982511498008135e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -206,6 +214,7 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -218,6 +227,7 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -235,18 +245,18 @@ Covariance(hybrid1_ensemble) * Increment:
   - northward_wind (2 levels):
     + min    = -2.2040053710112489e-01
     + max    = 1.5163638085774156e-01
-    + mean   = 4.8358701898549200e-04
-    + stddev = 2.0001024473853393e-02
+    + mean   = 4.8358701898549206e-04
+    + stddev = 2.0001024473853390e-02
   - air_pressure_at_surface (1 levels):
     + min    = -9.2483369584843364e-03
     + max    = 6.9391799128062337e-01
-    + mean   = 4.7345912924426420e-03
-    + stddev = 4.1621976975301796e-02
+    + mean   = 4.7345912924426411e-03
+    + stddev = 4.1621976975301789e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -1.4396097165854652e-01
-    + max    = 6.0143012549380773e-02
-    + mean   = 8.3657093850527544e-05
-    + stddev = 5.5982511498008161e-03
+    + min    = -1.4396097165854643e-01
+    + max    = 6.0143012549380759e-02
+    + mean   = 8.3657093850527612e-05
+    + stddev = 5.5982511498008135e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -261,6 +271,7 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -273,6 +284,7 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -300,12 +312,12 @@ Localization(hybrid1_ensemble) * Increment:
     + min close to zero
     + max    = 1.0000000000000002e+00
     + mean   = 1.2788222029481747e-02
-    + stddev = 8.0320252008336382e-02
+    + stddev = 8.0320252008336368e-02
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000002e+00
-    + mean   = 8.8009035815887378e-03
-    + stddev = 6.0903997636905800e-02
+    + mean   = 8.8009035815887360e-03
+    + stddev = 6.0903997636905793e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -327,6 +339,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -339,6 +352,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -356,18 +370,18 @@ Covariance(hybrid2_ensemble) * Increment:
   - northward_wind (2 levels):
     + min    = -2.2040053710112489e-01
     + max    = 1.5163638085774156e-01
-    + mean   = 4.8358701898549200e-04
-    + stddev = 2.0001024473853393e-02
+    + mean   = 4.8358701898549206e-04
+    + stddev = 2.0001024473853390e-02
   - air_pressure_at_surface (1 levels):
     + min    = -9.2483369584843364e-03
     + max    = 6.9391799128062337e-01
-    + mean   = 4.7345912924426420e-03
-    + stddev = 4.1621976975301796e-02
+    + mean   = 4.7345912924426411e-03
+    + stddev = 4.1621976975301789e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -1.4396097165854652e-01
-    + max    = 6.0143012549380773e-02
-    + mean   = 8.3657093850527544e-05
-    + stddev = 5.5982511498008161e-03
+    + min    = -1.4396097165854643e-01
+    + max    = 6.0143012549380759e-02
+    + mean   = 8.3657093850527612e-05
+    + stddev = 5.5982511498008135e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -389,6 +403,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -401,6 +416,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -428,12 +444,12 @@ Localization(hybrid2_ensemble) * Increment:
     + min close to zero
     + max    = 1.0000000000000002e+00
     + mean   = 1.2788222029481747e-02
-    + stddev = 8.0320252008336368e-02
+    + stddev = 8.0320252008336354e-02
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000002e+00
-    + mean   = 8.8009035815887378e-03
-    + stddev = 6.0903997636905793e-02
+    + mean   = 8.8009035815887360e-03
+    + stddev = 6.0903997636905786e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -448,6 +464,7 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -460,6 +477,7 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -481,18 +499,18 @@ Covariance(hybrid3_SABER) * Increment:
   - northward_wind (2 levels):
     + min    = -2.2040053710112498e-01
     + max    = 1.5163638085774156e-01
-    + mean   = 4.8358701898549168e-04
+    + mean   = 4.8358701898549113e-04
     + stddev = 2.0001024473853397e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -9.2483369584843520e-03
+    + min    = -9.2483369584843468e-03
     + max    = 6.9391799128062348e-01
-    + mean   = 4.7345912924426428e-03
-    + stddev = 4.1621976975301810e-02
+    + mean   = 4.7345912924426420e-03
+    + stddev = 4.1621976975301803e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -1.4396097165854654e-01
-    + max    = 6.0143012549380800e-02
-    + mean   = 8.3657093850527558e-05
-    + stddev = 5.5982511498008170e-03
+    + min    = -1.4396097165854649e-01
+    + max    = 6.0143012549380759e-02
+    + mean   = 8.3657093850527653e-05
+    + stddev = 5.5982511498008153e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -514,6 +532,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -526,6 +545,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -551,15 +571,15 @@ Covariance(hybrid4_SABER) * Increment:
   - northward_wind (2 levels):
     + min    = -2.2040053710112498e-01
     + max    = 1.5163638085774156e-01
-    + mean   = 4.8358701898549168e-04
+    + mean   = 4.8358701898549113e-04
     + stddev = 2.0001024473853397e-02
   - air_pressure_at_surface (1 levels):
-    + min    = -9.2483369584843520e-03
+    + min    = -9.2483369584843468e-03
     + max    = 6.9391799128062348e-01
-    + mean   = 4.7345912924426428e-03
-    + stddev = 4.1621976975301803e-02
+    + mean   = 4.7345912924426420e-03
+    + stddev = 4.1621976975301796e-02
   - air_horizontal_streamfunction (2 levels):
-    + min    = -1.4396097165854654e-01
-    + max    = 6.0143012549380800e-02
-    + mean   = 8.3657093850527558e-05
-    + stddev = 5.5982511498008170e-03
+    + min    = -1.4396097165854649e-01
+    + max    = 6.0143012549380759e-02
+    + mean   = 8.3657093850527653e-05
+    + stddev = 5.5982511498008153e-03

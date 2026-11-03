@@ -27,6 +27,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  6.38 /  9.86 /  7.96
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               3
              nc1(  1) =                         88
              nc1(  2) =                         88
              nc1(  3) =                         88
@@ -53,6 +54,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.63 /  9.84 /  4.66
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               5
              nc1(  1) =                        360
              nc1(  2) =                        360
              nc1(  3) =                        360
@@ -83,6 +85,7 @@ Square-root test for block BUMP_NICAS passed
                    Effective resolution (min/max/avg):  4.07 /  8.99 /  5.23
                    Subgrid hash:  -2117861176
                 Subgrid size:      208
+             nl1 =                               5
              nc1(  1) =                        208
              nc1(  2) =                        208
              nc1(  3) =                        208
@@ -111,6 +114,7 @@ Square-root test for block BUMP_NICAS passed
                    Effective resolution (min/max/avg):  3.63 /  9.84 /  4.66
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               5
              nc1(  1) =                        360
              nc1(  2) =                        360
              nc1(  3) =                        360
@@ -141,6 +145,7 @@ Square-root test for block BUMP_NICAS passed
                    Effective resolution (min/max/avg):  3.63 /  9.84 /  4.66
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               5
              nc1(  1) =                        360
              nc1(  2) =                        360
              nc1(  3) =                        360
@@ -158,7 +163,7 @@ Covariance(SABER) * Increment:
   Geometry: L48x25 [1200]
   Fields:
   - air_horizontal_streamfunction (5 levels):
-    + min    = -6.8702550607009942e-03
-    + max    = 1.0716263922749749e+00
-    + mean   = 5.6604983442749965e-03
-    + stddev = 3.4754220058077115e-02
+    + min    = -6.3592420580730249e-03
+    + max    = 1.0784466413678850e+00
+    + mean   = 6.0751510672972494e-03
+    + stddev = 3.5741808645019545e-02

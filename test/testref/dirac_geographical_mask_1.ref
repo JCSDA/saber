@@ -26,6 +26,7 @@ Norm of output parameter : 2.7604347483684521e+01
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -38,6 +39,7 @@ Norm of output parameter : 2.7604347483684521e+01
                    Effective resolution (min/max/avg):  3.62 / 11.61 /  4.50
                    Subgrid hash:    146342513
                 Subgrid size:      648
+             nl1 =                               2
              nc1(  1) =                        648
              nc1(  2) =                        648
              ns =                             1296
@@ -68,4 +70,4 @@ Covariance(SABER) * Increment:
     + min close to zero
     + max    = 1.0000000000000004e+00
     + mean   = 6.6053188461392626e-03
-    + stddev = 5.8907555288233840e-02
+    + stddev = 5.8907555288233847e-02

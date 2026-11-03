@@ -744,6 +744,7 @@ if (nam%check_dirac) then
    allocate(pert_c0a(geom%nc0a,geom%nl0,nam%nv))
 
    ! Get perturbation
+   pert_c0a = mpl%msv%valr
    do jl0=1,geom%nl0
       do jc0a=1,geom%nc0a
          if (geom%gmask_c0a(jc0a,jl0)) pert_c0a(jc0a,jl0,:) = fld_c0a(jc0a,jl0,:)-mom%m1(jc0a,jl0,:)

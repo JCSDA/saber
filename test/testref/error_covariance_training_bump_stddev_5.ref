@@ -6,7 +6,7 @@
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter var - 1: 5.7688371708315010e+01
-Norm of input parameter m4 - 1: 1.8245713548801251e+02
+Norm of input parameter m4 - 1: 1.8245713548801248e+02
              Effective levels:   1 
                    Requested distance between points (min/max/avg):  0.100E+04 km /  0.100E+04 km /  0.100E+04 km
                    Regular sampling grid size:      360 points
@@ -14,6 +14,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  4.84 / 13.12 /  6.21
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               1
              nc1(  1) =                        360
              ns =                              360
              v%n_s =                             1
@@ -25,6 +26,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  4.50 / 13.82 /  5.67
                    Subgrid hash:   -474283508
                 Subgrid size:      544
+             nl1 =                               1
              nc1(  1) =                        544
              ns =                              544
              v%n_s =                             1
@@ -36,6 +38,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  6.38 /  9.86 /  7.96
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               1
              nc1(  1) =                         88
              ns =                               88
              v%n_s =                             1
@@ -47,6 +50,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  5.10 /  7.89 /  6.37
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               1
              nc1(  1) =                         88
              ns =                               88
              v%n_s =                             1
@@ -64,6 +68,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  4.78 /  7.39 /  5.97
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -76,6 +81,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg): 10.20 / 15.77 / 12.73
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               1
              nc1(  1) =                         88
              ns =                               88
              v%n_s =                             1
@@ -93,6 +99,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg):  5.08 / 11.23 /  6.54
                    Subgrid hash:  -2117861176
                 Subgrid size:      208
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                        208
              ns =                              296
@@ -105,6 +112,7 @@ Norm of input parameter m4 - 1: 1.8245713548801251e+02
                    Effective resolution (min/max/avg): 12.76 / 19.73 / 15.93
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               1
              nc1(  1) =                         88
              ns =                               88
              v%n_s =                             1

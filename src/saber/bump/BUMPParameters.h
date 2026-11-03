@@ -422,9 +422,9 @@ class DiagnosticsSection : public oops::Parameters {
   oops::Parameter<int> ne{"target ensemble size", 0, this};
   // Gaussian approximation for asymptotic quantities
   oops::Parameter<bool> gau_approx{"gaussian approximation", false, this};
-  // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
-  // 'nice_without_table')
-  oops::Parameter<std::string> loc_option{"localization option", "default", this};
+  // Localization option ('from_squared_correlation', 'from_asymptotic_statistics',
+  //  'nice_with_table' and 'nice_without_table')
+  oops::Parameter<std::string> loc_option{"localization option", "from_squared_correlation", this};
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   oops::Parameter<double> gen_kurt_th{"generalized kurtosis threshold",
     std::numeric_limits<double>().max(), this};

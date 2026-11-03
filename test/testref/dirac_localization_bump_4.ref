@@ -29,6 +29,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -48,6 +49,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -67,6 +69,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -90,6 +93,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -108,17 +112,17 @@ Covariance(hybrid) * Increment:
   - eastward_wind (2 levels):
     + min    = -1.7717766486160583e-01
     + max    = 1.1501730280814750e+00
-    + mean   = 6.3062218595833852e-03
-    + stddev = 6.6082865855324371e-02
+    + mean   = 6.3062218595833844e-03
+    + stddev = 6.6082865855324358e-02
   - northward_wind (2 levels):
     + min    = -3.8210771441434442e-02
     + max    = 4.6977870416048402e-02
-    + mean   = 1.6538933935134113e-05
+    + mean   = 1.6538933935134069e-05
     + stddev = 5.1792053339015489e-03
   - air_horizontal_streamfunction (2 levels):
     + min    = -1.3098343536460411e-01
     + max    = 8.7896647441017994e-01
-    + mean   = 6.9325062198698105e-03
+    + mean   = 6.9325062198698122e-03
     + stddev = 5.5022912808200354e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -134,6 +138,7 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -170,6 +175,7 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -210,6 +216,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -222,12 +229,12 @@ Covariance(hybrid2_ensemble) * Increment:
   - eastward_wind (2 levels):
     + min    = -1.8690444694208810e-01
     + max    = 1.0867922256025364e+00
-    + mean   = 5.8861211700694371e-03
-    + stddev = 6.2945080700329101e-02
+    + mean   = 5.8861211700694362e-03
+    + stddev = 6.2945080700329087e-02
   - northward_wind (2 levels):
     + min    = -7.6421542882868829e-02
     + max    = 9.3955740832096818e-02
-    + mean   = 3.3077867870268437e-05
+    + mean   = 3.3077867870268444e-05
     + stddev = 1.0358410667803096e-02
   - air_horizontal_streamfunction (2 levels):
     + min    = -1.3989671851055824e-01
@@ -248,6 +255,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -270,7 +278,7 @@ Localization(hybrid2_ensemble) * Increment:
     + min close to zero
     + max    = 8.0000000000000004e-01
     + mean   = 2.9168816356494053e-02
-    + stddev = 9.7390325079894841e-02
+    + stddev = 9.7390325079894854e-02
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.3000000000000003e+00
@@ -290,6 +298,7 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -330,6 +339,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -353,10 +363,10 @@ Covariance(hybrid4_SABER) * Increment:
   - northward_wind (2 levels):
     + min    = -7.6421542882868940e-02
     + max    = 9.3955740832096790e-02
-    + mean   = 3.3077867870268159e-05
+    + mean   = 3.3077867870268139e-05
     + stddev = 1.0358410667803099e-02
   - air_horizontal_streamfunction (2 levels):
     + min    = -1.3989671851055829e-01
     + max    = 8.1558567193124154e-01
-    + mean   = 6.4678483719552878e-03
+    + mean   = 6.4678483719552869e-03
     + stddev = 5.1137835609221208e-02

@@ -112,8 +112,8 @@
                 Level:   2 ~> cov. at class zero:  0.97E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block air_horizontal_streamfunction:  0.14303157E+00 for      160 diagnostic points
-             Block air_horizontal_velocity_potential:  0.15423795E+00 for      160 diagnostic points
+             Block air_horizontal_streamfunction:  0.15263990E+00 for      160 diagnostic points
+             Block air_horizontal_velocity_potential:  0.16246786E+00 for      160 diagnostic points
                    Level:   1 ~> amplitude:        0.87
                                  cor. hor. support:      4847.24 km
                                  cor. ver. support:         3.48 vertical units
@@ -151,6 +151,7 @@
                    Effective resolution (min/max/avg):  5.35 / 16.43 /  6.74
                    Subgrid hash:   -474283508
                 Subgrid size:      544
+             nl1 =                               2
              nc1(  1) =                        448
              nc1(  2) =                        544
              ns =                              992
@@ -169,6 +170,7 @@
                    Effective resolution (min/max/avg):  4.51 / 21.82 /  5.26
                    Subgrid hash:  -1499126353
                 Subgrid size:     9720
+             nl1 =                               2
              nc1(  1) =                      33408
              nc1(  2) =                       9720
              ns =                            43128
@@ -187,6 +189,7 @@
                    Effective resolution (min/max/avg):  5.50 / 15.91 /  6.97
                    Subgrid hash:   -823721553
                 Subgrid size:      448
+             nl1 =                               2
              nc1(  1) =                        544
              nc1(  2) =                        448
              ns =                              992
@@ -205,6 +208,7 @@
                    Effective resolution (min/max/avg):  4.58 / 21.54 /  5.38
                    Subgrid hash:   2076120451
                 Subgrid size:     5544
+             nl1 =                               2
              nc1(  1) =                      34144
              nc1(  2) =                       5544
              ns =                            39688
@@ -249,7 +253,7 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6209030
+          Level   2:  0.0000000 -  0.6208536
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
@@ -270,4 +274,4 @@ Norm of output parameter cor_rh - 1: 2.7135741031923908e+08
 Norm of output parameter cor_rh - 2: 5.8824693210457429e+07
 Norm of output parameter cor_rv - 1: 1.9358909277910544e+02
 Norm of output parameter cor_rv - 2: 4.1565010573423358e+01
-Norm of output parameter nicas_norm - 1: 8.3039717315623491e+01
+Norm of output parameter nicas_norm - 1: 8.2210047677691236e+01

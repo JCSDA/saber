@@ -125,6 +125,9 @@ real(kind_real) :: w(n),x
 ! Set name
 @:set_name(asa007_syminv)
 
+! Check size
+if (n<=0) return
+
 ! Initialization
 nrow = n
 if (nn/=(n*(n+1))/2) then

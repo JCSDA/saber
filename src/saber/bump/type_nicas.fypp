@@ -1556,10 +1556,10 @@ do ie=1,ens%ne
 
    ! Schur product
    fld = fld+fld_tmp*pert
-
-   ! Normalization
-   fld = fld/real(ens%ne-1,kind_real)
 end do
+
+! Normalization
+fld = fld/real(ens%ne-1,kind_real)
 
 end subroutine nicas_apply_bens
 

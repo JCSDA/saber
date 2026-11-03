@@ -29,6 +29,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -41,6 +42,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -67,6 +69,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -79,6 +82,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -98,6 +102,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -110,6 +115,7 @@ Input Dirac increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -140,6 +146,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -152,6 +159,7 @@ Square-root test for block Ensemble passed
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -196,6 +204,7 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -208,6 +217,7 @@ Covariance(hybrid) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -244,6 +254,7 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -256,6 +267,7 @@ Covariance(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -303,6 +315,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -315,6 +328,7 @@ Localization(hybrid1_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -358,6 +372,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -370,6 +385,7 @@ Covariance(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -410,6 +426,7 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -422,6 +439,7 @@ Localization(hybrid2_ensemble) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -446,7 +464,7 @@ Covariance(hybrid3_SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = -7.4287015626681744e-03
     + max    = 9.4234727688911857e-01
-    + mean   = 4.4938619713933894e-03
+    + mean   = 4.4938619713933885e-03
     + stddev = 4.3669555299694102e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -469,6 +487,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.83 /  5.91 /  4.78
                    Subgrid hash:  -1613954990
                 Subgrid size:       88
+             nl1 =                               2
              nc1(  1) =                         88
              nc1(  2) =                         88
              ns =                              176
@@ -481,6 +500,7 @@ Covariance(hybrid3_SABER) * Increment:
                    Effective resolution (min/max/avg):  3.87 / 10.50 /  4.97
                    Subgrid hash:   -435093158
                 Subgrid size:      360
+             nl1 =                               2
              nc1(  1) =                        360
              nc1(  2) =                        360
              ns =                              720
@@ -509,5 +529,5 @@ Covariance(hybrid4_SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = -7.4287015626681744e-03
     + max    = 9.4234727688911857e-01
-    + mean   = 4.4938619713933894e-03
+    + mean   = 4.4938619713933885e-03
     + stddev = 4.3669555299694102e-02

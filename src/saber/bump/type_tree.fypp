@@ -202,11 +202,12 @@ logical :: separate
 ! Set name
 @:set_name(tree_find_nearest_neighbors_from_nn)
 
-! Check nn
-if (nn<=0) call mpl%abort('${subr}$','number of nearest neighbors should be positive')
-
 ! Build tree if needed
 call tree%build()
+
+! Check nn
+if (nn<=0) call mpl%abort('${subr}$','number of nearest neighbors should be positive')
+if (nn>tree%neff) call mpl%abort('${subr}$','cannot find so many nearest neighbors in the tree')
 
 ! Initialization
 separate = .false.
@@ -294,6 +295,10 @@ if (tree%neff>0) then
    ! Release memory
    deallocate(nn_index_tmp)
    deallocate(nn_dist_tmp)
+else
+   ! Missing values
+   nn_index(1:nn) = mpl%msv%vali
+   if (present(nn_dist)) nn_dist(1:nn) = mpl%msv%valr
 end if
 
 end subroutine tree_find_nearest_neighbors_from_nn
@@ -357,6 +362,11 @@ if (tree%neff>0) then
       ! Release memory
       deallocate(nn_index)
    end if
+else
+   ! No neighbor
+   nn = 0
+   allocate(nn_index(nn))
+   if (present(nn_dist)) allocate(nn_dist(nn))
 end if
 
 end subroutine tree_find_nearest_neighbors_from_rad

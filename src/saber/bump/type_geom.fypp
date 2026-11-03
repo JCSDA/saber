@@ -97,7 +97,8 @@ type geom_type
    ! Geometry data on subset Sc0, full domain
    integer :: nc0                                     !< Number of subset Sc0 points
    integer,allocatable :: proc_to_c0_offset(:)        !< Task to offset on subset Sc0
-   integer,allocatable :: nc0_gmask(:)                !< Horizontal mask size on subset Sc0
+   integer,allocatable :: gmask_c0_size(:)            !< Geometry mask size on subset Sc0
+   integer :: gmask_hor_c0_size                       !< Union of horizontal geometry masks size on subset Sc0
    real(kind_real) :: area                            !< Domain area
    real(kind_real),allocatable :: area_ver_c0(:)      !< Area profile on subset Sc0
    real(kind_real) :: area_max_c0                     !< Area maximum on subset Sc0
@@ -292,7 +293,7 @@ if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
 if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
 if (allocated(geom%vert_coord_c0a)) deallocate(geom%vert_coord_c0a)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
-if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
+if (allocated(geom%gmask_c0_size)) deallocate(geom%gmask_c0_size)
 call geom%hull_c0u%dealloc
 call geom%hull_c0%dealloc
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
@@ -412,6 +413,9 @@ if (nam%mask_check) then
    write(mpl%info,'(a10,a,i4,a,i4,a)') '','Boundary classes: ',geom%bnda_c0u%nclass,' distinct masks over ', &
  & geom%nl0,' levels (arc checks are shared within a class)'
    call mpl%flush
+else
+   ! Empty mask boundaries
+   call geom%bnda_c0u%empty(geom%nl0)
 end if
 
 ! Setup horizontal distance
@@ -481,7 +485,7 @@ write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
    write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ', &
- & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
+ & hundred*real(geom%gmask_c0_size(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Vertical coordinate:'
@@ -515,7 +519,8 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in) :: fieldset             !< Fieldset
 
 ! Local variables
-integer :: il0,imga
+integer :: il0,imga,iproc
+integer :: proc_to_nmga(mpl%nproc)
 real(kind_real) :: lon0,lat0,dist,maxdist
 real(kind_real),pointer :: vert_coord_ptr(:),real_ptr(:,:)
 type(atlas_field) :: afield,afield_lonlat
@@ -590,6 +595,7 @@ case ('NodeColumns')
    anodes = afunctionspace_nc%nodes()
    afield_lonlat = anodes%lonlat()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
       geom%lon_mga = real_ptr(1,:)*deg2rad
       geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -601,6 +607,7 @@ case ('PointCloud')
    ! Get lon/lat field
    afield_lonlat = afunctionspace_pc%lonlat()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
      geom%lon_mga = real_ptr(1,:)*deg2rad
      geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -612,6 +619,7 @@ case ('StructuredColumns')
    ! Get lon/lat
    afield_lonlat = afunctionspace_sc%xy()
    call afield_lonlat%data(real_ptr)
+   if (size(real_ptr,2)/=geom%nmga) call mpl%abort('${subr}$','inconsistent lon/lat field size')
    if (geom%nmga>0) then
      geom%lon_mga = real_ptr(1,:)*deg2rad
      geom%lat_mga = real_ptr(2,:)*deg2rad
@@ -625,13 +633,24 @@ do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
 
+! Communication
+call mpl%f_comm%allgather(geom%nmga,proc_to_nmga)
+
 ! Setup global flag
-if (mpl%main) then
-   lon0 = geom%lon_mga(1)
-   lat0 = geom%lat_mga(1)
-end if
-call mpl%f_comm%broadcast(lon0,mpl%rootproc-1)
-call mpl%f_comm%broadcast(lat0,mpl%rootproc-1)
+lon0 = mpl%msv%vali
+lat0 = mpl%msv%vali
+do iproc=1,mpl%nproc
+   if (proc_to_nmga(iproc)>0) then
+      if (mpl%myproc==iproc) then
+         lon0 = geom%lon_mga(1)
+         lat0 = geom%lat_mga(1)
+      end if
+      call mpl%f_comm%broadcast(lon0,iproc-1)
+      call mpl%f_comm%broadcast(lat0,iproc-1)
+      exit
+   end if
+end do
+if (mpl%msv%is(lon0).or.mpl%msv%is(lat0)) call mpl%abort('${subr}$','no valid point found')
 maxdist = zero
 do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) then
@@ -708,7 +727,7 @@ allocate(geom%lat_c0a(geom%nc0a))
 allocate(geom%vert_coord_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_hor_c0a(geom%nc0a))
-allocate(geom%nc0_gmask(0:geom%nl0))
+allocate(geom%gmask_c0_size(geom%nl0))
 allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vert_coordavg(geom%nl0))
 allocate(geom%l0_to_l0i(geom%nl0))
@@ -752,11 +771,12 @@ end if
 
 ! Horizontally averaged mask
 if (geom%nc0a>0) geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
-geom%nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
 do il0=1,geom%nl0
-   geom%nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
+   geom%gmask_c0_size(il0) = zss_count(geom%gmask_c0a(:,il0))
 end do
-call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
+geom%gmask_hor_c0_size = zss_count(geom%gmask_hor_c0a)
+call mpl%f_comm%allreduce(geom%gmask_c0_size,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%gmask_hor_c0_size,fckit_mpi_sum())
 
 ! Release memory
 deallocate(geom%lon_mga)
@@ -780,10 +800,10 @@ type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
 integer :: iproc,ic0a,ic0u,ic0
-integer :: proc_to_universe_size(mpl%nproc),proc_to_universe_proportion(mpl%nproc)
+integer :: proc_to_universe_size(mpl%nproc)
 integer,allocatable :: order(:)
 real(kind_real) :: dist,lon_avg,lat_avg,dist_max
-real(kind_real) :: xyz(3),xyz_avg(3)
+real(kind_real) :: xyz(3),xyz_avg(3),proc_to_universe_proportion(mpl%nproc)
 real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_dist_max(:)
 
 ! Set name
@@ -1130,6 +1150,7 @@ else
    else
       ! Find the point furthest from the centroid (first corner)
       maxdist = zero
+      vtmp = mpl%msv%valr
       do ic0a=1,geom%nc0a
          dist = sum((v_c0a(:,ic0a)-geom%v_center)**2)
          if (sup(dist,maxdist)) then
@@ -1147,6 +1168,7 @@ else
 
       ! Find the point furthest from the first corner (opposite corner)
       maxdist = zero
+      vtmp = mpl%msv%valr
       do ic0a=1,geom%nc0a
          dist = sum((v_c0a(:,ic0a)-v_bnd(:,1))**2)
          if (sup(dist,maxdist)) then
@@ -1172,6 +1194,7 @@ else
 
          ! Get positive triangle with maximum area
          maxdist = zero
+         vtmp = mpl%msv%valr
          do ic0a=1,geom%nc0a
             ! Check points order
             v1 = v_c0a(:,ic0a)-v_bnd(:,ib_1)
@@ -1203,6 +1226,7 @@ else
       geom%v_center = geom%v_center/sqrt(sum(geom%v_center**2))
       infl = one
       dinfl = one
+      infl_opt = one
       do iter=1,niter
          ! Inflation factor
          infl = infl+dinfl
@@ -1297,7 +1321,7 @@ else
       end do
 
       ! Desynchronize random number generator
-      call rng%resync(mpl)
+      call rng%desync(mpl)
 
       ! Release memory
       call minim%dealloc
@@ -1338,12 +1362,6 @@ else
    if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
    if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
 
-
-   ! Get grid projection
-   if (.not.geom%aconfig_work_grid%get('projection',aconfig_work_proj)) call mpl%abort('${subr}$','missing projection')
-   geom%aproj_work = atlas_projection(aconfig_work_proj)
-
-
    ! Get grid projection
    if (geom%aconfig_work_grid%get('projection',aconfig_work_proj)) then
       geom%aproj_work = atlas_projection(aconfig_work_proj)
@@ -1362,7 +1380,7 @@ else
 end if
 
 ! Miscellanous area-related fields
-if (geom%nc0_gmask(0)>0) then
+if (geom%gmask_hor_c0_size>0) then
    geom%area_max_c0 = geom%area*real(count(geom%gmask_hor_c0a),kind_real)/real(geom%nc0,kind_real)
 else
    geom%area_max_c0 = zero
@@ -1680,7 +1698,7 @@ else
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
          imga = geom%c0a_to_mga(ic0a)
-         fld_mga(imga,il0) = fld_c0a(ic0a,il0)
+         fld_mga(imga,il0) = fld_c0a_masked(ic0a,il0)
       end do
    end do
 end if
@@ -2424,7 +2442,7 @@ if (mpl%main) then
        do is=1,ns
          ! Get distance to the nearest neighbor
          call tree_s%find_nearest_neighbors(mpl,lon_s(is),lat_s(is),2,nn_index_check,nn_dist_check)
-         if (nn_dist_check(1)>zero) call mpl%abort('{subr}','error in sampling')
+         if (nn_dist_check(1)>zero) call mpl%abort('${subr}$','error in sampling')
 
          ! Get theoretical distance to the nearest neighbor
          nn_dist_eff(is) = nn_dist_check(2)*reqkm
