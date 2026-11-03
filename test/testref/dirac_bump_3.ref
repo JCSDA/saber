@@ -93,15 +93,15 @@ Covariance(SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -9.6600920582170735e-02
-    + max    = 1.2582130194337402e+00
-    + mean   = 5.3180252367242987e-03
-    + stddev = 5.6588927027192315e-02
+    + min    = -9.6600772419271050e-02
+    + max    = 1.2582126115256766e+00
+    + mean   = 5.3180253326207804e-03
+    + stddev = 5.6588901425103269e-02
   - northward_wind (2 levels):
-    + min    = -8.6421371954593262e-02
-    + max    = 1.0717454931827751e-01
-    + mean   = 5.3059684282921727e-04
-    + stddev = 8.5780030133201079e-03
+    + min    = -8.6421327086033298e-02
+    + max    = 1.0717453453927177e-01
+    + mean   = 5.3059688415049819e-04
+    + stddev = 8.5780013808131363e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -170,15 +170,15 @@ Covariance(SABER1_SABER) * Increment:
   Geometry: L40x21 [840]
   Fields:
   - eastward_wind (2 levels):
-    + min    = -3.6016262900082069e-07
-    + max    = 8.1581740654484105e-07
-    + mean   = -1.9179323596087562e-10
-    + stddev = 7.3514344645698334e-08
+    + min    = -4.0983867832710242e-13
+    + max    = 1.2793697045058599e-12
+    + mean   = -2.4900308154032388e-16
+    + stddev = 8.5418472697357270e-14
   - northward_wind (2 levels):
-    + min    = -2.8923519797354813e-07
-    + max    = 2.5938616816631383e-07
-    + mean   = -8.2642613162715565e-11
-    + stddev = 4.0494592634551948e-08
+    + min    = -2.7259847436169783e-13
+    + max    = 2.5237668886689989e-13
+    + mean   = -5.1442616945497831e-17
+    + stddev = 3.3398273811496502e-14
 Norm of input parameter inflation: 6.9558608381710329e+01
 Norm of input parameter StdDev: 1.6562608490210712e+02
 Adjoint test for block StdDev passed
