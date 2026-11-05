@@ -56,6 +56,39 @@ oops::FieldSet3D squaredMember(const ScaleData & scaleData, const size_t ie) {
 
 // -----------------------------------------------------------------------------
 
+void EnsembleBlockChainParameters::deserialize(util::CompositePath & path,
+                                               const eckit::Configuration & config) {
+  oops::Parameters::deserialize(path, config);
+
+  // Checks that ensemble read options are valid for SABER
+  const bool topLevelEnsemble = ensemble.value() != boost::none
+    || ensemblePert.value() != boost::none
+    || (ensembleBase.value() != boost::none && ensemblePairs.value() != boost::none)
+    || (ensemblePertOtherGeom.value() != boost::none && ensembleGeom.value() != boost::none);
+
+  bool scaleEnsembles = scales.value() != boost::none && !scales.value()->empty();
+  if (scaleEnsembles) {
+    for (const auto & scale : *scales.value()) {
+      if (scale.ensemblePert.value() == boost::none
+          && scale.ensemblePertOtherGeom.value() == boost::none) {
+        scaleEnsembles = false;
+      }
+    }
+  }
+
+  if (!topLevelEnsemble && !scaleEnsembles) {
+    throw eckit::UserError(path.path() + ": No ensemble found for the ensemble covariance. "
+                           "Provide one of 'ensemble', 'ensemble pert', 'ensemble base' with "
+                           "'ensemble pairs', 'ensemble pert on other geometry' with "
+                           "'ensemble geometry', or 'scales' with 'ensemble pert' or "
+                           "'ensemble pert on other geometry' in every scale. If 'members' or "
+                           "'members from template' is at the top level, nest it under "
+                           "'ensemble' or 'ensemble pert'.", Here());
+  }
+}
+
+// -----------------------------------------------------------------------------
+
 void EnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   oops::Log::trace() << "saber::EnsembleBlockChain::multiply starting" << std::endl;
 
