@@ -1,0 +1,33 @@
+input geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 2
+  halo: 1
+output geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 8
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 2
+  halo: 1
+states:
+- input:
+    date: 2010-01-01T12:00:00Z
+    state variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    filepath: testdata/error_covariance_training_bump_nicas_1/1-1_cor_rh
+  output:
+    filepath: testdata/convertstate_rh/cor_rh
+test:
+  reference filename: testref/convertstate_rh.ref
