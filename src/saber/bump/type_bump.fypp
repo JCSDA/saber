@@ -107,6 +107,9 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< Function space
 type(fieldset_type),intent(in) :: fieldset             !< SABER geometry fields
 type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
 
+! Local variables
+logical :: verbose
+
 ! Set name
 @:set_name(bump_create)
 
@@ -119,8 +122,12 @@ type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
 ! Initialize constants
 call initialize_constants
 
+! Get general verbosity
+verbose = .true.
+if (conf%has('verbose')) call conf%get_or_die('verbose',verbose)
+
 ! Initialize MPL
-call bump%mpl%init(comm)
+call bump%mpl%init(comm,verbose)
 
 ! Initialize parameters
 call bump%nam%init(bump%mpl)

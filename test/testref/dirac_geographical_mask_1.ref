@@ -11,7 +11,7 @@ Norm of input parameter mask: 2.2405356502408079e+01
 Mask norm: 2.3259406699226016e+01
 Mask _land at level 0: inside/outside = 299/541
 Mask _sea at level 0: inside/outside = 541/299
-Norm of output parameter : 2.7604347483684521e+01
+Norm of output parameter weight: 2.7604347483684521e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%

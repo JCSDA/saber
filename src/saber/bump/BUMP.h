@@ -93,6 +93,7 @@ class BUMP {
   size_t nens_;
   bool iterativeEnsembleLoading_;
   std::string gridUid_;
+  const bool verbose_;
 
   eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
                                         const eckit::Configuration &) const;

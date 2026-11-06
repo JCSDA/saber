@@ -15,6 +15,7 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
+#include "oops/base/FieldSet4D.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/parameters/NumericConstraints.h"
@@ -76,23 +77,42 @@ class GeographicalMaskParametersBase : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeographicalMaskParametersBase, oops::Parameters)
 
  public:
-  // Input mask file
-  oops::OptionalParameter<eckit::LocalConfiguration> inputMaskFileConf{
-    "input mask file", this};
+  // Input mask ATLAS file
+  oops::OptionalParameter<eckit::LocalConfiguration> inputMaskAtlasFileConf{
+    "input mask atlas file", this};
 
-  // Input weight file
-  oops::OptionalParameter<eckit::LocalConfiguration> inputWgtFileConf{
-    "input weight file", this};
+  // Input mask model file
+  oops::OptionalParameter<eckit::LocalConfiguration> inputMaskModelFileConf{
+    "input mask model file", this};
 
-  // Output weight file
-  oops::OptionalParameter<eckit::LocalConfiguration> outputWgtFileConf{
-    "output weight file", this};
+  // Input weight ATLAS file
+  oops::OptionalParameter<eckit::LocalConfiguration> inputWgtAtlasFileConf{
+    "input weight atlas file", this};
+
+  // Input weight model file
+  oops::OptionalParameter<eckit::LocalConfiguration> inputWgtModelFileConf{
+    "input weight model file", this};
+
+  // Output weight ATLAS file
+  oops::OptionalParameter<eckit::LocalConfiguration> outputWgtAtlasFileConf{
+    "output weight atlas file", this};
+
+  // Output weight model file
+  oops::OptionalParameter<eckit::LocalConfiguration> outputWgtModelFileConf{
+    "output weight model file", this};
 
   // Mask variable
   oops::OptionalParameter<std::string> maskVariable{"mask variable", this};
 
+  // Number of levels of the mask
+  oops::OptionalParameter<size_t> maskLevels{"mask levels", this};
+
   // Masks parameters vector
   oops::RequiredParameter<std::vector<MaskParameters>> masksParams{"masks", this};
+
+  // Masks filtering
+  oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>> filterParams{
+    "filter", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -143,19 +163,22 @@ class GeographicalMask : public OuterBlockBase {
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
     override;
 
+  void write() const override;
+
  private:
   const oops::GeometryData & innerGeometryData_;
   oops::Variables activeOuterVars_;
   ParametersBase_ params_;
   oops::Variables innerVars_;
 
+  // Background and first guess for the filter constructor
+  std::unique_ptr<oops::FieldSet4D> fset4dXb_;
+  std::unique_ptr<oops::FieldSet4D> fset4dFg_;
+
   // Mask
-  eckit::LocalConfiguration readMaskConf_;
   std::unique_ptr<oops::FieldSet3D> maskFset_;
 
   // Weight
-  eckit::LocalConfiguration readWgtConf_;
-  eckit::LocalConfiguration writeWgtConf_;
   std::unique_ptr<oops::FieldSet3D> wgtFset_;
 
   void print(std::ostream &) const override;

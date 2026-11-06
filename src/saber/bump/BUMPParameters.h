@@ -692,6 +692,8 @@ class BUMPParameters : public oops::Parameters {
 
   // External parameters
 
+  // Verbosity
+  oops::Parameter<bool> verbose{"verbose", true, this};
   // Missing real value
   oops::Parameter<double> msvalr{"msvalr", util::missingValue<double>(), this};
   // Grids

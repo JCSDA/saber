@@ -24,6 +24,9 @@
 #include "oops/util/FloatCompare.h"
 #include "oops/util/Logger.h"
 
+#include "saber/blocks/OuterBlockChain.h"
+#include "saber/oops/ErrorCovarianceParameters.h"
+
 namespace saber {
 namespace generic {
 
@@ -42,8 +45,7 @@ GeographicalMask::GeographicalMask(const oops::GeometryData & outerGeometryData,
   : OuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     activeOuterVars_(params.activeVars.value().get_value_or(outerVars)),
-    params_(params.calibration.value() != boost::none ? *params.calibration.value()
-      : *params.read.value()) {
+    params_(params.calibration.value() ? *params.calibration.value() : *params.read.value()) {
   oops::Log::trace() << classname() << "::GeographicalMask starting" << std::endl;
 
   // Define inner variables
@@ -63,32 +65,30 @@ GeographicalMask::GeographicalMask(const oops::GeometryData & outerGeometryData,
   }
 
   // Check consistency
-  if (params_.inputMaskFileConf.value() && params_.inputWgtFileConf.value()) {
+  if (params_.inputMaskAtlasFileConf.value() && params_.inputMaskModelFileConf.value()) {
+    throw eckit::UserError("cannot read mask with both ATLAS and model readers", Here());
+  }
+  if (params_.inputWgtAtlasFileConf.value() && params_.inputWgtModelFileConf.value()) {
+    throw eckit::UserError("cannot read weight with both ATLAS and model readers", Here());
+  }
+  if ((params_.inputMaskAtlasFileConf.value() || params_.inputMaskModelFileConf.value())
+    && (params_.inputWgtAtlasFileConf.value() || params_.inputWgtModelFileConf.value())) {
     throw eckit::UserError("cannot read both mask and weight at the same time", Here());
   }
 
+  if (params_.filterParams.value()) {
+    // Save xb and fg for the filter constructor
+    fset4dXb_ = std::make_unique<oops::FieldSet4D>(xb);
+    fset4dFg_ = std::make_unique<oops::FieldSet4D>(fg);
+  }
+
   if (params.calibration.value()) {
-    // Save configuration to read mask
-    ASSERT(params_.inputMaskFileConf.value());
-    readMaskConf_ = *params_.inputMaskFileConf.value();
-
     // Create mask fieldset
-    maskFset_.reset(new oops::FieldSet3D(xb.validTime(), innerGeometryData_.comm()));
+    maskFset_ = std::make_unique<oops::FieldSet3D>(xb.validTime(), innerGeometryData_.comm());
   }
 
-  if (params.read.value()) {
-    // Save configuration to read weight
-    ASSERT(params_.inputWgtFileConf.value());
-    readWgtConf_ = *params_.inputWgtFileConf.value();
-  }
-
-  // Create fieldsets
-  wgtFset_.reset(new oops::FieldSet3D(xb.validTime(), innerGeometryData_.comm()));
-
-  if (params.calibration.value() && params_.outputWgtFileConf.value()) {
-    // Save configuration to write weight
-    writeWgtConf_ = *params_.outputWgtFileConf.value();
-  }
+  // Create weight fieldset
+  wgtFset_ = std::make_unique<oops::FieldSet3D>(xb.validTime(), innerGeometryData_.comm());
 
   oops::Log::trace() << classname() << "::GeographicalMask done" << std::endl;
 }
@@ -211,11 +211,11 @@ std::vector<std::pair<std::string, eckit::LocalConfiguration>> GeographicalMask:
   oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> inputs;
-  if (!readMaskConf_.empty()) {
-    inputs.push_back(std::make_pair("mask", readMaskConf_));
+  if (params_.inputMaskModelFileConf.value()) {
+    inputs.push_back(std::make_pair("mask", *params_.inputMaskModelFileConf.value()));
   }
-  if (!readWgtConf_.empty()) {
-    inputs.push_back(std::make_pair("weight", readWgtConf_));
+  if (params_.inputWgtModelFileConf.value()) {
+    inputs.push_back(std::make_pair("weight", *params_.inputWgtModelFileConf.value()));
   }
 
   oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
@@ -227,12 +227,12 @@ std::vector<std::pair<std::string, eckit::LocalConfiguration>> GeographicalMask:
 void GeographicalMask::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
   oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
 
-  if (!readMaskConf_.empty()) {
+  if (params_.inputMaskModelFileConf.value()) {
     // Get mask from input file
     ASSERT(fsetVec.size() == 1);
     maskFset_->deepCopy(fsetVec[0]);
   }
-  if (!readWgtConf_.empty()) {
+  if (params_.inputWgtModelFileConf.value()) {
     // Get weight from input file
     ASSERT(fsetVec.size() == 1);
     wgtFset_->deepCopy(fsetVec[0]);
@@ -244,11 +244,19 @@ void GeographicalMask::setReadFields(const std::vector<oops::FieldSet3D> & fsetV
 // -----------------------------------------------------------------------------
 
 void GeographicalMask::directCalibration(const oops::FieldSets &) {
-  oops::Log::trace() << classname() << "::calibration starting" << std::endl;
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 
-  // Create pointers
-  ASSERT(maskFset_);
-  ASSERT(wgtFset_);
+  if (params_.inputMaskAtlasFileConf.value()) {
+    // Read ATLAS mask file
+    ASSERT(params_.maskVariable.value());
+    ASSERT(params_.maskLevels.value());
+    eckit::LocalConfiguration varConf;
+    varConf.set("levels", *params_.maskLevels.value());
+    const oops::Variables maskVars({oops::Variable(*params_.maskVariable.value(), varConf)});
+    maskFset_->read(innerGeometryData_.functionSpace(),
+                    maskVars,
+                    *params_.inputMaskAtlasFileConf.value());
+  }
 
   // Get ghost view
   const auto ghostView = atlas::array::make_view<int, 1>(
@@ -341,13 +349,42 @@ void GeographicalMask::directCalibration(const oops::FieldSets &) {
         << ": inside/outside = " << countInMask << "/" << countNotInMask << std::endl;
     }
 
-    // TODO(Benjamin): smooth out weight if requested in yaml
-
-    // Add wgt field
+    // Add weight field
     wgtFset_->add(wgtField);
   }
 
-  oops::Log::trace() << classname() << "::calibration done" << std::endl;
+  // Set name
+  wgtFset_->name() = "weight";
+
+  if (params_.filterParams.value()) {
+    oops::Log::info() << "Info     : Filtering weight" << std::endl;
+
+    // Create configuration without tests for filter
+    const ErrorCovarianceParametersBase defaultParamsBase;
+
+    // Create weight variables
+    oops::Variables wgtVars;
+    eckit::LocalConfiguration varConf;
+    varConf.set("levels", maskField.levels());
+    for (const auto & maskParams : params_.masksParams.value()) {
+      wgtVars.push_back(oops::Variable(maskParams.suffix.value(), varConf));
+    }
+
+    // Initialize filter outer block chain
+    const OuterBlockChain filter(outerGeometryData(),
+                                 wgtVars,
+                                 *fset4dXb_,
+                                 *fset4dFg_,
+                                 defaultParamsBase.toConfiguration(),
+                                 *params_.filterParams.value());
+
+    // Filter weight
+    oops::FieldSet4D fset4d(*wgtFset_);
+    filter.applyOuterBlocks(fset4d);
+    wgtFset_->deepCopy(fset4d[0]);
+  }
+
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -355,7 +392,21 @@ void GeographicalMask::directCalibration(const oops::FieldSets &) {
 void GeographicalMask::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
-  ASSERT(wgtFset_);
+  if (params_.inputWgtAtlasFileConf.value()) {
+    // Create weight variables
+    ASSERT(params_.maskLevels.value());
+    oops::Variables wgtVars;
+    eckit::LocalConfiguration varConf;
+    varConf.set("levels", *params_.maskLevels.value());
+    for (const auto & maskParams : params_.masksParams.value()) {
+      wgtVars.push_back(oops::Variable(maskParams.suffix.value(), varConf));
+    }
+
+    // Read ATLAS weight file
+    wgtFset_->read(innerGeometryData_.functionSpace(),
+                   wgtVars,
+                   *params_.inputWgtAtlasFileConf.value());
+  }
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
@@ -368,15 +419,41 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>>
 
   // Create vector of pairs
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs;
-
-  if (!writeWgtConf_.empty()) {
-    // Add pair
-    outputs.push_back(std::make_pair(writeWgtConf_, *wgtFset_));
+  if (params_.outputWgtModelFileConf.value()) {
+    outputs.push_back(std::make_pair(*params_.outputWgtModelFileConf.value(), *wgtFset_));
   }
 
   oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
   return outputs;
 }
+
+// -----------------------------------------------------------------------------
+
+void GeographicalMask::write() const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+
+  // Write ATLAS weight file
+  if (params_.outputWgtAtlasFileConf.value()) {
+    // Create weight variables
+    oops::Variables wgtVars;
+    eckit::LocalConfiguration varConf;
+    for (const auto & field : *wgtFset_) {
+      varConf.set("levels", field.levels());
+      wgtVars.push_back(oops::Variable(field.name(), varConf));
+    }
+
+    // Print FieldSet norm
+    oops::Log::test() << "Norm of output parameter weight: "
+                      << wgtFset_->norm(wgtVars)
+                      << std::endl;
+
+    // Write file
+    wgtFset_->write(*params_.outputWgtAtlasFileConf.value());
+  }
+
+  oops::Log::trace() << classname() << "::write done" << std::endl;
+}
+
 
 // -----------------------------------------------------------------------------
 

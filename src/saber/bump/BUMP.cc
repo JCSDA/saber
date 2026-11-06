@@ -42,7 +42,8 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
            const oops::FieldSet3D & xb)
   : keyBUMP_(), comm_(geometryData.comm()), fspace_(geometryData.functionSpace()), vars_(vars),
   validTime_(xb.validTime()), covarConf_(covarConf), bumpConf_(params.toConfiguration()),
-  nens_(), gridUid_(util::getGridUid(geometryData.functionSpace())) {
+  nens_(), gridUid_(util::getGridUid(geometryData.functionSpace())),
+  verbose_(bumpConf_.getBool("verbose", true)) {
   oops::Log::trace() << classname() << "::BUMP starting" << std::endl;
 
   // Get number of MPI tasks and OpenMP threads
@@ -54,11 +55,13 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     omp = std::to_string(omp_get_num_threads());
   }
 #endif
-  oops::Log::info() << "Info     :"
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ MPI tasks:      " << mpi << std::endl;
-  oops::Log::info() << "Info     : +++ OpenMP threads: " << omp << std::endl;
+    oops::Log::info() << "Info     : +++ MPI tasks:      " << mpi << std::endl;
+    oops::Log::info() << "Info     : +++ OpenMP threads: " << omp << std::endl;
+  }
 
   // Initialization
   nens_ = getNensFromConfig(covarConf_);
@@ -210,17 +213,56 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     }
     grid.set("external.geographical mask name", gmaskName);
 
+    // Iterative filtering case
+    if (covarConf.has("variance filtering factor")) {
+      const eckit::LocalConfiguration filtConf(covarConf, "variance filtering factor");
+      const std::vector<eckit::LocalConfiguration> horizConfs =
+        bumpConf_.getSubConfigurations("nicas.horizontal length-scale");
+      std::vector<eckit::LocalConfiguration> newHorizConfs;
+      for (auto & horizConf : horizConfs) {
+        const std::vector<std::string> groups = horizConf.getStringVector("groups");
+        for (const auto & group : groups) {
+          // Find same group in filtConf
+          std::vector<double> profile = filtConf.getDoubleVector(group);
+
+          // Multiply by input values
+          if (horizConf.has("value")) {
+            const double horizValue = horizConf.getDouble("value");
+            for (auto & item : profile) {
+              item *= horizValue;
+            }
+          } else if (horizConf.has("profile")) {
+            const std::vector<double> horizProfile = horizConf.getDoubleVector("profile");
+            ASSERT(horizProfile.size() == profile.size());
+            for (size_t jz = 0; jz < profile.size(); ++jz) {
+              profile[jz] *= horizProfile[jz];
+            }
+          } else {
+            throw eckit::Exception("missing value or profile", Here());
+          }
+
+          // Update horizontal length-scale configuration
+          eckit::LocalConfiguration newHorizConf;
+          newHorizConf.set("groups", std::vector<std::string>{group});
+          newHorizConf.set("profile", profile);
+          newHorizConfs.push_back(newHorizConf);
+        }
+      }
+      grid.set("nicas.horizontal length-scale", newHorizConfs);
+    }
+
     // Add time communicator rank and size
     grid.set("external.time communicator rank", covarConf_.getInt("time communicator rank", 0)+1);
     grid.set("external.time communicator size", covarConf_.getInt("time communicator size", 1));
 
     // Create BUMP instance
-    oops::Log::info() << "Info     :"
+    if (verbose_) {
+      oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
-    oops::Log::info() << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / "
-      << grids.size()
-                  << std::endl;
+      oops::Log::info() << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / "
+                  << grids.size() << std::endl;
+    }
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm_, fspace_.get(), geometryData.fieldSet().get(), grid,
       &oops::LibOOPS::instance().infoChannel(), &oops::LibOOPS::instance().testChannel());
@@ -246,21 +288,25 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
   if (ncmp > 0) {
     // Set number of components
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-      oops::Log::info() << "Info     :"
-                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+      if (verbose_) {
+        oops::Log::info() << "Info     :"
+                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      oops::Log::info() << "Info     : +++ Set number of components for BUMP instance " << (jgrid+1)
-                    << " / " << keyBUMP_.size() << std::endl;
+        oops::Log::info() << "Info     : +++ Set number of components for BUMP instance "
+                     << (jgrid+1) << " / " << keyBUMP_.size() << std::endl;
+      }
       bump_set_ncmp_f90(keyBUMP_[jgrid], ncmp);
     }
   }
-  oops::Log::info() << "Info     :"
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ End of BUMP creation" << std::endl;
-  oops::Log::info() << "Info     :"
+    oops::Log::info() << "Info     : +++ End of BUMP creation" << std::endl;
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
+  }
 
   oops::Log::trace() << classname() << "::BUMP done" << std::endl;
 }
@@ -272,21 +318,25 @@ BUMP::~BUMP() {
 
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     if (keyBUMP_[jgrid] > 0) {
-      oops::Log::info() << "Info     :"
+      if (verbose_) {
+        oops::Log::info() << "Info     :"
                     << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      oops::Log::info() << "Info     : +++ Terminate BUMP instance " << (jgrid+1) << " / "
+        oops::Log::info() << "Info     : +++ Terminate BUMP instance " << (jgrid+1) << " / "
                     << keyBUMP_.size() << std::endl;
+      }
       bump_dealloc_f90(keyBUMP_[jgrid]);
     }
   }
-  oops::Log::info() << "Info     :"
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ All BUMP instances terminated" << std::endl;
-  oops::Log::info() << "Info     :"
+    oops::Log::info() << "Info     : +++ All BUMP instances terminated" << std::endl;
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
+  }
 
   oops::Log::trace() << classname() << "::~BUMP done" << std::endl;
 }
@@ -315,9 +365,11 @@ void BUMP::readAtlasFiles() {
       fset.read(fspace_, vars_, file);
 
       // Print FieldSet norm
-      oops::Log::test() << "+++ Norm of input parameter " << fset.name() << ": "
-                        << fset.norm(vars_)
-                        << std::endl;
+      if (verbose_) {
+        oops::Log::test() << "+++ Norm of input parameter " << fset.name() << ": "
+                          << fset.norm(vars_)
+                          << std::endl;
+      }
 
       // Add fields
       this->addField(fset);
@@ -398,14 +450,18 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
       // Initial message
       if (ie == 0) {
-        oops::Log::info() << "Info     :"
+        if (verbose_) {
+          oops::Log::info() << "Info     :"
                       << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                       << std::endl;
-        oops::Log::info() << "Info     : +++ Add ensemble members" << std::endl;
+          oops::Log::info() << "Info     : +++ Add ensemble members" << std::endl;
+        }
       }
 
       // Add member
-      oops::Log::info() << "Info     :        Member " << ie+1 << std::endl;
+      if (verbose_) {
+         oops::Log::info() << "Info     :        Member " << ie+1 << std::endl;
+      }
       bump_add_member_f90(keyBUMP_[jgrid], fsetEns[jj].fieldSet().get(), ie+1);
     }
 
@@ -428,10 +484,12 @@ void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
   }
 
   // Print info
-  oops::Log::info() << "Info     :"
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ Load member " << ie+1 << std::endl;
+    oops::Log::info() << "Info     : +++ Load member " << ie+1 << std::endl;
+  }
 
   // Get driver keys
   bool new_vbal_cov = bumpConf_.getBool("drivers.compute vertical covariance", false);
@@ -453,13 +511,15 @@ void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
   }
 
   // Print info
-  oops::Log::info() << "Info     :"
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ End of iterative update" << std::endl;
-  oops::Log::info() << "Info     :"
+    oops::Log::info() << "Info     : +++ End of iterative update" << std::endl;
+    oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
+  }
 
   oops::Log::trace() << classname() << "::iterativeUpdate done" << std::endl;
 }
@@ -474,9 +534,11 @@ void BUMP::writeAtlasFiles() const {
       = bumpConf_.getSubConfigurations("output atlas files");
     for (const auto & output : this->fieldsToWrite(outputAtlasFilesConf)) {
       // Print FieldSet norm
-      oops::Log::test() << "+++ Norm of output parameter " << output.second.name() << ": "
-                        << output.second.norm(vars_)
-                        << std::endl;
+      if (verbose_) {
+        oops::Log::test() << "+++ Norm of output parameter " << output.second.name() << ": "
+                          << output.second.norm(vars_)
+                          << std::endl;
+      }
 
       // Write FieldSet
       output.second.write(output.first);
@@ -529,21 +591,25 @@ void BUMP::runDrivers() {
   oops::Log::trace() << classname() << "::runDrivers starting" << std::endl;
 
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    oops::Log::info() << "Info     :"
-                      << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                      << std::endl;
-    oops::Log::info() << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
-                      << " / " << keyBUMP_.size() << std::endl;
+    if (verbose_) {
+      oops::Log::info() << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+      oops::Log::info() << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
+                  << " / " << keyBUMP_.size() << std::endl;
+    }
     bump_run_drivers_f90(keyBUMP_[jgrid]);
     bump_partial_dealloc_f90(keyBUMP_[jgrid]);
   }
-  oops::Log::info() << "Info     :"
-                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                    << std::endl;
-  oops::Log::info() << "Info     : +++ End of BUMP drivers" << std::endl;
-  oops::Log::info() << "Info     :"
-                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                    << std::endl;
+  if (verbose_) {
+    oops::Log::info() << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+    oops::Log::info() << "Info     : +++ End of BUMP drivers" << std::endl;
+    oops::Log::info() << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  }
 
   oops::Log::trace() << classname() << "::runDrivers done" << std::endl;
 }
