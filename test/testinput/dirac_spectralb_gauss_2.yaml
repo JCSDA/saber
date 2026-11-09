@@ -153,7 +153,7 @@ background error:
             nmembers: 2
             template:
               date: 2016-01-01T16:00:00Z
-              filepath: testdata/process_perts_spectralb_from_gauss_perts_5/wb2_F12_inc_%MEM%
+              filepath: testdata/process_perts_spectralb_from_gauss_perts_5/_MPI_-_OMP__wb2_F12_inc_%MEM%
               variables:
               - eastward_wind
               - northward_wind
