@@ -11,11 +11,11 @@ Group: snow_depth_shadowLevels
 - variables: [snow_depth]
 - rv: 5.9999999999999998e-01
 - min/max vertical coordinate: 2.2204460492503131e-16 / 1.0000000000000000e+00
-- minimum number of shadow levels: 13
+- minimum number of shadow levels: 7
 - actual number of shadow levels: 13
-- normalized thickness: 9.4284188034188010e-01
-- squared weight average: 48.8% 33.4% 10.2% 1.9% 1.2% 0.9% 0.8% 0.7% 0.6% 0.5% 0.5% 0.4% 0.2% 
-Norm of output parameter : 8.4154619599877037e+01
+- normalized thickness: 4.9027777777777765e-01
+- squared weight average: 38.1% 25.6% 7.9% 1.7% 0.8% 0.7% 0.6% 0.5% 0.4% 0.4% 0.3% 0.3% 0.2% 
+Norm of output parameter : 7.4067909559581494e+01
        Independent levels:  1[13]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
@@ -71,6 +71,6 @@ Covariance(SABER) * Increment:
   Fields:
   - snow_depth (1 levels):
     + min close to zero
-    + max    = 1.0000000000000000e+00
-    + mean   = 8.6035541864911413e-03
-    + stddev = 7.3174553261972919e-02
+    + max    = 7.8166224833700504e-01
+    + mean   = 6.8672666625512703e-03
+    + stddev = 5.7386091112904297e-02

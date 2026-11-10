@@ -5,10 +5,6 @@
 
 #include "saber/bifourier/BifourierSpectralConverter.h"
 
-#include "atlas/field.h"
-#include "atlas/functionspace.h"
-#include "atlas/grid.h"
-
 #include "oops/util/FloatCompare.h"
 
 using atlas::array::make_view;
@@ -50,6 +46,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
       outerTrans_->geometryData().functionSpace());
     const atlas::StructuredGrid & outerGrid = outerFs.grid();
     const atlas::util::Config outerGridConfig = outerGrid.spec();
+    atlas::util::Config domainConfig = outerGrid.domain().spec();
 
     // Get xSpace and ySpace properties
     atlas::util::Config xSpaceConfig = outerGridConfig.getSubConfiguration("xspace");
@@ -91,15 +88,15 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
     xSpaceConfig.set("end", innerEndX);
     ySpaceConfig.set("end", innerEndY);
 
-    // Get and update domain configuration
-    atlas::util::Config domainConfig = outerGridConfig.getSubConfiguration("domain");
+    // Get projection (same for outer and inner geometries)
+    const atlas::Projection projection(
+        outerGridConfig.getSubConfiguration("projection"));
+
+    // Update domain configuration
     domainConfig.set("xmin", innerStartX);
     domainConfig.set("ymin", innerStartY);
     domainConfig.set("xmax", innerEndX);
     domainConfig.set("ymax", innerEndY);
-
-    // Get projection (same for outer and inner geometries)
-    const atlas::Projection projection(outerGridConfig.getSubConfiguration("projection"));
 
     // Create new xSpace and ySpace
     const atlas::StructuredGrid::XSpace xspace(xSpaceConfig);

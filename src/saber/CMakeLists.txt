@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set( _subdirs bifourier blocks bump coupled diffusion fastlam generic gsi interpolation oops spectralb test torchbalance util vader )
+set( _subdirs bifourier blocks bump coupled diffusion fastlam generic gsi interpolation mgbf oops spectralb test torchbalance util vader )
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -17,6 +17,11 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
                      INSTALL_HEADERS LISTED
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
+
+if( TARGET mgbflib )
+    add_dependencies( ${PROJECT_NAME} mgbflib )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC mgbflib )
+endif()
 
 if( OpenMP_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran OpenMP::OpenMP_CXX )

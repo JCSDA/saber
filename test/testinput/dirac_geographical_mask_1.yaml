@@ -1,3 +1,4 @@
+# Using the land-sea mask to create a GeographicalMask block, with model-based mask input and weight output
 geometry:
   function space: StructuredColumns
   grid:
@@ -64,10 +65,10 @@ background error:
         relational operator: "=="
         threshold: 1.0
       mask variable: gmask_0
-      input mask file:
+      input mask model file:
         overriding variables: [gmask_0]
         filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__geometry_fields
-      output weight file:
+      output weight model file:
         overriding variables: [_land, _sea]
         filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__weight
 dirac:

@@ -319,6 +319,10 @@ class BifourierTransformBase : public util::Printable,
   size_t ctlVecSize() const
     {return ctlVecSize_;}
 
+  // Control vector hash
+  std::string ctlVecHash() const
+    {return ctlVecHash_;}
+
   // Random control vector
   void randomCtlVec(atlas::Field &,
                     const oops::Variables &,
@@ -490,6 +494,9 @@ class BifourierTransformBase : public util::Printable,
 
   // Control vector size
   size_t ctlVecSize_;
+
+  // Control vector size
+  std::string ctlVecHash_;
 
   // Spectral norm sum inverse
   std::vector<double> spNormSumInv_;

@@ -666,6 +666,11 @@ void CentralBlockWrapper::read() {
       groupCentralBlocks_[igroup]->read();
     }
   }
+
+  if (strategy_ == "crossed") {
+    // Check control vector basis consistency between different groups
+    checkCrossedConsistency();
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -681,6 +686,11 @@ void CentralBlockWrapper::directCalibration(const oops::FieldSets & fsets) {
       }
       groupCentralBlocks_[igroup]->directCalibration(fsets);
     }
+  }
+
+  if (strategy_ == "crossed") {
+    // Check control vector basis consistency between different groups
+    checkCrossedConsistency();
   }
 }
 
@@ -1445,6 +1455,24 @@ void CentralBlockWrapper::applyWeightsAD(oops::FieldSet3D & fset3d) const {
   }
 
   oops::Log::trace() << "CentralBlockWrapper::applyWeightsAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void CentralBlockWrapper::checkCrossedConsistency() const {
+  oops::Log::trace() << "CentralBlockWrapper::checkCrossedConsistency starting" << std::endl;
+
+  // Get first group control vector size and hash
+  const size_t ctlVecSize = groupCentralBlocks_[0]->ctlVecSize();
+  std::string ctlVecHash = groupCentralBlocks_[0]->ctlVecHash();
+
+  for (size_t igroup = 1; igroup < ngroup_; ++igroup) {
+     // Check other groups control vector size and hash
+     ASSERT(groupCentralBlocks_[igroup]->ctlVecSize() == ctlVecSize);
+     ASSERT(groupCentralBlocks_[igroup]->ctlVecHash() == ctlVecHash);
+  }
+
+  oops::Log::trace() << "CentralBlockWrapper::checkCrossedConsistency done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

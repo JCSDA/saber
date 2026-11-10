@@ -148,6 +148,8 @@ class BifourierCovarianceImpl {
 
   size_t ctlVecSize() const
     {return trans_->ctlVecSize();}
+  std::string ctlVecHash() const
+    {return trans_->ctlVecHash();}
   void randomCtlVec(atlas::Field & cv,
                     const size_t & offset) const
     {trans_->randomCtlVec(cv, vars_, offset);}

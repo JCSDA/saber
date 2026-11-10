@@ -174,8 +174,8 @@ atlas::FieldSet createGlobalHorizontalAverageWeights(const eckit::mpi::Comm & lo
   if (fs.type() == "StructuredColumns") {
     auto scFspace = atlas::functionspace::StructuredColumns(fs);
     std::string s = scFspace.grid().name().substr(0, 1);
-    // "F" denotes a regular Gaussian grid.
-    if (s == "F") weights = GaussCellArea(localComm, scFspace, sizeOwned, binType);
+    // "F" and "O" denote 'regular' and 'octahedral' Gaussian grids, respectively.
+    if (s == "F" || s == "O") weights = GaussCellArea(localComm, scFspace, sizeOwned, binType);
   } else if (fs.type() == "NodeColumns") {
     auto nodeFspace = atlas::functionspace::NodeColumns(fs);
     std::string s = nodeFspace.mesh().grid().name();

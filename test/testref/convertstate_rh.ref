@@ -1,0 +1,24 @@
+Input state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 4.0000000000000000e+06
+    + max    = 4.0000000000000000e+06
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 4.0000000000000000e+06
+    + max    = 4.0000000000000000e+06
+Output state: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L32x17 [544]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 3.9999999999999995e+06
+    + max    = 4.0000000000000009e+06
+    + mean   = 4.0000000000000000e+06
+    + stddev close to zero
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 3.9999999999999995e+06
+    + max    = 4.0000000000000009e+06
+    + mean   = 4.0000000000000000e+06
+    + stddev close to zero

@@ -198,8 +198,8 @@ void computeVarianceFieldSetInstant(const eckit::mpi::Comm & comm,
   if (fset[0].functionspace().type() == "StructuredColumns") {
     auto scFspace = atlas::functionspace::StructuredColumns(fset[0].functionspace());
     std::string s = scFspace.grid().name().substr(0, 1);
-    // "F" denotes a regular Gaussian grid.
-    if (s == "F") {
+    // "F" and "O" denote 'regular' and 'octahedral' Gaussian grids, respectively.
+    if (s == "F" || s == "O") {
       atlas::Field gridptAreaWeights = GaussCellArea(comm,
                                                      scFspace,
                                                      scFspace.sizeOwned(),

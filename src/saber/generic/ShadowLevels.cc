@@ -296,11 +296,8 @@ void ShadowLevels::directCalibration(const oops::FieldSets &) {
     // Check rv value
     ASSERT(group.rv_ > 0.0);
 
-    // Apply GC99 autoconvolution factor
-    const double rv = group.rv_*autoConvolFactor_;
-
     // Equivalent Gaussian length-scale
-    const double L = rv*rv2L_;
+    const double L = group.rv_*rv2L_;
 
     // Get vertical coordinate for this group
     const std::string key = group.variables_[0] + ".vert_coord";
@@ -358,6 +355,9 @@ void ShadowLevels::directCalibration(const oops::FieldSets &) {
     auto view = atlas::array::make_view<double, 2>(field);
     view.assign(0.0);
 
+    // Apply GC99 autoconvolution factor
+    const double rv = group.rv_*autoConvolFactor_;
+
     // Compute weight
     std::vector<double> wgt(group.nz_);
     std::vector<double> sqWgtAvg(group.nz_, 0.0);
@@ -365,27 +365,21 @@ void ShadowLevels::directCalibration(const oops::FieldSets &) {
     for (int jnode = 0; jnode < field.shape(0); ++jnode) {
       if (ghostView(jnode) == 0) {
         // Compute raw weight
-        double wgtSum = 0.0;
+        double sqWgtSum = 0.0;
         for (size_t k = 0; k < group.nz_; ++k) {
           const double normDist = std::abs(vertCoordView(jnode, 0)-shadowLevels[k])/rv;
           wgt[k] = oops::gc99(normDist);
           wgt[k] = std::max(0.0, wgt[k]);
-          wgtSum += wgt[k];
+          sqWgtSum += wgt[k];
         }
 
         // Normalize weight
-        if (wgtSum > 0) {
+        if (sqWgtSum > 0) {
           for (size_t k = 0; k < group.nz_; ++k) {
-            wgt[k] /= wgtSum;
+            wgt[k] /= std::sqrt(sqWgtSum);
           }
         } else {
           throw eckit::UserError("shadow levels are too far apart", Here());
-        }
-
-        // Weight square-roots
-        for (size_t k = 0; k < group.nz_; ++k) {
-          ASSERT(wgt[k] >= 0.0);
-          wgt[k] = std::sqrt(wgt[k]);
         }
 
         // Apply component weight

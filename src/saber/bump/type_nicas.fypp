@@ -9,8 +9,9 @@
 module type_nicas
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
+use fckit_configuration_module, only: fckit_configuration
 use tools_const, only: zero,one,two
-use tools_func, only: zss_sum
+use tools_func, only: grid_hash,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_repro, only: repro_th
@@ -56,6 +57,7 @@ contains
    procedure :: run_nicas_tests => nicas_run_nicas_tests
    procedure :: alloc_cv => nicas_alloc_cv
    procedure :: random_cv => nicas_random_cv
+   procedure :: get_cv_hash => nicas_get_cv_hash
    procedure :: apply => nicas_apply
    procedure :: apply_filter => nicas_apply_filter
    procedure :: apply_sqrt => nicas_apply_sqrt
@@ -1236,6 +1238,61 @@ end do
 end subroutine nicas_random_cv
 
 !----------------------------------------------------------------------
+! Subroutine: nicas_get_cv_hash
+!> Get cv hash
+!----------------------------------------------------------------------
+subroutine nicas_get_cv_hash(nicas,nam,conf)
+
+implicit none
+
+! Passed variables
+class(nicas_type),intent(inout) :: nicas        !< NICAS data
+type(nam_type),intent(in) :: nam                !< Namelist
+type(fckit_configuration),intent(inout) :: conf !< FCKIT configuration
+
+! Local variables
+integer :: ncmp_tot,ig,icmp
+integer,allocatable :: hash(:)
+
+! Set name
+@:set_name(nicas_get_cv_hash)
+
+! Probe in
+@:probe_in()
+
+! Count components
+ncmp_tot = 0
+do ig=1,nam%ng
+   do icmp=1,nicas%blk(ig)%ncmp
+      ncmp_tot = ncmp_tot+1
+   end do
+end do
+
+! Allocation
+allocate(hash(ncmp_tot))
+
+! Get cv hash
+ncmp_tot = 0
+do ig=1,nam%ng
+   do icmp=1,nicas%blk(ig)%ncmp
+      ! Component work
+      ncmp_tot = ncmp_tot+1
+      hash(ncmp_tot) = nicas%blk(ig)%cmp(icmp)%hash_sa
+   end do
+end do
+
+! Save hash
+call conf%set("hash",hash)
+
+! Release memory
+deallocate(hash)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_get_cv_hash
+
+!----------------------------------------------------------------------
 ! Subroutine: nicas_apply
 !> Apply NICAS (correlation mode)
 !----------------------------------------------------------------------
@@ -1733,6 +1790,7 @@ end do
 @:probe_out()
 
 end subroutine nicas_test_dirac
+
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_test_randomization

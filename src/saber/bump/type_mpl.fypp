@@ -56,7 +56,7 @@ type mpl_type
    type(msv_type) :: msv                  !< Missing values
 
    ! Display parameters
-   logical :: verbose = .true.            !< Verbosity for this task
+   logical :: verbose                     !< Verbosity for this task
    type(fckit_logchannel) :: info_channel !< Info channel pointer
    type(fckit_logchannel) :: test_channel !< Test channel pointer
    character(len=1024) :: info            !< Info buffer
@@ -140,13 +140,14 @@ contains
 ! Subroutine: mpl_init
 !> Initialize MPL object
 !----------------------------------------------------------------------
-subroutine mpl_init(mpl,f_comm)
+subroutine mpl_init(mpl,f_comm,verbose)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl             !< MPI data
 type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
+logical,intent(in) :: verbose                    !< Verbosity
 
 ! Local variables
 type(fckit_mpi_comm) :: world_comm
@@ -206,6 +207,9 @@ mpl%testing = .false.
 ! Missing value
 mpl%msv%vali = -999
 mpl%msv%valr = -999.0_kind_real
+
+! Verbosity
+mpl%verbose = verbose
 
 ! Write parallel setup
 write(mpl%info,'(a)') '-------------------------------------------------------------------'

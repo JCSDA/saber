@@ -1,0 +1,56 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 8
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    levels: 2
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BUMP_VerticalBalance
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_vbal_8/_MPI_-_OMP_
+        overriding sampling file: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
+        overriding vertical balance file: error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal
+      drivers:
+        read global sampling: true
+        write local sampling: true
+        read vertical balance: true
+        write vertical balance: true
+        adjoints test: true
+        internal dirac test: true
+      sampling:
+        computation grid size: 500
+        diagnostic grid size: 250
+        averaging length-scale: 2000.0e3
+      vertical balance:
+        vbal:
+        - balanced variable: air_horizontal_velocity_potential
+          unbalanced variable: air_horizontal_streamfunction
+      dirac:
+      - longitude: 0.0
+        latitude: 0.0
+        level: 1
+        variable: air_horizontal_streamfunction
+      output model files:
+      - parameter: dirac_vbal
+        file:
+          filepath: testdata/error_covariance_training_bump_vbal_8/_MPI_-_OMP__dirac
+test:
+  reference filename: testref/error_covariance_training_bump_vbal_8.ref

@@ -145,7 +145,5 @@ dirac:
   - air_pressure_at_surface
 output dirac:
   filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__dirac_%id%
-output variance:
-  filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__variance
 test:
   reference filename: testref/dirac_fastlam_3.ref

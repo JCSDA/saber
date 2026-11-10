@@ -7,7 +7,7 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 1.4120304998587970e-04
     + stddev = 1.1882888957904500e-02
-Norm of input parameter weight: 8.4154619599908358e+01
+Norm of input parameter weight: 7.4110578424323734e+01
        Independent levels:  1[13]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
@@ -80,6 +80,6 @@ Covariance(SABER) * Increment:
   Fields:
   - snow_depth (1 levels):
     + min close to zero
-    + max    = 1.0000000000000000e+00
-    + mean   = 9.9542562360063758e-03
-    + stddev = 7.6485509296824988e-02
+    + max    = 7.8195411229615686e-01
+    + mean   = 7.9296480661601061e-03
+    + stddev = 6.0039645852123666e-02

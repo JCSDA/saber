@@ -77,6 +77,7 @@ class BUMP {
   void multiplyPsiChiToUV(oops::FieldSet3D &) const;
   void multiplyPsiChiToUVAd(oops::FieldSet3D &) const;
   size_t getCvSize() const;
+  std::string getCvHash() const;
   void randomCv(atlas::Field &, const size_t &) const;
   void multiplyNicasSqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const;
   void multiplyNicasSqrtAd(const oops::FieldSet3D &, atlas::Field &, const size_t &) const;
@@ -92,6 +93,7 @@ class BUMP {
   size_t nens_;
   bool iterativeEnsembleLoading_;
   std::string gridUid_;
+  const bool verbose_;
 
   eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
                                         const eckit::Configuration &) const;

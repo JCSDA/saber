@@ -62,6 +62,26 @@ Output state:
   - northward_wind (2 levels):
     + min    = 3.0000000000000000e+00
     + max    = 3.0000000000000000e+00
+Input state:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 3.3333333333333331e-01
+    + max    = 3.3333333333333331e-01
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 3.3333333333333331e-01
+    + max    = 3.3333333333333331e-01
+Output state:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 3.3333333333333331e-01
+    + max    = 3.3333333333333331e-01
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 3.3333333333333331e-01
+    + max    = 3.3333333333333331e-01
 Input state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]

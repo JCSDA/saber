@@ -1,3 +1,4 @@
+# Reading the model-based weight file from dirac_geographical_mask_1, results should be similar
 geometry:
   function space: StructuredColumns
   grid:
@@ -9,6 +10,8 @@ geometry:
     - air_horizontal_streamfunction_land
     - air_horizontal_streamfunction_sea
     levels: 2
+    mask type: sea
+    mask path: ../quench/data/landsea.nc
   - variables: [_land, _sea]
     levels: 1
   halo: 1
@@ -38,7 +41,7 @@ background error:
       masks:
       - suffix: _land
       - suffix: _sea
-      input weight file:
+      input weight model file:
         overriding variables: [_land, _sea]
         filepath: testdata/dirac_geographical_mask_1/_MPI_-_OMP__weight
 dirac:

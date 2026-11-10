@@ -412,6 +412,31 @@ call bump%get_cv_size(n)
 end subroutine bump_get_cv_size_c
 
 !----------------------------------------------------------------------
+! Subroutine: bump_get_cv_hash_c
+!> Get control variable hash
+!----------------------------------------------------------------------
+subroutine bump_get_cv_hash_c(key_bump,c_conf) bind(c,name="bump_get_cv_hash_f90")
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump  !< BUMP
+type(c_ptr),intent(in),value :: c_conf !< FCKIT configuration
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fckit_configuration) :: f_conf
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_conf = fckit_configuration(c_conf)
+
+! Call Fortran
+call bump%get_cv_hash(f_conf)
+
+end subroutine bump_get_cv_hash_c
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_random_cv_c
 !> NICAS randomization
 !----------------------------------------------------------------------

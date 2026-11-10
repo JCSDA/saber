@@ -1,32 +1,21 @@
        Independent levels:  1[2]
-          Subset Sc0 size:              762
+          Subset Sc0 size:              482
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter nicas_a - 1: 4.2636432980682187e+01
-Norm of input parameter nicas_a - 2: 1.2586602760794237e+01
-             nc1(  1) =                        637
-             nc1(  2) =                        569
-             ns =                             1206
+Norm of input parameter rh - 1: 1.7563598720080119e+08
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
              v%n_s =                             2
-             c%n_s[global] =                 31732
-             nc1(  1) =                        762
-             nc1(  2) =                        762
-             ns =                             1524
+             c%n_s[global] =                 28804
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
              v%n_s =                             2
-             c%n_s[global] =                 12186
-             nc1(  1) =                        539
-             nc1(  2) =                        640
-             ns =                             1179
-             v%n_s =                             2
-             c%n_s[global] =                 32297
-             nc1(  1) =                        762
-             nc1(  2) =                        762
-             ns =                             1524
-             v%n_s =                             2
-             c%n_s[global] =                 10418
+             c%n_s[global] =                 28804
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -36,21 +25,7 @@ Norm of input parameter nicas_a - 2: 1.2586602760794237e+01
           Communication AC adjoint test result:            T
           Convolution / communication adjoint test result: T
           Component NICAS adjoint test result:             T
-          Interpolation adjoint test (horizontal) result:  T
-          Interpolation adjoint test (vertical) result:    T
-          Interpolation adjoint test (total) result:       T
-          Communication AB adjoint test result:            T
-          Communication AC adjoint test result:            T
-          Convolution / communication adjoint test result: T
-          Component NICAS adjoint test result:             T
        Block NICAS adjoint test result:                    T
-          Interpolation adjoint test (horizontal) result:  T
-          Interpolation adjoint test (vertical) result:    T
-          Interpolation adjoint test (total) result:       T
-          Communication AB adjoint test result:            T
-          Communication AC adjoint test result:            T
-          Convolution / communication adjoint test result: T
-          Component NICAS adjoint test result:             T
           Interpolation adjoint test (horizontal) result:  T
           Interpolation adjoint test (vertical) result:    T
           Interpolation adjoint test (total) result:       T
@@ -60,8 +35,8 @@ Norm of input parameter nicas_a - 2: 1.2586602760794237e+01
           Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6575939
+          Level   2:  0.0000000 -  0.6000000
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of output parameter dirac_nicas - 1: 2.1377412787952652e+00
+Norm of output parameter dirac_nicas - 1: 2.2359569773293182e+00

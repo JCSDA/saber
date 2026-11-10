@@ -140,7 +140,7 @@ class ShadowLevels : public OuterBlockBase {
   std::vector<Group> groups_;
 
   // Factor for the GC99 function
-  const double autoConvolFactor_ = 0.52;
+  const double autoConvolFactor_ = 1.0/std::sqrt(1.92);
   const double rv2L_ = 1.0/3.53;
 
   // Weight

@@ -5,8 +5,8 @@ Input Dirac increment:
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000000e+00
-    + mean   = 6.5616797900262466e-04
-    + stddev = 2.5615775978927509e-02
+    + mean   = 9.9601593625498006e-04
+    + stddev = 3.1559720154890294e-02
 Norm of input parameter weight: 2.7604347483684521e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -39,5 +39,5 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min close to zero
     + max    = 1.0000000000000002e+00
-    + mean   = 3.8403263318356295e-03
-    + stddev = 4.3679167168104889e-02
+    + mean   = 5.8293399698381466e-03
+    + stddev = 5.3715810414251837e-02

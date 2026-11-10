@@ -12,6 +12,8 @@
 
 #include "atlas/array.h"
 
+#include "eckit/utils/MD5.h"
+
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
@@ -21,6 +23,15 @@ namespace fastlam {
 // -----------------------------------------------------------------------------
 
 static LayerMaker<LayerHalo> makerHalo_("halo");
+
+// -----------------------------------------------------------------------------
+
+std::string LayerHalo::ctlVecHash() const {
+  eckit::MD5 hash;
+  hash.add(rSize_);
+  hash.add(nz_);
+  return hash.digest();
+}
 
 // -----------------------------------------------------------------------------
 

@@ -54,6 +54,14 @@ states:
     state variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
+    constant value: 0.33333333333333333
+  output:
+    filepath: testdata/convertstate_constant/inverse_ensemble_transform
+- input:
+    date: 2010-01-01T12:00:00Z
+    state variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     constant value: 2.5
   output:
     filepath: testdata/convertstate_constant/linear_variable_change

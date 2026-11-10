@@ -257,19 +257,21 @@ rad_short = int(rad_real/pi*real(huge_short),kind_short)
 end subroutine func_rad2short
 
 !----------------------------------------------------------------------
-! Subroutine: func_grid_hash
+! Function: func_grid_hash
 !> Compute grid hash value from coordinates
 !----------------------------------------------------------------------
-subroutine func_grid_hash(ncx,lon_cx,lat_cx,mask_cx,hash)
+function func_grid_hash(ncx,lon_cx,lat_cx,mask_cx) result(hash)
 
 implicit none
 
 ! Passed variables
-integer,intent(in) :: ncx                 !< Number of points (global)
-real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
-real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
-logical,intent(in) :: mask_cx(ncx)        !< Mask
-integer,intent(out) :: hash               !< Grid hash
+integer,intent(in) :: ncx                   !< Number of points (global)
+real(kind_real),intent(in) :: lon_cx(ncx)   !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cx(ncx)   !< Latitude [radians]
+logical,intent(in),optional :: mask_cx(ncx) !< Mask
+
+! Returned variable
+integer :: hash
 
 ! Local variables
 integer :: icx
@@ -286,7 +288,12 @@ lonlat = 0_kind_short
 
 ! Loop over points
 do icx=1,ncx
-   if (mask_cx(icx)) then
+   if (present(mask_cx)) then
+      if (mask_cx(icx)) then
+         call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
+         call rad2short(lat_cx(icx),lonlat(2*icx))
+      end if
+   else
       call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
       call rad2short(lat_cx(icx),lonlat(2*icx))
    end if
@@ -298,7 +305,7 @@ hash = fletcher32(lonlat)
 ! Probe out
 @:probe_out()
 
-end subroutine func_grid_hash
+end function func_grid_hash
 
 !----------------------------------------------------------------------
 ! Subroutine: func_independent_levels

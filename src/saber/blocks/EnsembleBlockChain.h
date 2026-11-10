@@ -144,6 +144,11 @@ class EnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
                            ErrorCovarianceParametersBase)
 
  public:
+  // Keep deserialize(config) visible alongside the override below.
+  using ErrorCovarianceParametersBase::deserialize;
+  /// Reimplemented to check that an ensemble source is provided.
+  void deserialize(util::CompositePath & path, const eckit::Configuration & config) override;
+
   // Outer blocks
   oops::OptionalParameter<std::vector<OuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
@@ -175,7 +180,7 @@ class EnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   oops::OptionalParameter<double> denominatorForNormalizingEnsembleCovariance{
                         "denominator for normalizing ensemble covariance", this};
 
-  // Ensemble
+  // Ensemble configuration options (config is checked for a valid option in deserialize())
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};

@@ -73,6 +73,7 @@ class NICAS : public CentralBlockBase {
     override;
 
   size_t ctlVecSize() const override {return bump_->getCvSize();}
+  std::string ctlVecHash() const override {return bump_->getCvHash();}
   void randomCtlVec(atlas::Field &, const size_t &) const override;
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
