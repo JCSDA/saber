@@ -230,7 +230,7 @@ class IOSection : public oops::Parameters {
   // Universe radius file
   oops::Parameter<std::string> fname_universe_radius = param(def.fname_universe_radius, this);
   // NICAS file
-  oops::Parameter<std::string> fname_nicas = param(def.fname_nicas, this);
+  oops::Parameter<std::string> fname_nicas_in = param(def.fname_nicas_in, this);
   // Psichitouv transform file
   oops::Parameter<std::string> fname_wind = param(def.fname_wind, this);
   // GSI data file

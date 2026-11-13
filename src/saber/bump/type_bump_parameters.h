@@ -90,7 +90,7 @@ struct IODef {
     std::make_pair("overriding universe radius file", "");
 
   // NICAS file
-  std::pair<const char *, std::string> fname_nicas =
+  std::pair<const char *, std::string> fname_nicas_in =
     std::make_pair("overriding nicas file", "");
 
   // Psichitouv transform file

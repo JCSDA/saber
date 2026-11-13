@@ -69,7 +69,7 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Averaged statistics file
   param(ioDef.fname_avg, ioConf);
   // NICAS file
-  param(ioDef.fname_nicas, ioConf);
+  param(ioDef.fname_nicas_in, ioConf);
   // Psichitouv transform file
   param(ioDef.fname_wind, ioConf);
   // GSI data file

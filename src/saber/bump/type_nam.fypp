@@ -42,7 +42,8 @@ type nam_type
    character(len=1024),allocatable :: fname_mom(:)            !< Moments files
    character(len=1024) :: fname_avg                           !< Averaged statistics files
    character(len=1024) :: fname_universe_radius               !< Universe radius file
-   character(len=1024) :: fname_nicas                         !< NICAS file
+   character(len=1024) :: fname_nicas_in                      !< Input NICAS file
+   character(len=1024) :: fname_nicas_out                     !< Output NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
    character(len=1024) :: fname_gsi_data                      !< GSI data file
    character(len=1024) :: fname_gsi_nam                       !< GSI namelist
@@ -432,7 +433,7 @@ if (conf%get('io',section)) then
    end if
    call nam%get(section,'overriding averaged statistics file',nam%fname_avg)
    call nam%get(section,'overriding universe radius file',nam%fname_universe_radius)
-   call nam%get(section,'overriding nicas file',nam%fname_nicas)
+   call nam%get(section,'overriding nicas file',nam%fname_nicas_in)
    call nam%get(section,'overriding psichitouv file',nam%fname_wind)
    call nam%get(section,'gsi data file',nam%fname_gsi_data)
    call nam%get(section,'gsi namelist',nam%fname_gsi_nam)
@@ -1093,7 +1094,8 @@ if (allocated(nam%fname_mom)) then
 end if
 if (nam%fname_avg=='') nam%fname_avg = trim(nam%prefix)//'avg'
 if (nam%fname_universe_radius=='') nam%fname_universe_radius = trim(nam%prefix)//'universe_radius'
-if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
+if (nam%fname_nicas_in=='') nam%fname_nicas_in = trim(nam%prefix)//'nicas'
+nam%fname_nicas_out = trim(nam%prefix)//'nicas'
 if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
 
 ! Drivers section

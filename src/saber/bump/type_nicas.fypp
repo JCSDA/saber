@@ -222,7 +222,7 @@ do iproc=1,mpl%nproc
       call mpl%flush
 
       ! Open file
-      ncid = open_file(mpl,nam%fname_nicas,iproc)
+      ncid = open_file(mpl,nam%fname_nicas_in,iproc)
 
       ! Check number of levels (TODO: nl0 is now defined at block level, whole block should be removed at some point)
       if (mpl%msv%isnot(inquire_dim(mpl,ncid,'nl0'))) then
@@ -411,10 +411,10 @@ do iproc=1,mpl%nproc
 
       if (nam%new_files) then
          ! Create file
-         ncid = create_file(mpl,nam%fname_nicas,nam%time_comm,iproc)
+         ncid = create_file(mpl,nam%fname_nicas_out,nam%time_comm,iproc)
       else
          ! Open file
-         ncid = open_file(mpl,nam%fname_nicas,iproc,nowrite=.false.)
+         ncid = open_file(mpl,nam%fname_nicas_out,iproc,nowrite=.false.)
       end if
 
       if (iproc==iprocio) then
@@ -498,7 +498,7 @@ write(mpl%info,'(a7,a)') '','Read NICAS global data'
 call mpl%flush
 
 ! Open file
-ncid = open_file(mpl,nam%fname_nicas)
+ncid = open_file(mpl,nam%fname_nicas_in)
 
 do ig=1,nam%ng
    ! Copy global ID
@@ -544,10 +544,10 @@ call mpl%flush
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,nam%fname_nicas,nam%time_comm)
+   ncid = create_file(mpl,nam%fname_nicas_out,nam%time_comm)
 else
    ! Open file
-   ncid = open_file(mpl,nam%fname_nicas,nowrite=.false.)
+   ncid = open_file(mpl,nam%fname_nicas_out,nowrite=.false.)
 end if
 
 do ig=1,nam%ng
@@ -595,10 +595,10 @@ integer :: ig
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%fname_nicas)//'_grids',nam%time_comm,mpl%myproc,io_override=.true.)
+   ncid = create_file(mpl,trim(nam%fname_nicas_out)//'_grids',nam%time_comm,mpl%myproc,io_override=.true.)
 else
    ! Open file
-   ncid = open_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc,nowrite=.false.,io_override=.true.)
+   ncid = open_file(mpl,trim(nam%fname_nicas_out)//'_grids',mpl%myproc,nowrite=.false.,io_override=.true.)
 end if
 
 do ig=1,nam%ng
@@ -646,10 +646,10 @@ integer :: ig
 ! Open file
 if (nam%new_files) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',nam%time_comm,mpl%myproc,io_override=.true.)
+   ncid = create_file(mpl,trim(nam%fname_nicas_out)//'_steps',nam%time_comm,mpl%myproc,io_override=.true.)
 else
    ! Open file
-   ncid = open_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc,nowrite=.false.,io_override=.true.)
+   ncid = open_file(mpl,trim(nam%fname_nicas_out)//'_steps',mpl%myproc,nowrite=.false.,io_override=.true.)
 end if
 
 do ig=1,nam%ng
