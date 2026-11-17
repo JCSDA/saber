@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/trans/ifs/TransIFS.h"
 #include "atlas/trans/Trans.h"
 
 #include "oops/base/Variables.h"

@@ -584,8 +584,8 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_,
                                        fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
-  trans_->dirtrans_wind2vordiv_adj(specfset["air_upward_absolute_vorticity"],
-                                   specfset["air_horizontal_divergence"], rhsvec);
+  trans_.dirtrans_wind2vordiv_adj(specfset["air_upward_absolute_vorticity"],
+                                  specfset["air_horizontal_divergence"], rhsvec);
 
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
                     augmentedState_["coriolis"],

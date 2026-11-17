@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "atlas/trans/ifs/TransIFS.h"
 #include "atlas/trans/Trans.h"
 
 #include "oops/base/Variables.h"
