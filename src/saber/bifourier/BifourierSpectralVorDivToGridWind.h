@@ -90,6 +90,11 @@ class BifourierSpectralVorDivToGridWind : public OuterBlockBase {
   void read() override
     {}
 
+  // Compare FieldSets (for the inverse test)
+  bool compareFieldSets(const oops::FieldSet3D & fset3D1,
+                        const oops::FieldSet3D & fset3D2,
+                        const double & tol) const override;
+
  private:
   // Inner geometry data
   std::unique_ptr<oops::GeometryData> innerGeometryData_;

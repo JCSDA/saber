@@ -68,39 +68,6 @@ const oops::GeometryData & Biperiodization::innerGeometryData() const {
 
 // -----------------------------------------------------------------------------
 
-void Biperiodization::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  // Apply multiply
-  biper_->multiply(fset.fieldSet());
-
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void Biperiodization::multiplyAD(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-
-  // Apply multiply adjoint
-  biper_->multiplyAD(fset.fieldSet());
-
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void Biperiodization::leftInverseMultiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-
-  // Apply multiply left inverse
-  biper_->leftInverseMultiply(fset.fieldSet());
-
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void Biperiodization::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 

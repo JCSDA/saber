@@ -342,10 +342,10 @@ void BifourierTransformFFTW::setupBackend() {
   // Rows <=> grid
 
   // Ghost points
-  const auto ghostView = make_view<int, 1>(gdata_.functionSpace().ghost());
+  const auto ghostView = make_view<int, 1>(gpFspace_.ghost());
 
   // Index fields views
-  const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
+  const atlas::functionspace::StructuredColumns fs(gpFspace_);
   const auto indexIView = make_indexview<int, 1>(fs.index_i());
   const auto indexJView = make_indexview<int, 1>(fs.index_j());
 

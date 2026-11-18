@@ -169,13 +169,19 @@ void BifourierAromeBalance::read() {
     std::vector<double> sQTpsuGlb;
 
     // Define global IAL size
-    size_t nial = 0;
+    size_t kspec2g = 0;
     for (size_t jm = 0; jm < trans_->ellips().size(); ++jm) {
-      nial += 4*(trans_->ellips()[jm]+1);
+      kspec2g += 4*(trans_->ellips()[jm]+1);
     }
 
     // Fact1 IAL vector
-    std::vector<double> fact1IAL(nial);
+    std::vector<double> fact1IAL(kspec2g);
+
+    // Define attributes
+    eckit::LocalConfiguration attributes;
+    attributes.set("nsmax", trans_->nwGlb()-1);
+    attributes.set("nflev", nz_);
+    attributes.set("kspec2g", kspec2g);
 
     if (comm_.rank() == 0) {
       // Allocate global vectors
@@ -188,30 +194,33 @@ void BifourierAromeBalance::read() {
 
       if (params_.read.value()->inputFileFormat.value() == "arome legacy binary") {
         // Read Fortran unformatted file (based on readjbbal.F90)
+        const int nsmax = attributes.getDouble("nsmax");
+        const int nflev = attributes.getDouble("nflev");
+        const int kspec2g = attributes.getDouble("kspec2g");
         bifourier_arome_legacy_read_balance_f90(params_.read.value()->toConfiguration(),
-          trans_->nwGlb(), nz_, sDivPbGlb.data(), sTpsPbGlb.data(), sTpsDivuGlb.data(),
-          sQPbGlb.data(), sQDivuGlb.data(), sQTpsuGlb.data(), nial, fact1IAL.data());
+          attributes, nsmax+1, nflev, kspec2g, sDivPbGlb.data(), sTpsPbGlb.data(),
+          sTpsDivuGlb.data(), sQPbGlb.data(), sQDivuGlb.data(), sQTpsuGlb.data(), fact1IAL.data());
       } else if (params_.read.value()->inputFileFormat.value() == "arome legacy netcdf") {
         // NetCDF file path
         const std::string ncFilePath = params_.read.value()->inputFile.value();
 
         // NetCDF IDs
         int ncId, retval, dimId, varId;
-        size_t nzFromFile, nwGlbFromFile, nialFromFile;
+        size_t nflevFile, nsmaxp1File, kspec2gFile;
 
         // Open NetCDF file
         if ((retval = nc_open(ncFilePath.c_str(), NC_NOWRITE, &ncId))) ERR(retval, ncFilePath);
 
         // Check dimensions
         if ((retval = nc_inq_dimid(ncId, "NFLEV", &dimId))) ERR(retval, "NFLEV");
-        if ((retval = nc_inq_dimlen(ncId, dimId, &nzFromFile))) ERR(retval, "NFLEV");
-        ASSERT(nzFromFile == nz_);
+        if ((retval = nc_inq_dimlen(ncId, dimId, &nflevFile))) ERR(retval, "NFLEV");
+        ASSERT(nflevFile == nz_);
         if ((retval = nc_inq_dimid(ncId, "NSMAXP1", &dimId))) ERR(retval, "NSMAXP1");
-        if ((retval = nc_inq_dimlen(ncId, dimId, &nwGlbFromFile))) ERR(retval, "NSMAXP1");
-        ASSERT(nwGlbFromFile == trans_->nwGlb());
+        if ((retval = nc_inq_dimlen(ncId, dimId, &nsmaxp1File))) ERR(retval, "NSMAXP1");
+        ASSERT(nsmaxp1File == trans_->nwGlb());
         if ((retval = nc_inq_dimid(ncId, "KSPEC2G", &dimId))) ERR(retval, "KSPEC2G");
-        if ((retval = nc_inq_dimlen(ncId, dimId, &nialFromFile))) ERR(retval, "KSPEC2G");
-        ASSERT(nialFromFile == nial);
+        if ((retval = nc_inq_dimlen(ncId, dimId, &kspec2gFile))) ERR(retval, "KSPEC2G");
+        ASSERT(kspec2gFile == kspec2g);
 
         // Get variables
         if ((retval = nc_inq_varid(ncId, "SDIV_PB", &varId))) ERR(retval, "SDIV_PB");
@@ -276,7 +285,7 @@ void BifourierAromeBalance::read() {
         }
       }
     }
-    ASSERT(jIAL == nial);
+    ASSERT(jIAL == kspec2g);
 
     // Copy fact1
     for (size_t js = 0; js < trans_->ns(); ++js) {
@@ -430,13 +439,13 @@ void BifourierAromeBalance::write() const {
       trans_->gatherCov(sQTpsuField, sQTpsuGlb, true);
 
       // Define global IAL size
-      size_t nial = 0;
+      size_t kspec2g = 0;
       for (size_t jm = 0; jm < trans_->ellips().size(); ++jm) {
-        nial += 4*(trans_->ellips()[jm]+1);
+        kspec2g += 4*(trans_->ellips()[jm]+1);
       }
 
       // Allocate fact1 IAL vector
-      std::vector<double> fact1IAL(nial, 0.0);
+      std::vector<double> fact1IAL(kspec2g, 0.0);
 
       // Global IAL / spectral conversion
       atlas::Field IALIndexField("IALIndex", make_datatype<int>(),
@@ -452,7 +461,7 @@ void BifourierAromeBalance::write() const {
           }
         }
       }
-      ASSERT(jIAL == nial);
+      ASSERT(jIAL == kspec2g);
 
       // Copy fact1
       for (size_t js = 0; js < trans_->ns(); ++js) {
@@ -466,45 +475,124 @@ void BifourierAromeBalance::write() const {
       // Reduce fact1 IAL vector
       comm_.allReduceInPlace(fact1IAL.begin(), fact1IAL.end(), eckit::mpi::sum());
 
-      if (comm_.rank() == 0) {
-        // Get number of levels
-        const size_t nz = balVars_["balanced_air_pressure"].getLevels();
+      // Define attributes
+      eckit::LocalConfiguration attributes;
+      const atlas::StructuredGrid & outerGrid = trans_->geometryData().functionSpace().grid();
+      const atlas::StructuredGrid & gpGrid = trans_->gpFspace().grid();
+      const bool y_increasing = outerGrid.spec().getSubConfiguration("yspace").getDouble("end")
+        > outerGrid.spec().getSubConfiguration("yspace").getDouble("start");
+      attributes.set("clid", "ALADIN98");
+      attributes.set("clcom", " Balanced statistcs for a LAM, after L. Berre 1998");
+      attributes.set("iorig", 85);
+      attributes.set("elon0", outerGrid.projection().spec().getDouble("longitude0"));
+      attributes.set("elat0", outerGrid.projection().spec().getDouble("latitude0"));
+      const auto corner1 = y_increasing ? outerGrid.lonlat(0, 0)
+        : outerGrid.lonlat(0, outerGrid.ny()-1);
+      attributes.set("elon1", corner1[0]);
+      attributes.set("elat1", corner1[1]);
+      const auto corner2 = y_increasing ? outerGrid.lonlat(outerGrid.nxmax()-1, outerGrid.ny()-1)
+        :  outerGrid.lonlat(outerGrid.nxmax()-1, 0);
+      attributes.set("elon2", corner2[0]);
+      attributes.set("elat2", corner2[1]);
+      attributes.set("ndgl", gpGrid.ny());
+      attributes.set("ndlon", gpGrid.nxmax());
+      attributes.set("ndgux", outerGrid.ny());
+      attributes.set("ndlux", outerGrid.nxmax());
+      attributes.set("nsmax", trans_->nwGlb()-1);
+      attributes.set("nmsmax", trans_->M());
+      attributes.set("nflev", nz_);
+      attributes.set("kspec2g", kspec2g);
 
+      if (comm_.rank() == 0) {
         if (params_.write.value()->outputFileFormat.value() == "arome legacy binary") {
           // Write Fortran unformatted file (based on ewgsabal.F90)
+          const int nsmax = attributes.getDouble("nsmax");
+          const int nflev = attributes.getDouble("nflev");
+          const int kspec2g = attributes.getDouble("kspec2g");
           bifourier_arome_legacy_write_balance_f90(params_.write.value()->toConfiguration(),
-            trans_->nwGlb(), nz_, sDivPbGlb.data(), sTpsPbGlb.data(), sTpsDivuGlb.data(),
-            sQPbGlb.data(), sQDivuGlb.data(), sQTpsuGlb.data(), nial, fact1IAL.data());
+            attributes, nsmax+1, nflev, kspec2g, sDivPbGlb.data(), sTpsPbGlb.data(),
+            sTpsDivuGlb.data(), sQPbGlb.data(), sQDivuGlb.data(), sQTpsuGlb.data(),
+            fact1IAL.data());
         } else if (params_.write.value()->outputFileFormat.value() == "arome legacy netcdf") {
           // NetCDF file path
           const std::string ncFilePath = params_.write.value()->outputFile.value();
 
           // NetCDF IDs
-          int ncId, retval, nzId, nzP1Id, nwGlbId, nialId, dNzNzId[3], dNzNzP1Id[3], dNzP1NzId[3],
-            dIALId[1], sDivPbID, sTpsPbId, sTpsDivuId, sQPbId, sQDivuId, sQTpsuId, fact1Id;
+          int ncId, retval, nflevId, nflevp1Id, nsmaxp1Id, kspec2gId, dNzNzId[3], dNzNzP1Id[3],
+            dNzP1NzId[3], dIALId[1], sDivPbID, sTpsPbId, sTpsDivuId, sQPbId, sQDivuId, sQTpsuId,
+            fact1Id;
 
           // Create NetCDF file
           if ((retval = nc_create(ncFilePath.c_str(), NC_64BIT_OFFSET | NC_CLOBBER, &ncId)))
             ERR(retval, ncFilePath);
 
+          // Define attributes
+          const std::string clid = attributes.getString("clid");
+          if ((retval = nc_put_att_text(ncId, NC_GLOBAL, "ID", clid.size(), clid.c_str())))
+            ERR(retval, "ID");
+          const std::string clcom = attributes.getString("clcom");
+          if ((retval = nc_put_att_text(ncId, NC_GLOBAL, "COMMENT", clcom.size(), clcom.c_str())))
+            ERR(retval, "COMMENT");
+          const int iorig = attributes.getInt("iorig");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "WMO_CENTRE", NC_INT, 1, &iorig)))
+            ERR(retval, "WMO_CENTRE");
+          const double elon0 = attributes.getDouble("elon0");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELON0", NC_DOUBLE, 1, &elon0)))
+            ERR(retval, "ELON0");
+          const double elat0 = attributes.getDouble("elat0");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELAT0", NC_DOUBLE, 1, &elat0)))
+            ERR(retval, "ELAT0");
+          const double elon1 = attributes.getDouble("elon1");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELON1", NC_DOUBLE, 1, &elon1)))
+            ERR(retval, "ELON1");
+          const double elat1 = attributes.getDouble("elat1");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELAT1", NC_DOUBLE, 1, &elat1)))
+            ERR(retval, "ELAT1");
+          const double elon2 = attributes.getDouble("elon2");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELON2", NC_DOUBLE, 1, &elon2)))
+            ERR(retval, "ELON2");
+          const double elat2 = attributes.getDouble("elat2");
+          if ((retval = nc_put_att_double(ncId, NC_GLOBAL, "ELAT2", NC_DOUBLE, 1, &elat2)))
+            ERR(retval, "ELAT2");
+          const int ndgl = attributes.getDouble("ndgl");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NDGL", NC_INT, 1, &ndgl)))
+            ERR(retval, "NDGL");
+          const int ndlon = attributes.getDouble("ndlon");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NDLON", NC_INT, 1, &ndlon)))
+            ERR(retval, "NDLON");
+          const int ndgux = attributes.getDouble("ndgux");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NDGUX", NC_INT, 1, &ndgux)))
+            ERR(retval, "NDGUX");
+          const int ndlux = attributes.getDouble("ndlux");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NDLUX", NC_INT, 1, &ndlux)))
+            ERR(retval, "NDLUX");
+          const int nsmax = attributes.getDouble("nsmax");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NSMAX", NC_INT, 1, &nsmax)))
+            ERR(retval, "NSMAX");
+          const int nmsmax = attributes.getDouble("nmsmax");
+          if ((retval = nc_put_att_int(ncId, NC_GLOBAL, "NMSMAX", NC_INT, 1, &nmsmax)))
+            ERR(retval, "NMSMAX");
+
           // Create dimensions
-          if ((retval = nc_def_dim(ncId, "NFLEV", nz, &nzId))) ERR(retval, "NFLEV");
-          if ((retval = nc_def_dim(ncId, "NFLEVP1", nz+1, &nzP1Id))) ERR(retval, "NFLEVP1");
-          if ((retval = nc_def_dim(ncId, "NSMAXP1", trans_->nwGlb(), &nwGlbId)))
+          const int nflev = attributes.getDouble("nflev");
+          if ((retval = nc_def_dim(ncId, "NFLEV", nflev, &nflevId))) ERR(retval, "NFLEV");
+          if ((retval = nc_def_dim(ncId, "NFLEVP1", nflev+1, &nflevp1Id))) ERR(retval, "NFLEVP1");
+          if ((retval = nc_def_dim(ncId, "NSMAXP1", nsmax+1, &nsmaxp1Id)))
             ERR(retval, "NSMAXP1");
-          if ((retval = nc_def_dim(ncId, "KSPEC2G", nial, &nialId))) ERR(retval, "KSPEC2G");
+          const int kspec2g = attributes.getDouble("kspec2g");
+          if ((retval = nc_def_dim(ncId, "KSPEC2G", kspec2g, &kspec2gId))) ERR(retval, "KSPEC2G");
 
           // Dimensions arrays
-          dNzNzId[0] = nwGlbId;
-          dNzNzId[1] = nzId;
-          dNzNzId[2] = nzId;
-          dNzNzP1Id[0] = nwGlbId;
-          dNzNzP1Id[1] = nzId;
-          dNzNzP1Id[2] = nzP1Id;
-          dNzP1NzId[0] = nwGlbId;
-          dNzP1NzId[1] = nzP1Id;
-          dNzP1NzId[2] = nzId;
-          dIALId[0] = nialId;
+          dNzNzId[0] = nsmaxp1Id;
+          dNzNzId[1] = nflevId;
+          dNzNzId[2] = nflevId;
+          dNzNzP1Id[0] = nsmaxp1Id;
+          dNzNzP1Id[1] = nflevId;
+          dNzNzP1Id[2] = nflevp1Id;
+          dNzP1NzId[0] = nsmaxp1Id;
+          dNzP1NzId[1] = nflevp1Id;
+          dNzP1NzId[2] = nflevId;
+          dIALId[0] = kspec2gId;
 
           // Create variables
           if ((retval = nc_def_var(ncId, "SDIV_PB", NC_DOUBLE, 3, dNzNzId, &sDivPbID)))
@@ -637,7 +725,7 @@ void BifourierAromeBalance::vorToPb(oops::FieldSet3D & fset) const {
   const auto vorField = fset["air_upward_absolute_vorticity"];
 
   // Create outer field
-  atlas::Field pbField = trans_->spFspace()->createField<double>(
+  atlas::Field pbField = trans_->spFspace().createField<double>(
     atlas::option::name("balanced_air_pressure") | atlas::option::levels(nz_));
 
   // Get fields views
@@ -730,7 +818,7 @@ void BifourierAromeBalance::removePbAD(oops::FieldSet3D & fset) const {
   const auto vorField = fset["air_upward_absolute_vorticity"];
 
   // Create inner field
-  atlas::Field pbField = trans_->spFspace()->createField<double>(
+  atlas::Field pbField = trans_->spFspace().createField<double>(
     atlas::option::name("balanced_air_pressure") | atlas::option::levels(nz_));
 
   // Get inner field view
@@ -754,7 +842,7 @@ void BifourierAromeBalance::removePbLeftInverse(oops::FieldSet3D & fset) const {
   const auto vorField = fset["air_upward_absolute_vorticity"];
 
   // Create outer field
-  atlas::Field pbField = trans_->spFspace()->createField<double>(
+  atlas::Field pbField = trans_->spFspace().createField<double>(
     atlas::option::name("balanced_air_pressure") | atlas::option::levels(nz_));
 
   // Get fields views
@@ -783,9 +871,9 @@ void BifourierAromeBalance::splitTPs(oops::FieldSet3D & fset) const {
   const auto tPsField = fset["air_temperature_and_log_of_air_pressure_at_surface"];
 
   // Create outer fields
-  atlas::Field tField = trans_->spFspace()->createField<double>(
+  atlas::Field tField = trans_->spFspace().createField<double>(
     atlas::option::name("air_temperature") | atlas::option::levels(nz_));
-  atlas::Field psField = trans_->spFspace()->createField<double>(
+  atlas::Field psField = trans_->spFspace().createField<double>(
     atlas::option::name("log_of_air_pressure_at_surface") | atlas::option::levels(1));
 
   // Get fields views
@@ -822,7 +910,7 @@ void BifourierAromeBalance::gatherTPs(oops::FieldSet3D & fset) const {
   const auto psField = fset["log_of_air_pressure_at_surface"];
 
   // Create inner field
-  atlas::Field tPsField = trans_->spFspace()->createField<double>(
+  atlas::Field tPsField = trans_->spFspace().createField<double>(
     atlas::option::name("air_temperature_and_log_of_air_pressure_at_surface") |
     atlas::option::levels(nz_+1));
 

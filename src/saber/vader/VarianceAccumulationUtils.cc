@@ -15,6 +15,7 @@
 #include "atlas/grid.h"
 #include "atlas/meshgenerator.h"
 #include "atlas/option.h"
+#include "atlas/util/Constants.h"
 #include "atlas/util/Earth.h"
 #include "atlas/util/GaussianLatitudes.h"
 
@@ -39,7 +40,6 @@ atlas::Field CSCellArea(const eckit::mpi::Comm & localComm,
                         const std::size_t & sizeOwned,
                         const std::string& fieldName)
 {
-  constexpr auto degreesToRadians = M_PI / 180.;
   const auto cubedSphereGrid = atlas::CubedSphereGrid(nodeFspace.mesh().grid());
   const auto lonlat = make_view<double, 2>(nodeFspace.lonlat());
   constexpr double tolerance = 1e-8;
@@ -62,7 +62,7 @@ atlas::Field CSCellArea(const eckit::mpi::Comm & localComm,
     if (std::abs(std::abs(ll.lat()) - 90.0) < tolerance) {
       gridAreaView(0, i) = 1.0;
     } else {
-      const double cosLat = std::cos(degreesToRadians * ll.lat());
+      const double cosLat = std::cos(atlas::util::Constants::degreesToRadians() * ll.lat());
       // The absolute value of the Jacobian determinant at p gives us
       // the factor by which the function f expands or shrinks volumes near a
       // given point. We are looking at the reciprocal here as we are

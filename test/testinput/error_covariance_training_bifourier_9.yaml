@@ -1,4 +1,4 @@
-# Iterative calibration of a full bifourier error covariance matrix, using the full recursive inverse for the balance operator, with the covariance computed from the balance calibration, should be similar to error_covariance_training_bifourier_3
+# Direct calibration of a full bifourier error covariance matrix, with the covariance computed from the balance calibration, should be similar to error_covariance_training_bifourier_3
 geometry:
   function space: StructuredColumns
   grid:
@@ -39,7 +39,6 @@ background:
   - water_vapor_mixing_ratio_wrt_moist_air
 background error:
   covariance model: SABER
-  iterative ensemble loading: true
   ensemble:
     members from template:
       template:
@@ -68,8 +67,7 @@ background error:
     force write: true
   saber outer blocks:
   - saber block name: BifourierAromeBalance
-    calibration:
-      full recursive inverse: true
+    calibration: {}
     write:
       output file: testdata/error_covariance_training_bifourier_9/_MPI_-_OMP__balance.nc
       write covariance: true

@@ -77,9 +77,12 @@ class Biperiodization : public OuterBlockBase {
   const oops::Variables & innerVars() const override
     {return innerVars_;}
 
-  void multiply(oops::FieldSet3D &) const override;
-  void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D & fset) const override
+    {biper_->multiply(fset.fieldSet());}
+  void multiplyAD(oops::FieldSet3D & fset) const override
+    {biper_->multiplyAD(fset.fieldSet());}
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {biper_->inverseMultiply(fset.fieldSet());}
 
   void read() override;
 

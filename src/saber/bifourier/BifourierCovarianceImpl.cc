@@ -46,7 +46,7 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
     // User-defined vertical profile for each variable
 
     // Index fields views
-    const atlas::functionspace::StructuredColumns fs(trans_->geometryData().functionSpace());
+    const atlas::functionspace::StructuredColumns fs(trans_->gpFspace());
     const auto indexIView = make_indexview<int, 1>(fs.index_i());
     const auto indexJView = make_indexview<int, 1>(fs.index_j());
 
@@ -177,10 +177,10 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
 
       // Create horizontal spectral variance field
       atlas::Field horSpecVarField("horSpecVar", make_datatype<double>(),
-        make_shape(trans_->nw(), nz, 1));
+        make_shape(trans_->nw(), nz));
 
       // Get horizontal spectral variance view
-      auto horSpecVarView = make_view<double, 3>(horSpecVarField);
+      auto horSpecVarView = make_view<double, 2>(horSpecVarField);
 
       // Set horizontal spectral variance to zero
       horSpecVarView.assign(0.0);
@@ -190,7 +190,7 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
         if ((trans_->l(js) == 0) && (trans_->q(js) == 0)) {
           const size_t jw = trans_->jw(js);
           for (size_t jzI = 0; jzI < nz; ++jzI) {
-            horSpecVarView(jw, jzI, 0) += horCorSpView(js, jzI);
+            horSpecVarView(jw, jzI) += horCorSpView(js, jzI);
           }
         }
       }
@@ -201,8 +201,8 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
       // Compute horizontal spectral standard-deviation
       for (size_t jw = 0; jw < trans_->nw(); ++jw) {
         for (size_t jzI = 0; jzI < nz; ++jzI) {
-          horSpecVarView(jw, jzI, 0) = std::max(horSpecVarView(jw, jzI, 0), 0.0);
-          horSpecVarView(jw, jzI, 0) = std::sqrt(horSpecVarView(jw, jzI, 0));
+          horSpecVarView(jw, jzI) = std::max(horSpecVarView(jw, jzI), 0.0);
+          horSpecVarView(jw, jzI) = std::sqrt(horSpecVarView(jw, jzI));
         }
       }
 
@@ -210,7 +210,7 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
       for (size_t jw = 0; jw < trans_->nw(); ++jw) {
         for (size_t jzI = 0; jzI < nz; ++jzI) {
           for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
-            corSqrtView(jw, jzI, jzJ) = horSpecVarView(jw, jzI, 0)*es.eigenvectors().col(jzJ)[jzI]
+            corSqrtView(jw, jzI, jzJ) = horSpecVarView(jw, jzI)*es.eigenvectors().col(jzJ)[jzI]
               *std::sqrt(es.eigenvalues()[jzJ]);
           }
         }
@@ -253,13 +253,16 @@ BifourierCovarianceImpl::BifourierCovarianceImpl(const oops::GeometryData & geom
       }
 
       // Get standard-deviation view
-      auto stdDevView = getViewProfile("stdDev", var, data_);
+      auto stdDevView = getView1D("stdDev", var, data_);
 
       // Copy standard-deviation
       for (size_t jzI = 0; jzI < nz; ++jzI) {
         stdDevView(jzI) = stdDev[jzI];
       }
     }
+
+    // Compute diagnostics
+    computeDiagnostics();
 
     // Print norms
     print(oops::Log::test());
@@ -288,7 +291,7 @@ void BifourierCovarianceImpl::multiplySqrt(oops::FieldSet3D & fset) const {
     const auto corSqrtView = getView3D("corSqrt", var, data_);
 
     // Get standard-deviation view
-    const auto stdDevView = getViewProfile("stdDev", var, data_);
+    const auto stdDevView = getView1D("stdDev", var, data_);
 
     // Set output field to zero
     view.assign(0.0);
@@ -352,7 +355,7 @@ void BifourierCovarianceImpl::multiplySqrtAD(oops::FieldSet3D & fset) const {
     const auto corSqrtView = getView3D("corSqrt", var, data_);
 
     // Get standard-deviation view
-    const auto stdDevView = getViewProfile("stdDev", var, data_);
+    const auto stdDevView = getView1D("stdDev", var, data_);
 
     // Set output field to zero
     view.assign(0.0);
@@ -425,7 +428,7 @@ void BifourierCovarianceImpl::read() {
     const std::string ncFilePath = params_.read.value()->inputFile.value();
 
     // NetCDF IDs
-    int ncId, retval, nwId, nzIId, nzJId, covId;
+    int ncId, retval, nwGlbId, nzIId, nzJId, covId;
     size_t nwGlbFromFile, nzIFromFile, nzJFromFile;
 
     if (comm_.rank() == 0) {
@@ -444,10 +447,10 @@ void BifourierCovarianceImpl::read() {
         // Check dimensions
         const std::string nzIName = "nzI_" + var.name();
         const std::string nzJName = "nzJ_" + var.name();
-        if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwId))) ERR(retval, "nwGlb");
+        if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwGlbId))) ERR(retval, "nwGlb");
         if ((retval = nc_inq_dimid(ncId, nzIName.c_str(), &nzIId))) ERR(retval, nzIName);
         if ((retval = nc_inq_dimid(ncId, nzJName.c_str(), &nzJId))) ERR(retval, nzJName);
-        if ((retval = nc_inq_dimlen(ncId, nwId, &nwGlbFromFile))) ERR(retval, "nwGlb");
+        if ((retval = nc_inq_dimlen(ncId, nwGlbId, &nwGlbFromFile))) ERR(retval, "nwGlb");
         if ((retval = nc_inq_dimlen(ncId, nzIId, &nzIFromFile))) ERR(retval, nzIName);
         if ((retval = nc_inq_dimlen(ncId, nzJId, &nzJFromFile))) ERR(retval, nzJName);
         ASSERT(nwGlbFromFile == trans_->nwGlb());
@@ -455,14 +458,14 @@ void BifourierCovarianceImpl::read() {
         ASSERT(nzJFromFile == nz);
 
         // Get covariance field name (try with vvCov first)
-        std::string covFieldName = fieldName("vvCov", var, var);
+        std::string covFieldName = fieldName("vvCov", var);
 
         // Get variables ID
         retval = nc_inq_varid(ncId, covFieldName.c_str(), &covId);
 
         if (retval != 0) {
           // Get covariance field name (try with xxCov if vvCov is missing)
-          std::string covFieldName = fieldName("xxCov", var, var);
+          std::string covFieldName = fieldName("xxCov", var);
 
           // Get variables ID
           if ((retval = nc_inq_varid(ncId, covFieldName.c_str(), &covId)))
@@ -500,7 +503,7 @@ void BifourierCovarianceImpl::read() {
       createField3D("corSqrt", trans_->nw(), var, data_);
 
       // Create standard-deviation field
-      createFieldProfile("stdDev", var, data_);
+      createField1D("stdDev", var, data_);
     }
 
     // NetCDF file path
@@ -565,16 +568,11 @@ void BifourierCovarianceImpl::read() {
       // Scatter correlation square-root vector
       trans_->scatterCov(corSqrtVecGlb, corSqrtField);
 
-      // Broadcast standard-deviation vector
-      comm_.broadcast(stdDevVec.begin(), stdDevVec.end(), 0);
+      // Get standard-deviation field
+      auto stdDevField = getField("stdDev", var, data_);
 
-      // Get standard-deviation view
-      auto stdDevView = getViewProfile("stdDev", var, data_);
-
-      // Deserialize standard-deviation vector
-      for (size_t jzJ = 0; jzJ < nz; ++jzJ) {
-        stdDevView(jzJ) = stdDevVec[jzJ];
-      }
+      // Broadcast standard-deviation
+      trans_->bcastProf(stdDevVec, stdDevField);
     }
 
     if (comm_.rank() == 0) {
@@ -648,6 +646,9 @@ void BifourierCovarianceImpl::directCalibration(const oops::FieldSets & fsetEns)
 
   // Compute square-root
   computeSquareRoot();
+
+  // Compute diagnostics
+  computeDiagnostics();
 
   // Print norms
   print(oops::Log::test());
@@ -775,6 +776,9 @@ void BifourierCovarianceImpl::iterativeCalibrationFinal() {
   // Compute square-root
   computeSquareRoot();
 
+  // Compute diagnostics
+  computeDiagnostics();
+
   // Print norms
   print(oops::Log::test());
 
@@ -795,15 +799,26 @@ void BifourierCovarianceImpl::write() const {
       computeCovariance(covData);
     }
 
+    // Get number of variables
+    size_t nVar = 2*vars_.size();
+    if (params_.write.value()->writeCovariance.value()) {
+      // Add covariance variables
+      nVar += vars_.size();
+    }
+    if (params_.profiles.value() || params_.calibration.value()) {
+      // Add diagnostic variables
+      nVar += 4*vars_.size();
+    }
+
     // NetCDF IDs
-    int retval, ncId, nwId, nzIId, nzJId, dCorSqrtId[3], dStdDevId[1], dCovId[3],
-      corSqrtId[vars_.size()], stdDevId[vars_.size()], covId[vars_.size()];
+    int retval, ncId, nwGlbId, nzIId, nzJId;
+    std::vector<int> dProfId(1), dVertCovId(2), dSpecId(2), dCovId(3), varId(nVar);
 
     // NetCDF file path
     const std::string ncFilePath = params_.write.value()->outputFile.value();
 
     // Definition mode
-    size_t jvar = 0;
+    size_t jVar = 0;
 
     if (comm_.rank() == 0) {
       // Create NetCDF file
@@ -811,12 +826,12 @@ void BifourierCovarianceImpl::write() const {
         ERR(retval, ncFilePath);
 
       // Create horizontal dimension
-      if ((retval = nc_def_dim(ncId, "nwGlb", trans_->nwGlb(), &nwId)))
+      if ((retval = nc_def_dim(ncId, "nwGlb", trans_->nwGlb(), &nwGlbId)))
         ERR(retval, "nwGlb");
 
       // Dimensions arrays, horizontal part
-      dCorSqrtId[0] = nwId;
-      dCovId[0] = nwId;
+      dSpecId[0] = nwGlbId;
+      dCovId[0] = nwGlbId;
 
       for (const auto & var : vars_) {
         // Get number of levels
@@ -829,33 +844,25 @@ void BifourierCovarianceImpl::write() const {
         if ((retval = nc_def_dim(ncId, nzJName.c_str(), nz, &nzJId))) ERR(retval, nzJName);
 
         // Dimensions array, vertical part
-        dCorSqrtId[1] = nzIId;
-        dCorSqrtId[2] = nzJId;
-        dStdDevId[0] = nzIId;
+        dProfId[0] = nzIId;
+        dVertCovId[0] = nzIId;
+        dVertCovId[1] = nzJId;
+        dSpecId[1] = nzIId;
         dCovId[1] = nzIId;
         dCovId[2] = nzJId;
 
-        // Get correlation square-root field name
-        const std::string corSqrtFieldName = fieldName("corSqrt", var);
-
-        // Get standard-deviation field name
-        const std::string stdDevFieldName = fieldName("stdDev", var);
-
-        // Get correlation square-root field name
-        const std::string covFieldName = fieldName("cov", var);
-
         // Define variables
-        if ((retval = nc_def_var(ncId, corSqrtFieldName.c_str(), NC_DOUBLE, 3, dCorSqrtId,
-          &corSqrtId[jvar]))) ERR(retval, corSqrtFieldName);
-        if ((retval = nc_def_var(ncId, stdDevFieldName.c_str(), NC_DOUBLE, 1, dStdDevId,
-          &stdDevId[jvar]))) ERR(retval, stdDevFieldName);
+        defNcVar("corSqrt", var, ncId, dCovId, varId, jVar);
+        defNcVar("stdDev", var, ncId, dProfId, varId, jVar);
         if (params_.write.value()->writeCovariance.value()) {
-          if ((retval = nc_def_var(ncId, covFieldName.c_str(), NC_DOUBLE, 3, dCovId,
-            &covId[jvar]))) ERR(retval, covFieldName);
+          defNcVar("cov", var, ncId, dCovId, varId, jVar);
         }
-
-        // Update index
-        ++jvar;
+        if (params_.profiles.value() || params_.calibration.value()) {
+          defNcVar("varSpec", var, ncId, dSpecId, varId, jVar);
+          defNcVar("vertCov", var, ncId, dVertCovId, varId, jVar);
+          defNcVar("vertCor", var, ncId, dVertCovId, varId, jVar);
+          defNcVar("lengthScaleProf", var, ncId, dProfId, varId, jVar);
+        }
       }
 
       // End definition mode
@@ -863,53 +870,20 @@ void BifourierCovarianceImpl::write() const {
     }
 
     // Data mode
-    jvar = 0;
+    jVar = 0;
 
     for (const auto & var : vars_) {
-      // Get number of levels
-      const size_t nz = var.getLevels();
-
-      // Define global vectors
-      std::vector<double> corSqrtVecGlb;
-      std::vector<double> stdDevVec;
-      std::vector<double> covVecGlb;
-
-      // Get correlation square-root field
-      const auto corSqrtField = getField("corSqrt", var, data_);
-
-      // Gather correlation square-root vector
-      trans_->gatherCov(corSqrtField, corSqrtVecGlb);
-
+      // Write variables
+      putNcVar("corSqrt", var, ncId, varId, jVar, data_, *trans_);
+      putNcVar("stdDev", var, ncId, varId, jVar, data_, *trans_);
       if (params_.write.value()->writeCovariance.value()) {
-        // Get correlation square-root field
-        const auto covField = getField("cov", var, covData);
-
-        // Gather correlation square-root vector
-        trans_->gatherCov(covField, covVecGlb);
+        putNcVar("cov", var, ncId, varId, jVar, data_, *trans_);
       }
-
-      if (comm_.rank() == 0) {
-        // Get standard-deviation view
-        const auto stdDevView = getViewProfile("stdDev", var, data_);
-
-        // Allocate global standard-deviation vector
-        stdDevVec.resize(nz);
-
-        // Serialize
-        for (size_t jz = 0; jz < nz; ++jz) {
-          stdDevVec[jz] = stdDevView(jz);
-        }
-
-        // Write data
-        if ((retval = nc_put_var_double(ncId, corSqrtId[jvar], corSqrtVecGlb.data())))
-          ERR(retval, var.name() + "_corSqrt");
-        if ((retval = nc_put_var_double(ncId, stdDevId[jvar], stdDevVec.data())))
-          ERR(retval, var.name() + "_stdDev");
-        if (params_.write.value()->writeCovariance.value()) {
-          if ((retval = nc_put_var_double(ncId, covId[jvar], covVecGlb.data())))
-            ERR(retval, var.name() + "_cov");
-        }
-        ++jvar;
+      if (params_.profiles.value() || params_.calibration.value()) {
+        putNcVar("varSpec", var, ncId, varId, jVar, data_, *trans_);
+        putNcVar("vertCov", var, ncId, varId, jVar, data_, *trans_);
+        putNcVar("vertCor", var, ncId, varId, jVar, data_, *trans_);
+        putNcVar("lengthScaleProf", var, ncId, varId, jVar, data_, *trans_);
       }
     }
 
@@ -934,7 +908,7 @@ void BifourierCovarianceImpl::readCovariance() {
   const std::string ncFilePath = *params_.calibration.value()->oldCovInputFile.value();
 
   // NetCDF IDs
-  int ncId, retval, nwId, nzIId, nzJId, covId;
+  int ncId, retval, nwGlbId, nzIId, nzJId, covId;
   size_t nwGlbFromFile, nzIFromFile, nzJFromFile;
 
   if (comm_.rank() == 0) {
@@ -953,10 +927,10 @@ void BifourierCovarianceImpl::readCovariance() {
       // Check dimensions
       const std::string nzIName = "nzI_" + var.name();
       const std::string nzJName = "nzJ_" + var.name();
-      if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwId))) ERR(retval, "nwGlb");
+      if ((retval = nc_inq_dimid(ncId, "nwGlb", &nwGlbId))) ERR(retval, "nwGlb");
       if ((retval = nc_inq_dimid(ncId, nzIName.c_str(), &nzIId))) ERR(retval, nzIName);
       if ((retval = nc_inq_dimid(ncId, nzJName.c_str(), &nzJId))) ERR(retval, nzJName);
-      if ((retval = nc_inq_dimlen(ncId, nwId, &nwGlbFromFile))) ERR(retval, "nwGlb");
+      if ((retval = nc_inq_dimlen(ncId, nwGlbId, &nwGlbFromFile))) ERR(retval, "nwGlb");
       if ((retval = nc_inq_dimlen(ncId, nzIId, &nzIFromFile))) ERR(retval, nzIName);
       if ((retval = nc_inq_dimlen(ncId, nzJId, &nzJFromFile))) ERR(retval, nzJName);
       ASSERT(nwGlbFromFile == trans_->nwGlb());
@@ -1048,7 +1022,7 @@ void BifourierCovarianceImpl::computeSquareRoot() {
     createField3D("corSqrt", trans_->nw(), var, data_);
 
     // Create standard-deviation field
-    createFieldProfile("stdDev", var, data_);
+    createField1D("stdDev", var, data_);
 
     // Get covariance view
     const auto covView = getView3D("cov", var, data_);
@@ -1057,7 +1031,7 @@ void BifourierCovarianceImpl::computeSquareRoot() {
     auto corSqrtView = getView3D("corSqrt", var, data_);
 
     // Get standard-deviation view
-    auto stdDevView = getViewProfile("stdDev", var, data_);
+    auto stdDevView = getView1D("stdDev", var, data_);
 
     // Compute vertical correlation square-root
     const double zeps = 1.0e-99;
@@ -1148,10 +1122,10 @@ void BifourierCovarianceImpl::computeSquareRoot() {
     for (size_t jz2 = 0; jz2 < nz; ++jz2) {
       for (size_t js = 0; js < trans_->ns(); ++js) {
         if (trans_->q(js) == 0) {
+          const double fact = trans_->spNorm(js)*trans_->spNorm(js);
           const size_t jw = trans_->jw(js);
           for (size_t jz1 = 0; jz1 < nz; ++jz1) {
-            variance[jz2] += corSqrtView(jw, jz2, jz1)*corSqrtView(jw, jz2, jz1)
-              *trans_->spNorm(js)*trans_->spNorm(js);
+            variance[jz2] += corSqrtView(jw, jz2, jz1)*corSqrtView(jw, jz2, jz1)*fact;
           }
         }
       }
@@ -1206,7 +1180,7 @@ void BifourierCovarianceImpl::computeCovariance(atlas::FieldSet & covData) const
       const auto corSqrtView = getView3D("corSqrt", var, data_);
 
       // Get standard-deviation view
-      const auto stdDevView = getViewProfile("stdDev", var, data_);
+      const auto stdDevView = getView1D("stdDev", var, data_);
 
       // Compute covariance matrix
       for (size_t jw = 0; jw < trans_->nw(); ++jw) {
@@ -1228,6 +1202,106 @@ void BifourierCovarianceImpl::computeCovariance(atlas::FieldSet & covData) const
   oops::Log::trace() << classname() << "::computeCovariance done" << std::endl;
 }
 
+
+// -----------------------------------------------------------------------------
+
+void BifourierCovarianceImpl::computeDiagnostics() {
+  oops::Log::trace() << classname() << "::computeDiagnostics starting" << std::endl;
+
+  for (const auto & var : vars_) {
+    // Get number of levels
+    const size_t nz = var.getLevels();
+
+    // Get covariance view
+    const auto covView = getView3D("cov", var, data_);
+
+    // Create variance spectrum field
+    createField2D("varSpec", trans_->nw(), var, data_);
+
+    // Get variance spectrum view
+    auto varSpecView = getView2D("varSpec", var, data_);
+
+    // Compute variance spectrum
+    for (size_t jw = 0; jw < trans_->nw(); ++jw) {
+      for (size_t jz = 0; jz < nz; ++jz) {
+        varSpecView(jw, jz) = covView(jw, jz, jz);
+      }
+    }
+
+    // Create vertical covariance field
+    createField2D("vertCov", var, data_);
+
+    // Get vertical covariance view
+    auto vertCovView = getView2D("vertCov", var, data_);
+
+    // Compute vertical covariance
+    for (size_t js = 0; js < trans_->ns(); ++js) {
+      if (trans_->q(js) == 0) {
+        const double fact = trans_->spNorm(js)*trans_->spNorm(js);
+        const size_t jw = trans_->jw(js);
+        for (size_t jz2 = 0; jz2 < nz; ++jz2) {
+          for (size_t jz1 = 0; jz1 < nz; ++jz1) {
+            vertCovView(jz2, jz1) += covView(jw, jz2, jz1)*fact;
+          }
+        }
+      }
+    }
+
+    // Get standard-deviation view
+    const auto stdDevView = getView1D("stdDev", var, data_);
+
+    // Create vertical correlation field
+    createField2D("vertCor", var, data_);
+
+    // Get vertical correlation view
+    auto vertCorView = getView2D("vertCor", var, data_);
+
+    // Compute vertical correlation
+    for (size_t jz2 = 0; jz2 < nz; ++jz2) {
+      for (size_t jz1 = 0; jz1 < nz; ++jz1) {
+        const double norm = stdDevView(jz2)*stdDevView(jz1);
+        if (norm > 0.0) {
+          vertCorView(jz2, jz1) = vertCovView(jz2, jz1)/norm;
+        }
+      }
+    }
+
+    // Create length-scale profile field
+    createField1D("lengthScaleProf", var, data_);
+
+    // Get length-scale profile view
+    auto lengthScaleProfView = getView1D("lengthScaleProf", var, data_);
+
+    // Compute spectral variance and its Laplacian
+    std::vector<double> specVar(nz, 0.0);
+    std::vector<double> lapSpecVar(nz, 0.0);
+    for (size_t jz = 0; jz < nz; ++jz) {
+      for (size_t js = 0; js < trans_->ns(); ++js) {
+        if (trans_->q(js) == 0) {
+          const double fact = trans_->spNorm(js)*trans_->spNorm(js);
+          const size_t jw = trans_->jw(js);
+          specVar[jz] += covView(jw, jz, jz)*fact;
+          lapSpecVar[jz] += trans_->lapDir(js)*covView(jw, jz, jz)*fact;
+        }
+      }
+    }
+
+    // Reduce length-scale components
+    comm_.allReduceInPlace(specVar.begin(), specVar.end(), eckit::mpi::sum());
+    comm_.allReduceInPlace(lapSpecVar.begin(), lapSpecVar.end(), eckit::mpi::sum());
+
+    // Compute Daley length-scale
+    const double lfac = std::sqrt(2.0)*static_cast<double>(trans_->nwGlb()-1)/(2.0*M_PI);
+    for (size_t jz = 0; jz < nz; ++jz) {
+      if (lapSpecVar[jz] < 0.0) {
+        lengthScaleProfView(jz) = lfac*std::sqrt(-specVar[jz]/lapSpecVar[jz]);
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::computeDiagnostics done" << std::endl;
+}
+
 // -----------------------------------------------------------------------------
 
 void BifourierCovarianceImpl::print(std::ostream & os) const {
@@ -1241,7 +1315,7 @@ void BifourierCovarianceImpl::print(std::ostream & os) const {
     const auto corSqrtField = getField("corSqrt", var, data_);
 
     // Get standard-deviation view
-    const auto stdDevView = getViewProfile("stdDev", var, data_);
+    const auto stdDevView = getView1D("stdDev", var, data_);
 
     // Compute standard deviation squared norm
     double stdDevNorm = 0.0;

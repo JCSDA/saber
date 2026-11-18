@@ -19,130 +19,145 @@ contains
 
 !----------------------------------------------------------------------
 
-subroutine bifourier_arome_legacy_read_balance_c(c_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1) &
- & bind(c,name="bifourier_arome_legacy_read_balance_f90")
+subroutine bifourier_arome_legacy_read_balance_c(c_conf,c_attr,nsmaxp1,nflev,kspec2g,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu, &
+ & fact1) bind(c,name="bifourier_arome_legacy_read_balance_f90")
 
 implicit none
 
 ! Passed variables
 type(c_ptr),intent(in),value :: c_conf
-integer(c_int),intent(in) :: nwglb
+type(c_ptr),intent(in),value :: c_attr
+integer(c_int),intent(in) :: nsmaxp1
 integer(c_int),intent(in) :: nflev
-real(c_double),intent(inout) :: sdivpb(nwglb*nflev*nflev)
-real(c_double),intent(inout) :: stpspb(nwglb*nflev*(nflev+1))
-real(c_double),intent(inout) :: stpsdivu(nwglb*nflev*(nflev+1))
-real(c_double),intent(inout) :: sqpb(nwglb*nflev*nflev)
-real(c_double),intent(inout) :: sqdivu(nwglb*nflev*nflev)
-real(c_double),intent(inout) :: sqtpsu(nwglb*(nflev+1)*nflev)
-integer(c_int),intent(in) :: nial
-real(c_double),intent(inout) :: fact1(nial)
+integer(c_int),intent(in) :: kspec2g
+real(c_double),intent(inout) :: sdivpb(nsmaxp1*nflev*nflev)
+real(c_double),intent(inout) :: stpspb(nsmaxp1*nflev*(nflev+1))
+real(c_double),intent(inout) :: stpsdivu(nsmaxp1*nflev*(nflev+1))
+real(c_double),intent(inout) :: sqpb(nsmaxp1*nflev*nflev)
+real(c_double),intent(inout) :: sqdivu(nsmaxp1*nflev*nflev)
+real(c_double),intent(inout) :: sqtpsu(nsmaxp1*(nflev+1)*nflev)
+real(c_double),intent(inout) :: fact1(kspec2g)
 
 ! Local variables
 type(fckit_configuration) :: f_conf
+type(fckit_configuration) :: f_attr
 
 ! Interface
 f_conf = fckit_configuration(c_conf)
+f_attr = fckit_configuration(c_attr)
 
 ! Call Fortran
-call bifourier_arome_legacy_read_balance(f_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1)
+call bifourier_arome_legacy_read_balance(f_conf,f_attr,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,fact1)
 
 ! Release memory
 call f_conf%final()
+call f_attr%final()
 
 end subroutine bifourier_arome_legacy_read_balance_c
 
 !----------------------------------------------------------------------
 
-subroutine bifourier_arome_legacy_write_balance_c(c_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1) &
- & bind(c,name="bifourier_arome_legacy_write_balance_f90")
+subroutine bifourier_arome_legacy_write_balance_c(c_conf,c_attr,nsmaxp1,nflev,kspec2g,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu, &
+ & fact1) bind(c,name="bifourier_arome_legacy_write_balance_f90")
 
 implicit none
 
 ! Passed variables
 type(c_ptr),intent(in),value :: c_conf
-integer(c_int),intent(in) :: nwglb
+type(c_ptr),intent(in),value :: c_attr
+integer(c_int),intent(in) :: nsmaxp1
 integer(c_int),intent(in) :: nflev
-real(c_double),intent(in) :: sdivpb(nwglb*nflev*nflev)
-real(c_double),intent(in) :: stpspb(nwglb*nflev*(nflev+1))
-real(c_double),intent(in) :: stpsdivu(nwglb*nflev*(nflev+1))
-real(c_double),intent(in) :: sqpb(nwglb*nflev*nflev)
-real(c_double),intent(in) :: sqdivu(nwglb*nflev*nflev)
-real(c_double),intent(in) :: sqtpsu(nwglb*(nflev+1)*nflev)
-integer(c_int),intent(in) :: nial
-real(c_double),intent(in) :: fact1(nial)
+integer(c_int),intent(in) :: kspec2g
+real(c_double),intent(in) :: sdivpb(nsmaxp1*nflev*nflev)
+real(c_double),intent(in) :: stpspb(nsmaxp1*nflev*(nflev+1))
+real(c_double),intent(in) :: stpsdivu(nsmaxp1*nflev*(nflev+1))
+real(c_double),intent(in) :: sqpb(nsmaxp1*nflev*nflev)
+real(c_double),intent(in) :: sqdivu(nsmaxp1*nflev*nflev)
+real(c_double),intent(in) :: sqtpsu(nsmaxp1*(nflev+1)*nflev)
+real(c_double),intent(in) :: fact1(kspec2g)
 
 ! Local variables
 type(fckit_configuration) :: f_conf
+type(fckit_configuration) :: f_attr
 
 ! Interface
 f_conf = fckit_configuration(c_conf)
+f_attr = fckit_configuration(c_attr)
 
 ! Call Fortran
-call bifourier_arome_legacy_write_balance(f_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1)
+call bifourier_arome_legacy_write_balance(f_conf,f_attr,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,fact1)
 
 ! Release memory
 call f_conf%final()
+call f_attr%final()
 
 end subroutine bifourier_arome_legacy_write_balance_c
 
 !----------------------------------------------------------------------
 
-subroutine bifourier_arome_legacy_read_covariance_c(c_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov) &
+subroutine bifourier_arome_legacy_read_covariance_c(c_conf,c_attr,nsmaxp1,nflev,vorcov,divucov,tpsucov,qucov) &
  & bind(c,name="bifourier_arome_legacy_read_covariance_f90")
 
 implicit none
 
 ! Passed variables
 type(c_ptr),intent(in),value :: c_conf
-integer(c_int),intent(in) :: nwglb
+type(c_ptr),intent(in),value :: c_attr
+integer(c_int),intent(in) :: nsmaxp1
 integer(c_int),intent(in) :: nflev
-real(c_double),intent(inout) :: vorcov(nwglb*nflev*nflev)
-real(c_double),intent(inout) :: divucov(nwglb*nflev*nflev)
-real(c_double),intent(inout) :: tpsucov(nwglb*(nflev+1)*(nflev+1))
-real(c_double),intent(inout) :: qucov(nwglb*nflev*nflev)
+real(c_double),intent(inout) :: vorcov(nsmaxp1*nflev*nflev)
+real(c_double),intent(inout) :: divucov(nsmaxp1*nflev*nflev)
+real(c_double),intent(inout) :: tpsucov(nsmaxp1*(nflev+1)*(nflev+1))
+real(c_double),intent(inout) :: qucov(nsmaxp1*nflev*nflev)
 
 ! Local variables
 type(fckit_configuration) :: f_conf
+type(fckit_configuration) :: f_attr
 
 ! Interface
 f_conf = fckit_configuration(c_conf)
+f_attr = fckit_configuration(c_attr)
 
 ! Call Fortran
-call bifourier_arome_legacy_read_covariance(f_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov)
+call bifourier_arome_legacy_read_covariance(f_conf,f_attr,vorcov,divucov,tpsucov,qucov)
 
 ! Release memory
 call f_conf%final()
+call f_attr%final()
 
 end subroutine bifourier_arome_legacy_read_covariance_c
 
-
 !----------------------------------------------------------------------
 
-subroutine bifourier_arome_legacy_write_covariance_c(c_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov) &
+subroutine bifourier_arome_legacy_write_covariance_c(c_conf,c_attr,nsmaxp1,nflev,vorcov,divucov,tpsucov,qucov) &
  & bind(c,name="bifourier_arome_legacy_write_covariance_f90")
 
 implicit none
 
 ! Passed variables
 type(c_ptr),intent(in),value :: c_conf
-integer(c_int),intent(in) :: nwglb
+type(c_ptr),intent(in),value :: c_attr
+integer(c_int),intent(in) :: nsmaxp1
 integer(c_int),intent(in) :: nflev
-real(c_double),intent(in) :: vorcov(nwglb*nflev*nflev)
-real(c_double),intent(in) :: divucov(nwglb*nflev*nflev)
-real(c_double),intent(in) :: tpsucov(nwglb*(nflev+1)*(nflev+1))
-real(c_double),intent(in) :: qucov(nwglb*nflev*nflev)
+real(c_double),intent(in) :: vorcov(nsmaxp1*nflev*nflev)
+real(c_double),intent(in) :: divucov(nsmaxp1*nflev*nflev)
+real(c_double),intent(in) :: tpsucov(nsmaxp1*(nflev+1)*(nflev+1))
+real(c_double),intent(in) :: qucov(nsmaxp1*nflev*nflev)
 
 ! Local variables
 type(fckit_configuration) :: f_conf
+type(fckit_configuration) :: f_attr
 
 ! Interface
 f_conf = fckit_configuration(c_conf)
+f_attr = fckit_configuration(c_attr)
 
 ! Call Fortran
-call bifourier_arome_legacy_write_covariance(f_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov)
+call bifourier_arome_legacy_write_covariance(f_conf,f_attr,vorcov,divucov,tpsucov,qucov)
 
 ! Release memory
 call f_conf%final()
+call f_attr%final()
 
 end subroutine bifourier_arome_legacy_write_covariance_c
 

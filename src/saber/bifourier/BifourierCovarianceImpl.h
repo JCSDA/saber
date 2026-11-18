@@ -189,6 +189,9 @@ class BifourierCovarianceImpl {
   // Compute covariance from correlation square-root and standard-deviation
   void computeCovariance(atlas::FieldSet &) const;
 
+  // Compute diagnostics
+  void computeDiagnostics();
+
  protected:
   // Geometry data
   const oops::GeometryData & geometryData_;

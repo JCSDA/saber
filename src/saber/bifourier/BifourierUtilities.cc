@@ -5,10 +5,15 @@
 
 #include "saber/bifourier/BifourierUtilities.h"
 
+#include <netcdf.h>
+
 #include "eckit/exception/Exceptions.h"
 #include "eckit/utils/MD5.h"
 
 #include "oops/util/Logger.h"
+
+#define ERR(e, msg) {std::string s(nc_strerror(e)); \
+  throw eckit::Exception(s + " : " + msg, Here());}
 
 using atlas::array::make_datatype;
 using atlas::array::make_shape;
@@ -85,11 +90,8 @@ std::string generateSpectralUid(const atlas::FunctionSpace & fspace,
 
 std::string fieldName(const std::string & prefix,
                       const oops::Variable & var) {
-  oops::Log::trace() << "saber::bifourier::fieldName starting" << std::endl;
-
   const std::string name = prefix + "_" + var.name();
 
-  oops::Log::trace() << "saber::bifourier::fieldName done" << std::endl;
   return name;
 }
 
@@ -98,21 +100,17 @@ std::string fieldName(const std::string & prefix,
 std::string fieldName(const std::string & prefix,
                       const oops::Variable & outputVar,
                       const oops::Variable & inputVar) {
-  oops::Log::trace() << "saber::bifourier::fieldName starting" << std::endl;
+  const std::string name = (inputVar == outputVar) ?
+    prefix + "_" + outputVar.name() : prefix + "_" + outputVar.name() + "_from_" + inputVar.name();
 
-  const std::string name = prefix + "_" + outputVar.name() + "_from_" + inputVar.name();
-
-  oops::Log::trace() << "saber::bifourier::fieldName done" << std::endl;
   return name;
 }
 
 // -----------------------------------------------------------------------------
 
-void createFieldProfile(const std::string & prefix,
-                        const oops::Variable & var,
-                        atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::createFieldProfile starting" << std::endl;
-
+void createField1D(const std::string & prefix,
+                   const oops::Variable & var,
+                   atlas::FieldSet & fset) {
   // Get matrix field name
   const std::string name = fieldName(prefix, var);
 
@@ -128,8 +126,6 @@ void createFieldProfile(const std::string & prefix,
 
   // Add matrix field
   fset.add(field);
-
-  oops::Log::trace() << "saber::bifourier::createFieldProfile done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -138,8 +134,6 @@ void createField2D(const std::string & prefix,
                    const size_t & bins,
                    const oops::Variable & var,
                    atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::createField2D starting" << std::endl;
-
   // Get field name
   const std::string name = fieldName(prefix, var);
 
@@ -154,8 +148,51 @@ void createField2D(const std::string & prefix,
 
   // Add field
   fset.add(field);
+}
 
-  oops::Log::trace() << "saber::bifourier::createField2D done" << std::endl;
+// -----------------------------------------------------------------------------
+
+void createField2D(const std::string & prefix,
+                   const oops::Variable & var,
+                   atlas::FieldSet & fset) {
+  // Get matrix field name
+  const std::string name = fieldName(prefix, var);
+
+  // Create matrix field
+  atlas::Field field(name, make_datatype<double>(),
+    make_shape(var.getLevels(), var.getLevels()));
+
+  // Get matrix view
+  auto view = make_view<double, 2>(field);
+
+  // Set matrix to zero
+  view.assign(0.0);
+
+  // Add matrix field
+  fset.add(field);
+}
+
+// -----------------------------------------------------------------------------
+
+void createField2D(const std::string & prefix,
+                   const oops::Variable & outputVar,
+                   const oops::Variable & inputVar,
+                   atlas::FieldSet & fset) {
+  // Get matrix field name
+  const std::string name = fieldName(prefix, outputVar, inputVar);
+
+  // Create matrix field
+  atlas::Field field(name, make_datatype<double>(),
+    make_shape(outputVar.getLevels(), inputVar.getLevels()));
+
+  // Get matrix view
+  auto view = make_view<double, 2>(field);
+
+  // Set matrix to zero
+  view.assign(0.0);
+
+  // Add matrix field
+  fset.add(field);
 }
 
 // -----------------------------------------------------------------------------
@@ -164,8 +201,6 @@ void createField3D(const std::string & prefix,
                    const size_t & bins,
                    const oops::Variable & var,
                    atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::createField3D starting" << std::endl;
-
   // Get matrix field name
   const std::string name = fieldName(prefix, var);
 
@@ -181,8 +216,6 @@ void createField3D(const std::string & prefix,
 
   // Add matrix field
   fset.add(field);
-
-  oops::Log::trace() << "saber::bifourier::createField3D done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -192,8 +225,6 @@ void createField3D(const std::string & prefix,
                    const oops::Variable & outputVar,
                    const oops::Variable & inputVar,
                    atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::createField3D starting" << std::endl;
-
   // Get matrix field name
   const std::string name = fieldName(prefix, outputVar, inputVar);
 
@@ -209,8 +240,6 @@ void createField3D(const std::string & prefix,
 
   // Add matrix field
   fset.add(field);
-
-  oops::Log::trace() << "saber::bifourier::createField3D done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -218,8 +247,6 @@ void createField3D(const std::string & prefix,
 atlas::Field getField(const std::string & prefix,
                       const oops::Variable & var,
                       const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getField starting" << std::endl;
-
   // Get matrix field name
   const std::string name = fieldName(prefix, var);
 
@@ -228,7 +255,7 @@ atlas::Field getField(const std::string & prefix,
 
   // Check number of levels
   if (field.rank() == 1) {
-    // Profile
+    // 1D field
     ASSERT(field.shape(0) == static_cast<int>(var.getLevels()));
   } else if (field.rank() == 2) {
     // 2D field
@@ -242,7 +269,6 @@ atlas::Field getField(const std::string & prefix,
     throw eckit::Exception("wrong rank", Here());
   }
 
-  oops::Log::trace() << "saber::bifourier::getField done" << std::endl;
   return field;
 }
 
@@ -252,36 +278,42 @@ atlas::Field getField(const std::string & prefix,
                       const oops::Variable & outputVar,
                       const oops::Variable & inputVar,
                       const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getField starting" << std::endl;
+  if (outputVar == inputVar) {
+    return getField(prefix, outputVar, fset);
+  } else {
+    // Get matrix field name
+    const std::string name = fieldName(prefix, outputVar, inputVar);
 
-  // Get matrix field name
-  const std::string name = fieldName(prefix, outputVar, inputVar);
+    // Get matrix field
+    auto field = fset[name];
 
-  // Get matrix field
-  auto field = fset[name];
+    // Check number of levels
+    if (field.rank() == 2) {
+      ASSERT(field.shape(0) == static_cast<int>(outputVar.getLevels()));
+      ASSERT(field.shape(1) == static_cast<int>(inputVar.getLevels()));
+    } else if (field.rank() == 3) {
+      ASSERT(field.shape(1) == static_cast<int>(outputVar.getLevels()));
+      ASSERT(field.shape(2) == static_cast<int>(inputVar.getLevels()));
+    } else {
+      // Wrong rank
+      throw eckit::Exception("wrong rank", Here());
+    }
 
-  // Check number of levels
-  ASSERT(field.shape(1) == static_cast<int>(outputVar.getLevels()));
-  ASSERT(field.shape(2) == static_cast<int>(inputVar.getLevels()));
-
-  oops::Log::trace() << "saber::bifourier::getField done" << std::endl;
-  return field;
+    return field;
+  }
 }
 
 // -----------------------------------------------------------------------------
 
-atlas::array::ArrayView<double, 1> getViewProfile(const std::string & prefix,
-                                                  const oops::Variable & var,
-                                                  const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getViewProfile starting" << std::endl;
-
+atlas::array::ArrayView<double, 1> getView1D(const std::string & prefix,
+                                             const oops::Variable & var,
+                                             const atlas::FieldSet & fset) {
   // Get matrix field
   auto field = getField(prefix, var, fset);
 
   // Get matrix view
   auto view = make_view<double, 1>(field);
 
-  oops::Log::trace() << "saber::bifourier::getViewProfile done" << std::endl;
   return view;
 }
 
@@ -289,15 +321,12 @@ atlas::array::ArrayView<double, 1> getViewProfile(const std::string & prefix,
 
 atlas::array::ArrayView<double, 2> getView2D(const oops::Variable & var,
                                              const oops::FieldSet3D & fset) {
-  oops::Log::trace() << "saber::bifourier::getView2D starting" << std::endl;
-
   // Get field name
   auto field = fset[var.name()];;
 
   // Get view
   auto view = make_view<double, 2>(field);
 
-  oops::Log::trace() << "saber::bifourier::getView2D done" << std::endl;
   return view;
 }
 
@@ -306,32 +335,42 @@ atlas::array::ArrayView<double, 2> getView2D(const oops::Variable & var,
 atlas::array::ArrayView<double, 2> getView2D(const std::string & prefix,
                                              const oops::Variable & var,
                                              const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getView2D starting" << std::endl;
-
   // Get field name
   auto field = getField(prefix, var, fset);
 
   // Get view
   auto view = make_view<double, 2>(field);
 
-  oops::Log::trace() << "saber::bifourier::getView2D done" << std::endl;
   return view;
 }
+
+// -----------------------------------------------------------------------------
+
+atlas::array::ArrayView<double, 2> getView2D(const std::string & prefix,
+                                             const oops::Variable & outputVar,
+                                             const oops::Variable & inputVar,
+                                             const atlas::FieldSet & fset) {
+  // Get matrix field
+  auto field = getField(prefix, outputVar, inputVar, fset);
+
+  // Get matrix view
+  auto view = make_view<double, 2>(field);
+
+  return view;
+}
+
 
 // -----------------------------------------------------------------------------
 
 atlas::array::ArrayView<double, 3> getView3D(const std::string & prefix,
                                              const oops::Variable & var,
                                              const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getView3D starting" << std::endl;
-
   // Get matrix field
   auto field = getField(prefix, var, fset);
 
   // Get matrix view
   auto view = make_view<double, 3>(field);
 
-  oops::Log::trace() << "saber::bifourier::getView3D done" << std::endl;
   return view;
 }
 
@@ -341,16 +380,107 @@ atlas::array::ArrayView<double, 3> getView3D(const std::string & prefix,
                                              const oops::Variable & outputVar,
                                              const oops::Variable & inputVar,
                                              const atlas::FieldSet & fset) {
-  oops::Log::trace() << "saber::bifourier::getView3D starting" << std::endl;
-
   // Get matrix field
   auto field = getField(prefix, outputVar, inputVar, fset);
 
   // Get matrix view
   auto view = make_view<double, 3>(field);
 
-  oops::Log::trace() << "saber::bifourier::getView3D done" << std::endl;
   return view;
+}
+
+// -----------------------------------------------------------------------------
+
+void defNcVar(const std::string & name,
+              const oops::Variable & var,
+              const int & ncId,
+              const std::vector<int> & dId,
+              std::vector<int> & varId,
+              size_t & jVar) {
+  defNcVar(name, var, var, ncId, dId, varId, jVar);
+}
+
+// -----------------------------------------------------------------------------
+
+void defNcVar(const std::string & name,
+              const oops::Variable & inputVar,
+              const oops::Variable & outputVar,
+              const int & ncId,
+              const std::vector<int> & dId,
+              std::vector<int> & varId,
+              size_t & jVar) {
+  // Build NetCDF variable name
+  const std::string varName = fieldName(name, inputVar, outputVar);
+
+  // Define variable
+  int retval;
+  if ((retval = nc_def_var(ncId, varName.c_str(), NC_DOUBLE, dId.size(), dId.data(), &varId[jVar])))
+    ERR(retval, varName);
+
+  // Update variable index
+  ++jVar;
+}
+
+// -----------------------------------------------------------------------------
+
+void putNcVar(const std::string & name,
+              const oops::Variable & var,
+              const int & ncId,
+              const std::vector<int> & varId,
+              size_t & jVar,
+              const atlas::FieldSet & data,
+              const BifourierTransformBase & trans) {
+  putNcVar(name, var, var, ncId, varId, jVar, data, trans);
+}
+// -----------------------------------------------------------------------------
+
+void putNcVar(const std::string & name,
+              const oops::Variable & outputVar,
+              const oops::Variable & inputVar,
+              const int & ncId,
+              const std::vector<int> & varId,
+              size_t & jVar,
+              const atlas::FieldSet & data,
+              const BifourierTransformBase & trans) {
+  // Get field
+  const auto field = getField(name, outputVar, inputVar, data);
+
+  // Create vector
+  std::vector<double> vec;
+
+  // Prepare vector
+  if (field.rank() == 1) {
+    if (trans.geometryData().comm().rank() == 0) {
+      // Serialize profile to vector
+      trans.serializeProf(field, vec);
+    }
+  } else if (field.rank() == 2) {
+    if ((field.shape(0) == trans.nw()) && (field.shape(1) == outputVar.getLevels())) {
+      // Gather spectrum vector
+      trans.gatherCov(field, vec);
+    } else if ((field.shape(0) == outputVar.getLevels()) &&
+        (field.shape(1) == inputVar.getLevels())) {
+      // Reduce vertical matrix
+      trans.reduceVertCov(field, vec);
+    } else {
+      throw eckit::Exception("wrong shape for " + name, Here());
+    }
+  } else if (field.rank() == 3) {
+    // Gather covariance vector
+    trans.gatherCov(field, vec);
+  } else {
+    throw eckit::Exception("wrong rank for " + name, Here());
+  }
+
+  // Write data
+  if (trans.geometryData().comm().rank() == 0) {
+    const std::string varName = fieldName(name, outputVar, inputVar);
+    int retval;
+    if ((retval = nc_put_var_double(ncId, varId[jVar], vec.data()))) ERR(retval, varName);
+  }
+
+  // Update variable index
+  ++jVar;
 }
 
 // -----------------------------------------------------------------------------

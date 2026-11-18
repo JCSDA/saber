@@ -28,7 +28,6 @@ Input Dirac increment:
 - Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
@@ -44,7 +43,6 @@ Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == 
 - Spectral array global size: 669
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
@@ -62,7 +60,6 @@ Outer inverse test for block BifourierGridToSpectral passed: Uinv U (Uinv x) == 
 - Spectral array global size: 669
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
@@ -86,7 +83,6 @@ Square-root test for the multivariate central block passed
 - Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed

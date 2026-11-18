@@ -196,6 +196,9 @@ class BifourierBalance : public OuterBlockBase {
   // Compute regressions from covariances
   void computeRegressionsFromCovariances();
 
+  // Compute regressions from covariances
+  void computeDiagnostics();
+
   // Get variables to compute full covariances with
   oops::Variables xxCovVars(const oops::Variable &) const;
 

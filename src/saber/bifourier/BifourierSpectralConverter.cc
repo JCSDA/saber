@@ -42,8 +42,7 @@ BifourierSpectralConverter::BifourierSpectralConverter(const oops::GeometryData 
     innerGpFs = xb[*params.fspaceFromBkgVar.value()].functionspace();
   } else {
     // Get outer geometry configuration
-    const atlas::functionspace::StructuredColumns outerFs(
-      outerTrans_->geometryData().functionSpace());
+    const atlas::functionspace::StructuredColumns outerFs(outerTrans_->gpFspace());
     const atlas::StructuredGrid & outerGrid = outerFs.grid();
     const atlas::util::Config outerGridConfig = outerGrid.spec();
     atlas::util::Config domainConfig = outerGrid.domain().spec();

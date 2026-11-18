@@ -28,7 +28,6 @@ Input Dirac increment:
 - Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
@@ -41,7 +40,6 @@ Input Dirac increment:
 - Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
-- Parseval identity test passed
 - Adjoint test (forward) passed
 - Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed

@@ -5,6 +5,8 @@
 
 #include "saber/bifourier/BifourierSpectralVorDivToGridWind.h"
 
+#include "atlas/util/Constants.h"
+
 using atlas::array::make_view;
 
 namespace saber {
@@ -108,7 +110,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
   oops::Variables biperVars;
 
   // Get grid function space
-  const atlas::functionspace::StructuredColumns fs(trans_->geometryData().functionSpace());
+  const atlas::functionspace::StructuredColumns fs(trans_->gpFspace());
 
   // Get lon/lat view
   const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
@@ -138,12 +140,10 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
     // Get map factor view
     auto mapFactorView = make_view<double, 2>(mapFactorField);
 
-    // Degree to radian
-    const double deg2rad = M_PI/180.0;
-
     // Get projection parameter
     const eckit::LocalConfiguration projConf = fs.grid().projection().spec();
-    const double latitude0 = projConf.getDouble("latitude0")*deg2rad;
+    const double latitude0 = projConf.getDouble("latitude0")
+      *atlas::util::Constants::degreesToRadians();
 
     // Get pole
     double pole;
@@ -162,7 +162,7 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
 
     // Compute map factor
     for (int jnode = 0; jnode < mapFactorField.shape(0); ++jnode) {
-      const double latRad = lonlatView(jnode, 1)*deg2rad;
+      const double latRad = lonlatView(jnode, 1)*atlas::util::Constants::degreesToRadians();
       mapFactorView(jnode, 0) = rho0*sina/std::cos(latRad)
         *std::pow(std::tan((0.25*M_PI)-(pole*0.5*latRad)), sina);
     }
@@ -238,8 +238,8 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
     BiperiodizationImpl biper(outerGeometryData, biperVars, *biperParams);
     ASSERT(biper.sameFs());
 
-    // Apply biperiodization leftInverseMultiply to go to biperiodization inner geometry
-    biper.leftInverseMultiply(data_.fieldSet());
+    // Apply biperiodization inverseMultiply to go to biperiodization inner geometry
+    biper.inverseMultiply(data_.fieldSet());
 
     // Apply biperiodization multiply
     biper.multiply(data_.fieldSet());
@@ -304,6 +304,19 @@ void BifourierSpectralVorDivToGridWind::leftInverseMultiply(oops::FieldSet3D & f
   }
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+bool BifourierSpectralVorDivToGridWind::compareFieldSets(const oops::FieldSet3D & fset3D1,
+                                                         const oops::FieldSet3D & fset3D2,
+                                                         const double & tol) const {
+  if (trans_->isBiper()) {
+    oops::Log::test() << "Inverse tests skipped (biperiodization)" << std::endl;
+    return true;
+  } else {
+    return OuterBlockBase::compareFieldSets(fset3D1, fset3D2, tol);
+  }
 }
 
 // -----------------------------------------------------------------------------

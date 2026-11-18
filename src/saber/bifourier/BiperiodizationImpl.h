@@ -42,14 +42,93 @@ class BiperiodizationImplParameters : public oops::Parameters {
   // Inner partitioner (required if outer partitioner is "custom")
   oops::OptionalParameter<std::string> innerPartitioner{"inner partitioner", this};
 
-  // Mixing size (have an impact if lower than nxExt or nyExt)
-  oops::OptionalParameter<size_t> nmix{"mixing size", this};
+  // Mixing size
+  oops::Parameter<size_t> nmix{"mixing size", 0, this};
 
   // Mixing scale
   oops::Parameter<double> Lmix{"mixing scale", 1.0, this};
 
   // Boyd scale
   oops::Parameter<double> Lboyd{"boyd scale", 2.0, this};
+};
+
+// -----------------------------------------------------------------------------
+
+class BiperiodizationData {
+ public:
+  static const std::string classname()
+    {return "saber::bifourier::BiperiodizationData";}
+
+  BiperiodizationData(const eckit::mpi::Comm & comm,
+                      const atlas::functionspace::StructuredColumns &,
+                      const std::vector<int> &,
+                      const atlas::functionspace::StructuredColumns &,
+                      const size_t &,
+                      const size_t &,
+                      const size_t &,
+                      const size_t &,
+                      const size_t &,
+                      const double &,
+                      const double &,
+                      const oops::Variables &);
+  ~BiperiodizationData()
+    {};
+
+  // Multiply
+  void multiply(atlas::FieldSet &) const;
+
+  // Multiply adjoint
+  void multiplyAD(atlas::FieldSet &) const;
+
+ private:
+  // Communicator
+  const eckit::mpi::Comm & comm_;
+
+  // Input and output geometries
+  atlas::functionspace::StructuredColumns inputFs_;
+  std::vector<int> inputPartition_;
+  atlas::functionspace::StructuredColumns outputFs_;
+
+  // Variables
+  const oops::Variables vars_;
+
+  // Total number of levels (sum of all levels of all active variables)
+  size_t nvz_;
+
+  // Counter
+  size_t outputJnode_;
+
+  // Biperiodization operations
+  size_t localBiperSize_;
+  std::vector<size_t> localOutputJnodeVec_;
+  std::vector<size_t> localInputJnodeVec_;
+  std::vector<double> localWeightVec_;
+  size_t commBiperSize_;
+  std::vector<size_t> outputJnodeVec_;
+  std::vector<size_t> inputJnodeGlbVec_;
+  std::vector<size_t> inputTaskVec_;
+  std::vector<double> weightVec_;
+
+  // Communication
+  size_t sendSize_;
+  size_t recvSize_;
+  std::vector<int> sendCounts_;
+  std::vector<int> sendDispls_;
+  std::vector<int> recvCounts_;
+  std::vector<int> recvDispls_;
+
+  // Multiply vectors
+  std::vector<size_t> sendInputJnode_;
+  std::vector<size_t> outputJnodeVecOrdered_;
+  std::vector<double> weightVecOrdered_;
+  std::vector<size_t> mappingFull2Red_;
+
+  // Private methods
+
+  // Add element to send
+  void addBiperElement(const size_t &,
+                       const size_t &,
+                       const double &);
 };
 
 // -----------------------------------------------------------------------------
@@ -70,72 +149,31 @@ class BiperiodizationImpl {
   const atlas::FunctionSpace & innerFunctionSpace()
     {return innerFs_;}
 
-  void multiply(atlas::FieldSet &) const;
-  void multiplyAD(atlas::FieldSet &) const;
-  void leftInverseMultiply(atlas::FieldSet &) const;
+  void multiply(atlas::FieldSet & fset) const
+    {direct_->multiply(fset);}
+  void multiplyAD(atlas::FieldSet & fset) const
+    {direct_->multiplyAD(fset);}
+  void inverseMultiply(atlas::FieldSet & fset) const
+    {inverse_->multiply(fset);}
+  void inverseMultiplyAD(atlas::FieldSet & fset) const
+    {inverse_->multiplyAD(fset);}
 
   bool sameFs() const
     {return sameFs_;}
 
  private:
-  // Inner grid
-  atlas::StructuredGrid innerGrid_;
+  // Same grid flag
   bool sameFs_;
-
-  // Inner partition
-  std::vector<int> innerPartition_;
 
   // Inner FunctionSpace
   atlas::functionspace::StructuredColumns innerFs_;
 
-  // Outer geometry data
-  const oops::GeometryData & outerGeometryData_;
-
   // Communicator
   const eckit::mpi::Comm & comm_;
-  size_t myrank_;
 
-  // Variables
-  const oops::Variables & vars_;
-
-  // Parameters
-  Parameters_ params_;
-
-  // Total number of levels (sum of all levels of all active variables)
-  size_t nvz_;
-
-  // Biperiodization operations
-  size_t localBiperSize_;
-  std::vector<size_t> localOuterJnodeVec_;
-  std::vector<size_t> localInnerJnodeVec_;
-  std::vector<double> localWeightVec_;
-  size_t commBiperSize_;
-  std::vector<size_t> outerJnodeVec_;
-  std::vector<size_t> innerJnodeGlbVec_;
-  std::vector<size_t> innerTaskVec_;
-  std::vector<double> weightVec_;
-
-  // Communication
-  size_t sendSize_;
-  size_t recvSize_;
-  std::vector<int> sendCounts_;
-  std::vector<int> sendDispls_;
-  std::vector<int> recvCounts_;
-  std::vector<int> recvDispls_;
-
-  // Multiply vectors
-  std::vector<size_t> sendInnerJnode_;
-  std::vector<size_t> outerJnodeVecOrdered_;
-  std::vector<double> weightVecOrdered_;
-  std::vector<size_t> mappingFull2Red_;
-
-  // Private methods
-
-  // Add element to send
-  void addBiperElement(const size_t &,
-                       const size_t &,
-                       const size_t &,
-                       const double &);
+  // Data structure
+  std::unique_ptr<BiperiodizationData> direct_;
+  std::unique_ptr<BiperiodizationData> inverse_;
 };
 
 // -----------------------------------------------------------------------------

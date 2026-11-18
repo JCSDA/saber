@@ -19,9 +19,12 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
+#include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/Printable.h"
+
+#include "saber/bifourier/BiperiodizationImpl.h"
 
 namespace saber {
 namespace bifourier {
@@ -32,6 +35,10 @@ class BifourierTransformParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BifourierTransformParameters, Parameters)
 
  public:
+  // Biperiodization parameters
+  oops::OptionalParameter<BiperiodizationImplParameters> biperParams{"biperiodization",
+    this};
+
   // FFT backend
   oops::Parameter<std::string> fftBackend{"fft backend", "fftw", this};
 
@@ -136,6 +143,14 @@ class BifourierTransformBase : public util::Printable,
   const oops::GeometryData & geometryData() const
     {return gdata_;}
 
+  // Check if biperiodization is present
+  bool isBiper() const
+    {return biper_.get() != nullptr;}
+
+  // Periodic grid-point FunctionSpace
+  const atlas::FunctionSpace & gpFspace() const
+    {return gpFspace_;}
+
   // UIDs
   const std::string & gridUid() const
     {return gridUid_;}
@@ -196,7 +211,7 @@ class BifourierTransformBase : public util::Printable,
 
   // Dummy spectral FunctionSpace
   const atlas::FunctionSpace & spFspace() const
-    {return *spFspace_;}
+    {return spFspace_;}
 
   // Zonal truncation
   const size_t & M() const
@@ -221,6 +236,10 @@ class BifourierTransformBase : public util::Printable,
   // Return kstar for this wavenumber
   double kstar(const size_t & js) const
     {return kstarVec_[js];}
+
+  // Return lapDir for this wavenumber
+  double lapDir(const size_t & js) const
+    {return lapDirVec_[js];}
 
   // Return jw for this wavenumber
   size_t jw(const size_t & js) const
@@ -364,33 +383,51 @@ class BifourierTransformBase : public util::Printable,
   bool includeWavenumber(const size_t &,
                          const size_t &) const;
 
-  // Reduce covariances
+  // Reduce covariance
   void reduceCov(atlas::Field &) const;
 
-  // Scatter covariances
+  // Scatter covariance
   void scatterCov(const std::vector<double> &,
                   atlas::Field &,
                   const bool & adjointInput = false) const;
 
-  // Gather covariances
+  // Gather covariance
   void gatherCov(const atlas::Field &,
                  std::vector<double> &,
                  const bool & adjoint = false) const;
 
-  // Filter covariances
+  // Filter covariance
   void filterCov(const double &,
                  atlas::Field &) const;
 
-  // Compute covariances norm
+  // Compute covariance norm
   double normCov(const atlas::Field &) const;
 
   // Reduce and normalize covariance
   void reduceNormalizeCov(const size_t &,
                           atlas::Field &);
 
+  // Reduce vertical covariance
+  void reduceVertCov(const atlas::Field &,
+                     std::vector<double> &) const;
+
+  // Broadcast profile
+  void bcastProf(std::vector<double> &,
+                 atlas::Field &) const;
+
+  // Serialize profile
+  void serializeProf(const atlas::Field &,
+                     std::vector<double> &) const;
+
  protected:
   // Model grid geometry data
   const oops::GeometryData & gdata_;
+
+  // Biperiodization
+  std::unique_ptr<BiperiodizationImpl> biper_;
+
+  // Periodic grid-point FunctionSpace
+  atlas::FunctionSpace gpFspace_;
 
   // Communicator
   const eckit::mpi::Comm & comm_;
@@ -474,7 +511,7 @@ class BifourierTransformBase : public util::Printable,
   std::vector<size_t> sMapping_;
 
   // Dummy spectral function space
-  std::unique_ptr<atlas::FunctionSpace> spFspace_;
+  atlas::FunctionSpace spFspace_;
 
   // Total wavenumber
   size_t nwGlb_;
