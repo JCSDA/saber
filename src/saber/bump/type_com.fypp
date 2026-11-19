@@ -9,7 +9,7 @@
 !----------------------------------------------------------------------
 module type_com
 
-use fckit_mpi_module, only: fckit_mpi_status
+use fckit_mpi_module, only: fckit_mpi_status,fckit_mpi_sum
 !$ use omp_lib
 use tools_kinds, only: kind_int,kind_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
@@ -18,6 +18,11 @@ use type_mpl, only: mpl_type
 @:use_probe()
 
 implicit none
+
+! Fraction of empty (sender, receiver) task pairs above which halo exchanges use point-to-point instead of alltoallv.
+! This value is chosen arbitrarily. In most realistic applications, the fraction of empty pairs is close to 1, so the
+! exact value should rarely matter.
+real(kind_real),parameter :: sparse_comm_threshold = 0.5_kind_real
 
 ! Communication derived type
 type com_type
@@ -40,6 +45,11 @@ type com_type
    integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
    integer,allocatable :: halo(:)        !< Halo buffer
    integer,allocatable :: excl(:)        !< Exclusive interior buffer
+   ! Halo exchange mode, decided by an allreduce on the first ext/red (all tasks call ext/red together, whereas
+   ! setup/read/deserialize may run on different subsets of tasks, e.g. read on I/O tasks only).
+   ! Pointer because ext/red get com as intent(in): they cannot allocate it, but can update its target.
+   ! setup/read/deserialize allocate a fresh target set to 0; dealloc only nullifies, as copies may share it.
+   integer,pointer :: mode => null()     !< 0 undecided, 1 alltoallv, 2 point-to-point
 
    ! I/O IDs
    integer :: grpid                      !< group ID
@@ -60,6 +70,8 @@ contains
    procedure :: serialize => com_serialize
    procedure :: deserialize => com_deserialize
    procedure :: setup => com_setup
+   procedure :: reset_mode => com_reset_mode
+   procedure :: sparse => com_sparse
    #:for dtype in dtypes_irl
       #:for rank in ranks_1234
          procedure :: com_ext_${dtype}$_r${rank}$
@@ -115,6 +127,7 @@ if (allocated(com%jhalodispls)) deallocate(com%jhalodispls)
 if (allocated(com%jexcldispls)) deallocate(com%jexcldispls)
 if (allocated(com%halo)) deallocate(com%halo)
 if (allocated(com%excl)) deallocate(com%excl)
+nullify(com%mode)
 
 ! Probe out
 @:probe_out()
@@ -179,6 +192,9 @@ call get_var(mpl,com%grpid,com%jhalodispls_id,com%jhalodispls)
 call get_var(mpl,com%grpid,com%jexcldispls_id,com%jexcldispls)
 if (com%nhalo>0) call get_var(mpl,com%grpid,com%halo_id,com%halo)
 if (com%nexcl>0) call get_var(mpl,com%grpid,com%excl_id,com%excl)
+
+! Reset exchange mode
+call com%reset_mode
 
 ! Probe out
 @:probe_out()
@@ -431,6 +447,9 @@ ibufi = ibufi+com%nexcl
 
 ! Check
 if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+
+! Reset exchange mode
+call com%reset_mode
 
 ! Probe out
 @:probe_out()
@@ -767,10 +786,70 @@ call mpl%update_tag(6)
 ! Set prefix
 com_out%prefix = prefix
 
+! Reset exchange mode
+call com_out%reset_mode
+
 ! Probe out
 @:probe_out()
 
 end subroutine com_setup
+
+!----------------------------------------------------------------------
+! Subroutine: com_reset_mode
+!> Mark the exchange mode as undecided (counts have been set or changed)
+!----------------------------------------------------------------------
+subroutine com_reset_mode(com)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com !< Communication data
+
+! Fresh target: never deallocate the previous one, which a copy of the containing object may still use
+allocate(com%mode)
+com%mode = 0
+
+end subroutine com_reset_mode
+
+!----------------------------------------------------------------------
+! Function: com_sparse
+!> Decide (once, collectively) whether halo exchanges use point-to-point communication
+!----------------------------------------------------------------------
+function com_sparse(com,mpl) result(sparse)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Returned variable
+logical :: sparse
+
+! Local variables
+integer :: nempty
+real(kind_real) :: fempty
+
+if (.not.associated(com%mode)) then
+   ! Not set up through setup/read/deserialize: keep the collective exchange
+   sparse = .false.
+   return
+end if
+
+if (com%mode==0) then
+   ! Global fraction of empty (sender, receiver) pairs, as in oops GlobalInterpolator
+   nempty = count(com%jexclcounts==0)
+   call mpl%f_comm%allreduce(nempty,fckit_mpi_sum())
+   fempty = real(nempty,kind_real)/(real(mpl%nproc,kind_real)**2)
+   if (fempty>=sparse_comm_threshold) then
+      com%mode = 2
+   else
+      com%mode = 1
+   end if
+end if
+sparse = (com%mode==2)
+
+end function com_sparse
 
 #:for dtype in dtypes_irl
    #:for rank in ranks_1234
@@ -789,11 +868,13 @@ ${ftype[dtype]}$,intent(in) :: vec_red(${dim[rank]}$)  !< Reduced vector
 ${ftype[dtype]}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
 
 ! Local variables
-integer :: nl,iexcl,iown,ihalo
+integer :: nl,iexcl,iown,ihalo,iproc,nreq,ireq
 integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+integer :: req(2*mpl%nproc)
+type(fckit_mpi_status) :: status
 #{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
 #{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
-${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+${ftype[dtype]}$,allocatable,asynchronous :: sbuf(:),rbuf(:)
 
 ! Set name
 @:set_name(com_ext_${dtype}$_r${rank}$)
@@ -843,7 +924,28 @@ jexclcounts = com%jexclcounts*nl
 jexcldispls = com%jexcldispls*nl
 jhalocounts = com%jhalocounts*nl
 jhalodispls = com%jhalodispls*nl
-call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+if (com%sparse(mpl)) then
+   ! Point-to-point with the tasks that actually exchange data
+   nreq = 0
+   do iproc=1,mpl%nproc
+      if (jhalocounts(iproc)>0) then
+         nreq = nreq+1
+         req(nreq) = mpl%f_comm%ireceive(rbuf(jhalodispls(iproc)+1:jhalodispls(iproc)+jhalocounts(iproc)),iproc-1,mpl%tag)
+      end if
+   end do
+   do iproc=1,mpl%nproc
+      if (jexclcounts(iproc)>0) then
+         nreq = nreq+1
+         req(nreq) = mpl%f_comm%isend(sbuf(jexcldispls(iproc)+1:jexcldispls(iproc)+jexclcounts(iproc)),iproc-1,mpl%tag)
+      end if
+   end do
+   do ireq=1,nreq
+      call mpl%f_comm%wait(req(ireq),status)
+   end do
+   call mpl%update_tag(1)
+else
+   call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+end if
 
 ! Initialization
 vec_ext = ${zero[dtype]}$
@@ -907,11 +1009,13 @@ ${ftype[dtype]}$,intent(out) :: vec_red(${dim[rank]}$) !< Reduced vector
 character(len=*),intent(in),optional :: op             !< Logical operation for the sum
 
 ! Local variables
-integer :: nl,ihalo,iown,iexcl
+integer :: nl,ihalo,iown,iexcl,iproc,nreq,ireq
 integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+integer :: req(2*mpl%nproc)
+type(fckit_mpi_status) :: status
 #{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
 #{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
-${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+${ftype[dtype]}$,allocatable,asynchronous :: sbuf(:),rbuf(:)
 character(len=3) :: lop
 
 ! Set name
@@ -969,7 +1073,28 @@ jexclcounts = com%jexclcounts*nl
 jexcldispls = com%jexcldispls*nl
 jhalocounts = com%jhalocounts*nl
 jhalodispls = com%jhalodispls*nl
-call mpl%f_comm%alltoall(sbuf,jhalocounts,jhalodispls,rbuf,jexclcounts,jexcldispls)
+if (com%sparse(mpl)) then
+   ! Point-to-point with the tasks that actually exchange data
+   nreq = 0
+   do iproc=1,mpl%nproc
+      if (jexclcounts(iproc)>0) then
+         nreq = nreq+1
+         req(nreq) = mpl%f_comm%ireceive(rbuf(jexcldispls(iproc)+1:jexcldispls(iproc)+jexclcounts(iproc)),iproc-1,mpl%tag)
+      end if
+   end do
+   do iproc=1,mpl%nproc
+      if (jhalocounts(iproc)>0) then
+         nreq = nreq+1
+         req(nreq) = mpl%f_comm%isend(sbuf(jhalodispls(iproc)+1:jhalodispls(iproc)+jhalocounts(iproc)),iproc-1,mpl%tag)
+      end if
+   end do
+   do ireq=1,nreq
+      call mpl%f_comm%wait(req(ireq),status)
+   end do
+   call mpl%update_tag(1)
+else
+   call mpl%f_comm%alltoall(sbuf,jhalocounts,jhalodispls,rbuf,jexclcounts,jexcldispls)
+end if
 
 ! Initialization
 vec_red = ${zero[dtype]}$
