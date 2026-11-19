@@ -15,6 +15,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/mpi/Comm.h"
+
 #include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
@@ -64,6 +66,7 @@ class Fields : public util::Printable,
             const Fields &);
   double dot_product_with(const Fields &) const;
   void schur_product_with(const Fields &);
+  void schur_quotient_with(const Fields &);
   void dirac(const eckit::Configuration &);
   void random(const int &);
   void random()
@@ -98,6 +101,9 @@ class Fields : public util::Printable,
     {return time_;}
   void updateTime(const util::Duration & dt)
     {time_ += dt;}
+
+  // Sum in place across comm; used when forming ensemble statistics
+  void allReduceInPlace(const eckit::mpi::Comm &);
 
   // Serialization
   size_t serialSize() const;

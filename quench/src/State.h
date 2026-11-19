@@ -99,11 +99,18 @@ class State : public util::Printable,
                const State & xx)
     {fields_->axpy(zz, *xx.fields_);}
 
+  // Variables
+  void removeFields(const oops::Variables &);
+  void addFields(const oops::Variables &);
+
   // Geometry and variables accessors
   const Geometry & geometry() const
     {return fields_->geometry();}
   const oops::Variables & variables() const
     {return fields_->variables();}
+
+  void allReduceInPlace(const eckit::mpi::Comm & comm)
+    {fields_->allReduceInPlace(comm);}
 
   // Serialization
   size_t serialSize() const

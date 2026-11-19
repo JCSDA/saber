@@ -67,6 +67,8 @@ class Increment : public util::Printable,
     {return fields_->dot_product_with(*dx.fields_);}
   void schur_product_with(const Increment & dx)
     {fields_->schur_product_with(*dx.fields_);}
+  void schur_quotient_with(const Increment & dx)
+    {fields_->schur_quotient_with(*dx.fields_);}
   void random()
     {fields_->random();}
   void sqrt()
@@ -112,6 +114,9 @@ class Increment : public util::Printable,
     {return fields_->geometry();}
   const oops::Variables & variables() const
     {return fields_->variables();}
+
+  void allReduceInPlace(const eckit::mpi::Comm & comm)
+    {fields_->allReduceInPlace(comm);}
 
   // Serialization
   size_t serialSize() const

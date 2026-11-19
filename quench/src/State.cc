@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include "atlas/field.h"
+
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/util/Logger.h"
@@ -102,6 +104,42 @@ void State::print(std::ostream & os) const {
   os << *fields_;
 
   oops::Log::trace() << classname() << "::print done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void State::removeFields(const oops::Variables & vars) {
+  oops::Log::trace() << classname() << "::removeFields starting" << std::endl;
+
+  // Keep (share) the fields of the other variables
+  atlas::FieldSet fset;
+  for (const auto & field : fields_->fieldSet()) {
+    if (!vars.has(field.name())) {
+      fset.add(field);
+    }
+  }
+  fields_->fromFieldSet(fset);
+
+  oops::Log::trace() << classname() << "::removeFields done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void State::addFields(const oops::Variables & vars) {
+  oops::Log::trace() << classname() << "::addFields starting" << std::endl;
+
+  // Keep (share) the existing fields and append zero fields for vars
+  const Fields added(fields_->geometry(), vars, fields_->validTime(), true);
+  atlas::FieldSet fset;
+  for (const auto & field : fields_->fieldSet()) {
+    fset.add(field);
+  }
+  for (const auto & field : added.fieldSet()) {
+    fset.add(field);
+  }
+  fields_->fromFieldSet(fset);
+
+  oops::Log::trace() << classname() << "::addFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

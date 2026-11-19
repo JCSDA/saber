@@ -27,6 +27,7 @@
 #include "eckit/exception/Exceptions.h"
 #include "eckit/mpi/Comm.h"
 
+#include "oops/mpi/mpi.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/ConfigHelpers.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -552,6 +553,43 @@ void Fields::schur_product_with(const Fields & fld2) {
 
 // -----------------------------------------------------------------------------
 
+void Fields::schur_quotient_with(const Fields & fld2) {
+  oops::Log::trace() << classname() << "::schur_quotient_with starting" << std::endl;
+
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(fld2));
+
+  // Contract of oops::util::divideFieldSets: a zero denominator over a zero numerator
+  // leaves the value alone, and is an error over a non-zero numerator.
+  for (const auto & var : vars_) {
+    atlas::Field field = fset_[var.name()];
+    const std::string gmaskName = "gmask_" + std::to_string(geom_.groupIndex(var.name()));
+    const auto gmaskView = atlas::array::make_view<int, 2>(geom_.fields()[gmaskName]);
+    const atlas::Field field2 = fld2.fset_[var.name()];
+    if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      const auto view2 = atlas::array::make_view<double, 2>(field2);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          if (gmaskView(jnode, jlevel) == 1) {
+            if (view2(jnode, jlevel) != 0.0) {
+              view(jnode, jlevel) /= view2(jnode, jlevel);
+            } else if (view(jnode, jlevel) != 0.0) {
+              throw eckit::BadValue(classname() + "::schur_quotient_with: divide by zero",
+                                    Here());
+            }
+          }
+        }
+      }
+      field.set_dirty(field.dirty() || field2.dirty());
+    }
+  }
+
+  oops::Log::trace() << classname() << "::schur_quotient_with done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Fields::random(const int & seed) {
   oops::Log::trace() << classname() << "::random starting" << std::endl;
 
@@ -1072,6 +1110,15 @@ void Fields::write(const eckit::Configuration & config) const {
 double Fields::norm() const {
   oops::Log::trace() << classname() << "::norm" << std::endl;
   return std::sqrt(dot_product_with(*this));
+}
+
+// -----------------------------------------------------------------------------
+
+void Fields::allReduceInPlace(const eckit::mpi::Comm & comm) {
+  oops::mpi::allReduceInPlace(comm, fset_);
+  // The typed op subsumes the synchronizeFields() its call sites used to make
+  // explicitly, which for quench is where duplicate points get reset.
+  synchronizeFields();
 }
 
 // -----------------------------------------------------------------------------
