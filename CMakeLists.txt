@@ -53,13 +53,9 @@ find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.17.1 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.9.5 REQUIRED )
 if(OpenMP_FOUND)
-    find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran TESSELATION)
+    find_package( atlas 0.43.0 REQUIRED COMPONENTS OMP_Fortran TESSELATION)
 else()
-    find_package( atlas 0.35.0 REQUIRED COMPONENTS TESSELATION)
-endif()
-
-if( atlas_VERSION VERSION_GREATER "0.41" )
-    add_definitions(-DATLAS_MAKE_SPARSE)
+    find_package( atlas 0.43.0 REQUIRED COMPONENTS TESSELATION)
 endif()
 
 # Flag to signify Atlas supports spherical vector interpolation.
