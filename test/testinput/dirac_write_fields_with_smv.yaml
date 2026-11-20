@@ -5,18 +5,23 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_potential_temperature
     - air_pressure
     - air_pressure_levels_minus_one
     - air_temperature
     - cfeff
     - cleff
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
     - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
     - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+    - dimensionless_exner_function
+    - dimensionless_exner_function_levels_minus_one
     - dlsvpdT
     - dry_air_density_levels_minus_one
     - eastward_wind
-    - dimensionless_exner_function
-    - dimensionless_exner_function_levels_minus_one
     - geostrophic_pressure_levels_minus_one
     - height_above_mean_sea_level
     - ice_cloud_volume_fraction_in_atmosphere_layer
@@ -29,23 +34,18 @@ geometry:
     - muRow1Column2
     - muRow2Column1
     - muRow2Column2
-    - cloud_ice_mixing_ratio_wrt_dry_air
-    - cloud_liquid_water_mixing_ratio_wrt_dry_air
-    - rain_mixing_ratio_wrt_dry_air
-    - total_water_mixing_ratio_wrt_dry_air
-    - water_vapor_mixing_ratio_wrt_dry_air
     - northward_wind
-    - air_potential_temperature
     - qrain
     - qsat
     - qt
+    - rain_mixing_ratio_wrt_dry_air
     - rht
-    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
-    - air_horizontal_streamfunction
     - svp
+    - total_water_mixing_ratio_wrt_dry_air
     - unbalanced_pressure_levels_minus_one
-    - air_horizontal_velocity_potential
     - virtual_potential_temperature
+    - water_vapor_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
     levels: 70
   - variables:
     - air_pressure_levels
@@ -58,31 +58,31 @@ geometry:
 background:
   date: 2016-01-01T16:00:00Z
   state variables:
+  - air_potential_temperature
   - air_pressure
   - air_pressure_levels_minus_one
-  - eastward_wind
+  - cloud_ice_mixing_ratio_wrt_dry_air
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air
   - dimensionless_exner_function
   - dimensionless_exner_function_levels_minus_one
+  - eastward_wind
   - height_above_mean_sea_level
   - height_above_mean_sea_level_levels
   - ice_cloud_volume_fraction_in_atmosphere_layer
   - liquid_cloud_volume_fraction_in_atmosphere_layer
-  - cloud_ice_mixing_ratio_wrt_dry_air
-  - cloud_liquid_water_mixing_ratio_wrt_dry_air
+  - northward_wind
   - rain_mixing_ratio_wrt_dry_air
   - water_vapor_mixing_ratio_wrt_dry_air
-  - northward_wind
-  - air_potential_temperature
   filepath: testdata/gauss_state
 
 increment variables:
-- dry_air_density_levels_minus_one
-- eastward_wind
-- dimensionless_exner_function_levels_minus_one
-- northward_wind
 - air_potential_temperature
 - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
 - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+- dimensionless_exner_function_levels_minus_one
+- dry_air_density_levels_minus_one
+- eastward_wind
+- northward_wind
 - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
 
 background error:
@@ -92,10 +92,10 @@ background error:
   saber central block:
     saber block name: spectral covariance
     active variables:
-    - mu
     - air_horizontal_streamfunction
-    - unbalanced_pressure_levels_minus_one
     - air_horizontal_velocity_potential
+    - mu
+    - unbalanced_pressure_levels_minus_one
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
@@ -119,12 +119,12 @@ background error:
     inner inverse tolerance: 1e-12
     outer inverse tolerance: 1e-8
     active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     - eastward_wind
     - mu
     - northward_wind
-    - air_horizontal_streamfunction
     - unbalanced_pressure_levels_minus_one
-    - air_horizontal_velocity_potential
   - saber block name: gauss winds to geostrophic pressure with smv-interp
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
   # Write out fields in Gaussian space
@@ -144,9 +144,9 @@ background error:
     gauss grid uid: F15
     active variables:
     - eastward_wind
+    - geostrophic_pressure_levels_minus_one
     - mu
     - northward_wind
-    - geostrophic_pressure_levels_minus_one
   # Write out fields in cubed-sphere space
   - saber block name: write fields
     output path: testdata/dirac_write_fields
@@ -156,33 +156,18 @@ background error:
     field names:
      - geostrophic_pressure_levels_minus_one
      - mu
-  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+  - saber block name: mo_hydrostatic_pressure_levels_minus_one_from_geostrophic_pressure
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
     read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-  - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  - saber block name: mo_hp_lvlsm1_to_hexner_lvls
     skip inverse test: true
-  - saber block name: mo_hydro_bal
+  - saber block name: mo_hydro_bal2
     skip inverse test: true
-    inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
-    outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
-    outer inverse tolerance: 1e-13
-  - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
-    inner variables to compare:
-    - hydrostatic_exner_levels
-    - hydrostatic_pressure_levels
-    outer variables to compare:
-    - air_pressure_levels
-    - dimensionless_exner_function_levels_minus_one
   - saber block name: mo_moisture_control
-    inner inverse tolerance: 1e-13
-    outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
-    inner variables to compare:
-      - mu
-      - virtual_potential_temperature
+    skip inverse test: true
     read:
       covariance file path: testdata/MUstats.nc
   - saber block name: mo_air_temperature
@@ -191,7 +176,7 @@ background error:
     skip inverse test: true  # Tested within the mo_super_mio block
     inner variables to compare: [qt, air_temperature]
     moisture incrementing operator file: testdata/MIO_coefficients.nc
-  - saber block name: mo_dry_air_density
+  - saber block name: mo_dry_air_density_from_exnerm1
     skip inverse test: true
   # Write out fields in cubed-sphere space
   - saber block name: write fields

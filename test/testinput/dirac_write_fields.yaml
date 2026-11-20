@@ -157,27 +157,19 @@ background error:
     field names:
      - geostrophic_pressure_levels_minus_one
      - mu
-  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+  - saber block name: mo_hydrostatic_pressure_levels_minus_one_from_geostrophic_pressure
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
     read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-  - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  - saber block name: mo_hp_lvlsm1_to_hexner_lvls
     skip inverse test: true
-  - saber block name: mo_hydro_bal
+  - saber block name: mo_hydro_bal2
     skip inverse test: true
     inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
     outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
     outer inverse tolerance: 1e-13
-  - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
-    inner variables to compare:
-    - hydrostatic_exner_levels
-    - hydrostatic_pressure_levels
-    outer variables to compare:
-    - air_pressure_levels
-    - dimensionless_exner_function_levels_minus_one
   - saber block name: mo_moisture_control
     inner inverse tolerance: 1e-13
     outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
@@ -192,7 +184,7 @@ background error:
     skip inverse test: true  # Tested within the mo_super_mio block
     inner variables to compare: [qt, air_temperature]
     moisture incrementing operator file: testdata/MIO_coefficients.nc
-  - saber block name: mo_dry_air_density
+  - saber block name: mo_dry_air_density_from_exnerm1
     skip inverse test: true
   # Write out fields in cubed-sphere space
   - saber block name: write fields

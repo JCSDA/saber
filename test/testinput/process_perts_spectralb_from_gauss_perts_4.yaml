@@ -104,7 +104,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_sqrtspectralb_5/_MPI_-_OMP__randomized_gauss_mb%MEM%
+      filepath: testdata/randomization_sqrtspectralb_uv/_MPI_-_OMP__randomized_gauss_mb%MEM%
       variables: *winds
 
 input variables: *winds

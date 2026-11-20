@@ -55,7 +55,7 @@ namespace spectralb {
 namespace {
 
 
-double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
+double normfield(const eckit::mpi::Comm & comm, const atlas::Field & fld) {
   auto view = atlas::array::make_view<const double, 2>(fld);
 
   std::size_t i(0);
@@ -358,7 +358,8 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
   ModelGrid modelGrid = unknown;
   if (xb[s].functionspace().type() == "StructuredColumns") {
     const auto fs = atlas::functionspace::StructuredColumns(xb[s].functionspace());
-    if (fs.grid().name().compare(0, 1, "F") == 0) {
+    if (fs.grid().name().compare(0, 1, "F") == 0 ||
+        fs.grid().name().compare(0, 1, "O") == 0) {
       modelGrid = gauss;
     }
   } else if (xb[s].functionspace().type() == "NodeColumns") {

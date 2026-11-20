@@ -1,3 +1,5 @@
+# Randomization test using spectral B formulation
+# Generating ensemble perturbations in analysis variable space
 geometry:
   function space: StructuredColumns
   grid:
@@ -45,7 +47,7 @@ geometry:
     - unbalanced_pressure_levels_minus_one
     - virtual_potential_temperature
     - water_vapor_mixing_ratio_wrt_dry_air
-    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water   
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
     levels: 70
   - variables:
     - air_pressure_levels
@@ -82,7 +84,7 @@ background error:
     active variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
-    - mu   
+    - mu
     - unbalanced_pressure_levels_minus_one
     read:
       covariance_file: testdata/spectralcov.nc
@@ -90,7 +92,7 @@ background error:
       - PSI_inc_Uv_matrix
       - CHI_inc_Uv_matrix
       - MU_inc_Uv_matrix
-      - aP_inc_Uv_matrix 
+      - aP_inc_Uv_matrix
       gauss_grid_uid: F12
   - saber block name: spectral to gauss
     active variables:
@@ -100,21 +102,20 @@ background error:
     - mu
     - northward_wind
     - unbalanced_pressure_levels_minus_one
-  - saber block name: gauss winds to geostrophic pressure with smv-interp
-  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+  - saber block name: gauss winds to geostrophic pressure
+  - saber block name: mo_hydrostatic_pressure_levels_minus_one_from_geostrophic_pressure
     read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-  - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
-  - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
-  - saber block name: mo_hydro_bal
+  - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+  - saber block name: mo_hydro_bal2
   - saber block name: mo_moisture_control
     read:
       covariance file path: testdata/MUstats.nc
   - saber block name: mo_super_mio
     moisture incrementing operator file: testdata/MIO_coefficients.nc
-  - saber block name: mo_dry_air_density
+  - saber block name: mo_dry_air_density_from_exnerm1
 
 background:
   date: 2016-01-01T16:00:00Z
@@ -137,8 +138,7 @@ background:
 
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_with_smv_2/_MPI_-_OMP__randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_ens_analvars/_MPI_-_OMP__randomized_gauss_mb%MEM%
 
 test:
-  float relative tolerance: 1e-12
-  reference filename: testref/randomization_sqrtspectralb_with_smv_2.ref
+  reference filename: testref/randomization_sqrtspectralb_ens_analvars.ref

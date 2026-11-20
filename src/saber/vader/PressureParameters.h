@@ -63,32 +63,6 @@ class GpToHpCalibrationReadParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class GpToHpParameters : public BlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GpToHpParameters, BlockParametersBase)
-
- public:
-  // Read parameters
-  oops::OptionalParameter<GpToHpReadParameters> readParams{"read", this};
-
-  oops::OptionalParameter<GpToHpCalibrationReadParameters>
-    calibrationReadParams{"calibration read", this};
-
-  oops::Variables mandatoryActiveVars() const override;
-
-  const oops::Variables mandatoryStateVars() const override {
-    return oops::Variables({"air_pressure_levels"});
-  }
-
-  oops::Variables activeInnerVars(const oops::Variables& outerVars) const override;
-
-  oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({outerVars["hydrostatic_pressure_levels"]});
-    return vars;
-  }
-};
-
-// -----------------------------------------------------------------------------
-
 class GpToHpm1Parameters : public BlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GpToHpm1Parameters, BlockParametersBase)
 
@@ -107,29 +81,6 @@ class GpToHpm1Parameters : public BlockParametersBase {
     oops::Variables vars({outerVars["hydrostatic_pressure_levels_minus_one"]});
     return vars;
   }
-};
-
-// -----------------------------------------------------------------------------
-
-class HydrostaticPressureParameters : public BlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticPressureParameters, BlockParametersBase)
-
- public:
-  GaussUVToGPParameters gaussUVToGp{this};
-  GpToHpParameters gpToHp{this};
-  oops::Variables mandatoryActiveVars() const override;
-
-  // same as in GpToHp parameters since this block is used in HydrostaticPressure
-  const oops::Variables mandatoryStateVars() const override {
-    return oops::Variables({"air_pressure_levels"});
-  }
-
-  oops::Variables activeInnerVars(const oops::Variables& outerVars) const override;
-
-  // activeOuterVars() is not needed in this super-block.
-  // It would have contained "hydrostatic_pressure_levels".
-
-  oops::Variables intermediateTempVars(const oops::Variables& outerVars) const;
 };
 
 // -----------------------------------------------------------------------------

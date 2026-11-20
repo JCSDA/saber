@@ -12,19 +12,30 @@ geometry:
   - variables: &vars
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
+    - dry_air_density_levels_minus_one
     - eastward_wind
+    - geostrophic_pressure_levels_minus_one
+    - hydrostatic_pressure_levels_minus_one
     - mu
-    - northward_wind 
-    - unbalanced_pressure_levels_minus_one  
+    - northward_wind
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   partitioner: ectrans
 background:
   date: 2010-01-01T12:00:00Z
   state variables: &inputvars
+  - dry_air_density_levels_minus_one
   - eastward_wind
+  - geostrophic_pressure_levels_minus_one
   - mu
   - northward_wind
   - unbalanced_pressure_levels_minus_one
+  filepath: testdata/gauss_state
+increment variables: &incvars
+- eastward_wind
+- hydrostatic_pressure_levels_minus_one
+- mu
+- northward_wind
 background error:
   covariance model: SABER
   ensemble pert:
@@ -32,7 +43,7 @@ background error:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/randomization_sqrtspectralb_3/_MPI_-_OMP__randomized_gauss_mb%mem%
+        filepath: testdata/randomization_sqrtspectralb_ens_ctrlvars/_MPI_-_OMP__randomized_gauss_mb%mem%
       pattern: '%mem%'
       nmembers: 10
   saber central block:
@@ -40,7 +51,7 @@ background error:
     active variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
-    - mu 
+    - mu
     - unbalanced_pressure_levels_minus_one
     calibration:
       write:
@@ -63,11 +74,11 @@ background error:
       write:
         covariance name: randomization with F12 mesh
         file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__variances.nc
-    field names: *inputvars
+    field names: *incvars
     save NetCDF file: true
     statistics type:  variance
   - saber block name: write variances
-    field names: *inputvars
+    field names: *incvars
     binning:
       type: horizontal grid point
       file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__hor_gri_ave.nc
@@ -92,7 +103,7 @@ background error:
       write:
         covariance name: randomization with F12 mesh
         file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__vertcov.nc
-    field names: *inputvars
+    field names: *incvars
     save NetCDF file: true
     statistics type:  vertical covariance
   - saber block name: write variances
@@ -111,8 +122,13 @@ background error:
       write:
         covariance name: randomization with F12 mesh
         file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__lat_overlap_vertcov.nc
-    field names: *inputvars
+    field names: *incvars
     save NetCDF file: true
     statistics type:  vertical covariance
+  - saber block name: mo_hydrostatic_pressure_levels_minus_one
+    read:
+      covariance file path: testdata/FPstats.nc
+      number of covariance latitude rings: 481
+      gp regression bins: 18
 test:
   reference filename: testref/error_covariance_training_spectralb_2.ref

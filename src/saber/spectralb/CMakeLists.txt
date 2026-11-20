@@ -30,8 +30,6 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     SqrtOfSpectralCovariance.h
     GaussUVToGP.cc
     GaussUVToGP.h
-    HydrostaticPressure.cc
-    HydrostaticPressure.h
     HydrostaticPressurem1.cc
     HydrostaticPressurem1.h
     )

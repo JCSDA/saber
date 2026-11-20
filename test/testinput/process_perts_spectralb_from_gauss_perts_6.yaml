@@ -1,4 +1,4 @@
-# starting from randomization_sqrtspectralb_4
+# starting from randomization_sqrtspectralb_ens_modelvars
 #
 geometry:
   function space: StructuredColumns
@@ -28,11 +28,6 @@ geometry:
     - hydrostatic_pressure_levels_minus_one
     - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
-    - qrain
-    - qsat
-    - qt
-    - rht
-    - svp
     - mu
     - muA
     - muH1
@@ -42,7 +37,12 @@ geometry:
     - muRow2Column1
     - muRow2Column2
     - northward_wind
+    - qrain
+    - qsat
+    - qt
     - rain_mixing_ratio_wrt_dry_air
+    - rht
+    - svp
     - total_water_mixing_ratio_wrt_dry_air
     - total_water_mixing_ratio_wrt_moist_air_and_condensed_water
     - unbalanced_pressure_levels_minus_one
@@ -124,20 +124,20 @@ bands:
       multiply fset filename: init_cntl_F12_inc
       field names: &cntlvars
       - eastward_wind
-      - northward_wind
-      - hydrostatic_pressure_levels_minus_one 
+      - hydrostatic_pressure_levels_minus_one
       - mu
+      - northward_wind
       parallel IO: true
     - saber block name: spectral to gauss
       right inverse: true
       reuse already created block: true
       active variables: &spectralvars
-      - eastward_wind
-      - northward_wind
       - air_horizontal_streamfunction
       - air_horizontal_velocity_potential
-      - hydrostatic_pressure_levels_minus_one 
+      - eastward_wind
+      - hydrostatic_pressure_levels_minus_one
       - mu
+      - northward_wind
     - saber block name: spectral analytical filter
       function:
         shape: waveband filter
@@ -148,8 +148,8 @@ bands:
       active variables: &innervars
       - air_horizontal_streamfunction
       - air_horizontal_velocity_potential
-      - mu
       - hydrostatic_pressure_levels_minus_one
+      - mu
     - saber block name: spectral to gauss
       active variables: *spectralvars
     - saber block name: write fields
@@ -280,7 +280,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_sqrtspectralb_4/_MPI_-_OMP__randomized_gauss_mb%MEM%
+      filepath: testdata/randomization_sqrtspectralb_ens_modelvars/_MPI_-_OMP__randomized_gauss_mb%MEM%
       variables:
        - air_potential_temperature
        - cloud_ice_mixing_ratio_wrt_dry_air

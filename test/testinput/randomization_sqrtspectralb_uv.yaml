@@ -1,3 +1,5 @@
+# Randomization test using spectral B formulation
+# Generating ensemble perturbations with wind vectors.
 geometry:
   function space: StructuredColumns
   grid:
@@ -36,9 +38,9 @@ background error:
     active variables: *vars
 
 output variance:  # This section is optional
-  filepath: testdata/randomization_sqrtspectralb_5/_MPI_-_OMP__variance
+  filepath: testdata/randomization_sqrtspectralb_uv/_MPI_-_OMP__variance
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_5/_MPI_-_OMP__randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_uv/_MPI_-_OMP__randomized_gauss_mb%MEM%
 test:
-  reference filename: testref/randomization_sqrtspectralb_5.ref
+  reference filename: testref/randomization_sqrtspectralb_uv.ref

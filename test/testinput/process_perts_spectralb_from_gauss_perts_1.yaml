@@ -62,7 +62,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_sqrtspectralb_1/_MPI_-_OMP__randomized_gauss_mb%MEM%
+      filepath: testdata/randomization_sqrtspectralb_uv_innervars/_MPI_-_OMP__randomized_gauss_mb%MEM%
       variables: *vars
 
 input variables: *vars

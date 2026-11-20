@@ -1,3 +1,5 @@
+# Met Office Covariance on Gaussian mesh
+# Variable transforms using super blocks, including inverse and adjoint testing
 geometry:
   function space: StructuredColumns
   grid:
@@ -10,6 +12,7 @@ geometry:
     - air_potential_temperature
     - air_pressure
     - air_pressure_levels_minus_one
+    - air_temperature
     - cfeff
     - cleff
     - cloud_ice_mixing_ratio_wrt_dry_air
@@ -26,10 +29,6 @@ geometry:
     - hydrostatic_pressure_levels_minus_one
     - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
-    - qrain
-    - qsat
-    - qt
-    - rht
     - mu
     - muA
     - muH1
@@ -39,7 +38,11 @@ geometry:
     - muRow2Column1
     - muRow2Column2
     - northward_wind
+    - qrain
+    - qsat
+    - qt
     - rain_mixing_ratio_wrt_dry_air
+    - rht
     - total_water_mixing_ratio_wrt_dry_air
     - unbalanced_pressure_levels_minus_one
     - virtual_potential_temperature
@@ -56,11 +59,12 @@ geometry:
   halo: 1
 
 background:
-  date: 2010-01-01T12:00:00Z
+  date: 2016-01-01T16:00:00Z
   state variables:
   - air_potential_temperature
   - air_pressure
   - air_pressure_levels_minus_one
+  - air_temperature
   - cloud_ice_mixing_ratio_wrt_dry_air
   - cloud_liquid_water_mixing_ratio_wrt_dry_air
   - dimensionless_exner_function
@@ -120,12 +124,7 @@ background error:
     read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
-      gp regression bins: 18  
-    active variables:
-    - eastward_wind
-    - hydrostatic_pressure_levels_minus_one
-    - northward_wind
-    - unbalanced_pressure_levels_minus_one
+      gp regression bins: 18
   - saber block name: mo_hp_lvlsm1_to_hexner_lvls
     active variables:
     - hydrostatic_pressure_levels_minus_one
@@ -189,3 +188,4 @@ output dirac:
   filepath: testdata/dirac_spectralb_gauss_vader_6/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_gauss_vader_6.ref
+  test output filename: testref/dirac_spectralb_gauss_vader_6.out

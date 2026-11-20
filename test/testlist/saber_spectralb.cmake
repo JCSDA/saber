@@ -27,7 +27,7 @@ saber_add_test( TARGET saber_compare_diagnostics_sqrtspectralb_2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
                 ARGS testinput/compare_diagnostics_sqrtspectralb_2.yaml )
 
-# ERROR COVARIANCE CONVERSION TEST               
+# ERROR COVARIANCE CONVERSION TEST
 # error_covariance_training_spectralb_1
 saber_add_test( TARGET saber_error_covariance_training_spectralb_1_1-1
                 MPI 1
@@ -104,100 +104,102 @@ if(ATLAS_TEST_46_OR_GREATER)
                                saber_randomization_csdual_sqrtspectralb_parallelio_1-1)
 endif()
 
-# randomization_sqrtspectralb_1
-saber_add_test( TARGET saber_randomization_sqrtspectralb_1_1-1
+# randomization_sqrtspectralb_uv_innervars
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_innervars_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_1.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv_innervars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_1_2-1
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_innervars_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_1.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv_innervars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_1_1-2
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_innervars_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_1.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv_innervars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_3_1-1
+# randomization_sqrtspectralb_ens_ctrlvars
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_3.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-1 )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_3_2-1
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_3.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1 )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_3_1-2
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_3.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-2 )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_4_1-1
+# randomization_sqrtspectralb_ens_modelvars
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_modelvars_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_4.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_modelvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-1 )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_4_2-1
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_modelvars_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_4.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_modelvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1 )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_4_1-2
+saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_modelvars_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_4.yaml
+                ARGS testinput/randomization_sqrtspectralb_ens_modelvars.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-2 )
 
-# randomization_sqrtspectralb_5
-saber_add_test( TARGET saber_randomization_sqrtspectralb_5_1-1
+# randomization_sqrtspectralb_uv
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_1-1
                 MPI 1
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_5.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_5_2-1
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_2-1
                 MPI 2
                 OMP 1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_5.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
-saber_add_test( TARGET saber_randomization_sqrtspectralb_5_1-2
+saber_add_test( TARGET saber_randomization_sqrtspectralb_uv_1-2
                 MPI 1
                 OMP 2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                ARGS testinput/randomization_sqrtspectralb_5.yaml
+                ARGS testinput/randomization_sqrtspectralb_uv.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
 # STANDARD ERROR COVARIANCE TRAINING TESTS
@@ -209,7 +211,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_2_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_3_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_ctrlvars_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_spectralb_2_2-1
                 MPI 2
@@ -217,7 +219,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_2_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_3_2-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_ctrlvars_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_spectralb_2_1-2
                 MPI 1
@@ -226,7 +228,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_2_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_2.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_3_1-2 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_ctrlvars_1-2 )
 
 # error_covariance_training_spectralb_3
 saber_add_test( TARGET saber_error_covariance_training_spectralb_3_1-1
@@ -235,7 +237,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_3_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_1-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_spectralb_3_2-1
                 MPI 2
@@ -243,7 +245,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_3_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_2-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_2-1 )
 
 saber_add_test( TARGET saber_error_covariance_training_spectralb_3_1-2
                 MPI 1
@@ -252,7 +254,7 @@ saber_add_test( TARGET saber_error_covariance_training_spectralb_3_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_spectralb_3.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-2 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_1-2 )
 
 # PROCESS PERTS TESTS
 
@@ -431,7 +433,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_1.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_2-1
                 MPI 2
@@ -439,7 +441,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_1.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_2-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_2-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_1-2
                 MPI 1
@@ -448,7 +450,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_1_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_1.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-2 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-2 )
 
 # process_perts_spectralb_from_gauss_perts_2
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_1-1
@@ -457,7 +459,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_2.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_2-1
                 MPI 2
@@ -465,8 +467,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_2.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_2-1
-                             saber_process_perts_spectralb_from_gauss_perts_2_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_2-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_1-2
                 MPI 1
@@ -475,7 +476,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_2_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_2.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-2
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-2
                              saber_process_perts_spectralb_from_gauss_perts_2_1-1
                              saber_process_perts_spectralb_from_gauss_perts_2_2-1 )
 
@@ -486,7 +487,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_3_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_3.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_3_2-1
                 MPI 2
@@ -494,7 +495,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_3_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_3.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_2-1
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_2-1
                              saber_process_perts_spectralb_from_gauss_perts_3_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_3_1-2
@@ -504,7 +505,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_3_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_3.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_1_1-2
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_innervars_1-2
                              saber_process_perts_spectralb_from_gauss_perts_3_2-1
                              saber_process_perts_spectralb_from_gauss_perts_3_1-1 )
 
@@ -515,7 +516,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_4_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_4.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_4_2-1
                 MPI 2
@@ -523,7 +524,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_4_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_4.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_2-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_2-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_4_1-2
                 MPI 1
@@ -532,7 +533,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_4_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_4.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_1-2 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_1-2 )
 
 # process_perts_spectralb_from_gauss_perts_5
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_1-1
@@ -541,7 +542,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_5.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_2-1
                 MPI 2
@@ -549,7 +550,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_5.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_2-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_2-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_1-2
                 MPI 1
@@ -558,7 +559,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_5.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_5_1-2 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_uv_1-2 )
 
 # process_perts_spectralb_from_gauss_perts_5
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-1
@@ -567,7 +568,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-1 )
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_2-1
                 MPI 2
@@ -575,7 +576,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_2-1
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_2-1
                              saber_process_perts_spectralb_from_gauss_perts_6_1-1 )
 
 saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-2
@@ -585,7 +586,7 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
                 ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
                 DEPENDS saber_quench_process_perts.x
-                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-2
+                TEST_DEPENDS saber_randomization_sqrtspectralb_ens_modelvars_1-2
                              saber_process_perts_spectralb_from_gauss_perts_6_2-1
                              saber_process_perts_spectralb_from_gauss_perts_6_1-1 )
 
@@ -718,7 +719,7 @@ if(ATLAS_TEST_46_OR_GREATER)
                   ARGS testinput/dirac_ens_parallel_other_geom_2.yaml
 		              LABELS   tier2
                   DEPENDS saber_quench_error_covariance_toolbox.x
-                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )	
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_with_smv_2_1-2 )
 
   # Compare model and other geom
   saber_add_test( TARGET saber_compare_diagnostics_ens_geom
@@ -778,28 +779,28 @@ if(ATLAS_TEST_46_OR_GREATER)
                   ARGS testinput/dirac_spectralb_from_CS_with_smv.yaml
                   DEPENDS saber_quench_error_covariance_toolbox.x )
 
-  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_1-1
-                  MPI 1
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_with_smv_1-1
+                  MPI 1git
                   OMP 1
                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars_with_smv.yaml
                   DEPENDS saber_quench_error_covariance_toolbox.x
                   TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-1 )
 
-  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_2-1
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_with_smv_2-1
                   MPI 2
                   OMP 1
                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars_with_smv.yaml
                   DEPENDS saber_quench_error_covariance_toolbox.x
                   TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1 )
 
-  saber_add_test( TARGET saber_randomization_sqrtspectralb_with_smv_3_1-2
+  saber_add_test( TARGET saber_randomization_sqrtspectralb_ens_ctrlvars_with_smv_1-2
                   MPI 1
                   OMP 2
                   LABELS   tier2
                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                  ARGS testinput/randomization_sqrtspectralb_with_smv_3.yaml
+                  ARGS testinput/randomization_sqrtspectralb_ens_ctrlvars_with_smv.yaml
                   DEPENDS saber_quench_error_covariance_toolbox.x
                   TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-2 )
 endif()
@@ -1348,7 +1349,7 @@ saber_add_test( TARGET saber_dirac_spectralb_from_saber_file_1_2-1
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_spectralb_from_saber_file_1.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x
-                TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1)              
+                TEST_DEPENDS saber_error_covariance_training_spectralb_1_2-1)
 
 saber_add_test( TARGET saber_dirac_spectralb_from_saber_file_1_1-2
                 MPI 1
@@ -1356,7 +1357,7 @@ saber_add_test( TARGET saber_dirac_spectralb_from_saber_file_1_1-2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/dirac_spectralb_from_saber_file_1.yaml
-                DEPENDS saber_quench_error_covariance_toolbox.x 
+                DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_spectralb_1_1-2)
 
 saber_add_test( TARGET saber_dirac_spectralb_from_saber_file_2_1-1

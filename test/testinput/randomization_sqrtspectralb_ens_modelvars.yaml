@@ -1,3 +1,5 @@
+# Randomization test using spectral B formulation
+# Generating ensemble perturbations in model variable space
 geometry:
   function space: StructuredColumns
   grid:
@@ -26,11 +28,6 @@ geometry:
     - hydrostatic_pressure_levels_minus_one
     - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
-    - qrain
-    - qsat
-    - qt
-    - rht
-    - svp
     - mu
     - muA
     - muH1
@@ -40,7 +37,12 @@ geometry:
     - muRow2Column1
     - muRow2Column2
     - northward_wind
+    - qrain
+    - qsat
+    - qt
     - rain_mixing_ratio_wrt_dry_air
+    - rht
+    - svp
     - total_water_mixing_ratio_wrt_dry_air
     - unbalanced_pressure_levels_minus_one
     - virtual_potential_temperature
@@ -129,7 +131,7 @@ background:
 
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_4/_MPI_-_OMP__randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_ens_modelvars/_MPI_-_OMP__randomized_gauss_mb%MEM%
 
 test:
-  reference filename: testref/randomization_sqrtspectralb_4.ref
+  reference filename: testref/randomization_sqrtspectralb_ens_modelvars.ref
